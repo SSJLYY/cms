@@ -13,7 +13,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/resource_platform?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
     username: root
-    password: g!GNidTxcwymw85N69Iu0oHwP8GhYidz!h!
+    password: g!GNidTxcwymw85N69Iu0oHwP8GhYidz!h
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20
