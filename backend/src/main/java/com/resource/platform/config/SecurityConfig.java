@@ -61,6 +61,11 @@ public class SecurityConfig {
                 .antMatchers("/api/link-types/public/**").permitAll()
                 // 客户端公开接口 - 反馈相关
                 .antMatchers("/api/feedback/public/**").permitAll()
+                // 客户端公开接口 - 友情链接相关
+                .antMatchers("/api/friendlinks/enabled").permitAll()
+                // 客户端公开接口 - 广告推广相关
+                .antMatchers("/api/promotion/active").permitAll()
+                .antMatchers("/api/promotion/*/click").permitAll()
                 // 静态资源和文件访问
                 .antMatchers("/uploads/**").permitAll()
                 .antMatchers("/images/**").permitAll()

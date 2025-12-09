@@ -1,0 +1,220 @@
+/* 主题变量定义 */
+:root {
+  /* 浅色主题（默认） */
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #fafbfc;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --border-color: #e0e6ed;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.12);
+  --card-bg: #ffffff;
+  --header-bg: transparent;
+  --footer-bg: #ffffff;
+  --footer-border: #e0e6ed;
+  --announcement-bg: rgba(248, 250, 252, 0.6);
+  --announcement-border: rgba(226, 232, 240, 0.5);
+  --input-bg: rgba(255, 255, 255, 0.9);
+  --input-border: #e0e6ed;
+  --input-focus-border: #3498db;
+}
+
+/* 深色主题 */
+[data-theme="dark"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #242424;
+  --text-primary: #e0e0e0;
+  --text-secondary: #b0b0b0;
+  --text-tertiary: #808080;
+  --border-color: #404040;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.5);
+  --card-bg: #2d2d2d;
+  --header-bg: #1a1a1a;
+  --footer-bg: #2d2d2d;
+  --footer-border: #404040;
+  --announcement-bg: rgba(45, 45, 45, 0.8);
+  --announcement-border: rgba(64, 64, 64, 0.5);
+  --input-bg: rgba(45, 45, 45, 0.9);
+  --input-border: #404040;
+  --input-focus-border: #3498db;
+}
+
+/* 灰色主题（默哀模式） */
+[data-theme="gray"] {
+  filter: grayscale(100%);
+  -webkit-filter: grayscale(100%);
+}
+
+/* 圣诞主题 */
+[data-theme="christmas"] {
+  --bg-primary: #f0f8ff;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e6f2ff;
+  --text-primary: #2c5f2d;
+  --text-secondary: #4a7c59;
+  --text-tertiary: #7fa89b;
+  --border-color: #c1e1c1;
+  --card-bg: #ffffff;
+  --footer-bg: #e6f7ff;
+  --footer-border: #b3d9ff;
+  --accent-color: #c41e3a;
+}
+
+/* 春节主题 */
+[data-theme="spring-festival"] {
+  --bg-primary: #fff5f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #ffe6e6;
+  --text-primary: #8b0000;
+  --text-secondary: #b22222;
+  --text-tertiary: #cd5c5c;
+  --border-color: #ffcccc;
+  --card-bg: #ffffff;
+  --footer-bg: #ffe6e6;
+  --footer-border: #ffb3b3;
+  --accent-color: #ff0000;
+}
+
+/* 应用主题变量 */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.home {
+  background-color: var(--bg-primary);
+}
+
+.software-card,
+.card-bg {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.modern-header {
+  background-color: var(--header-bg);
+}
+
+.announcement-banner {
+  background: var(--announcement-bg);
+  border-color: var(--announcement-border);
+}
+
+.announcement-text {
+  color: var(--text-secondary);
+}
+
+.search-input {
+  background: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--text-primary);
+}
+
+.search-input:focus {
+  border-color: var(--input-focus-border);
+}
+
+.search-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.category-btn {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.software-name {
+  color: var(--text-primary);
+}
+
+.software-desc {
+  color: var(--text-secondary);
+}
+
+.page-container {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+.page-content {
+  background: var(--bg-tertiary);
+}
+
+.resource-name {
+  color: var(--text-primary);
+}
+
+.resource-desc {
+  color: var(--text-secondary);
+}
+
+.bottom-info-bar {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+.pagination-btn {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.site-footer {
+  background-color: var(--footer-bg);
+  border-top-color: var(--footer-border);
+}
+
+/* 深色主题特殊处理 */
+[data-theme="dark"] .title-text {
+  background: linear-gradient(135deg, #e0e0e0 0%, #b0b0b0 50%, #808080 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="dark"] .no-result {
+  background: var(--card-bg);
+}
+
+[data-theme="dark"] .loading {
+  color: #3498db;
+}
+
+/* 圣诞主题特殊处理 */
+[data-theme="christmas"] .site-footer {
+  background: linear-gradient(135deg, #e6f7ff 0%, #cce7ff 100%);
+  border-top: 2px solid #b3d9ff;
+}
+
+[data-theme="christmas"] .footer-info {
+  color: var(--text-secondary);
+}
+
+[data-theme="christmas"] .copyright {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* 春节主题特殊处理 */
+[data-theme="spring-festival"] .site-footer {
+  background: linear-gradient(135deg, #ffe6e6 0%, #ffcccc 100%);
+  border-top: 2px solid #ffb3b3;
+}
+
+[data-theme="spring-festival"] .footer-info {
+  color: var(--text-secondary);
+}
+
+[data-theme="spring-festival"] .copyright {
+  color: var(--text-primary);
+  font-weight: 600;
+}

@@ -13,7 +13,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/resource_platform?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
     username: root
-    password: g!GNidTxcwymw85N69Iu0oHwP8GhYidz!h
+    password: g!GNidTxcwymw85N69Iu0oHwP8GhYidz!h!
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20
@@ -30,6 +30,12 @@ spring:
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
+  
+  # Quartz Configuration
+  quartz:
+    job-store-type: jdbc
+    jdbc:
+      initialize-schema: always
 
 # MyBatis Plus Configuration
 mybatis-plus:
@@ -116,3 +122,28 @@ file:
       keep-aspect-ratio: true
     compress:
       quality: 0.8
+
+# Crawler Configuration
+crawler:
+  # 线程池配置
+  thread-pool:
+    core-size: 5
+    max-size: 10
+    queue-capacity: 100
+  # 请求配置
+  request:
+    connect-timeout: 30000  # 连接超时(毫秒)
+    read-timeout: 60000     # 读取超时(毫秒)
+    max-retries: 3          # 最大重试次数
+    retry-delay: 2000       # 重试延迟(毫秒)
+  # 资源限制
+  limits:
+    max-pages: 1000         # 单次爬取最大页面数
+    max-page-size: 10485760 # 单个页面最大大小(10MB)
+    max-image-size: 5242880 # 单张图片最大大小(5MB)
+  # 速率限制
+  rate-limit:
+    requests-per-second: 2  # 每秒最大请求数
+    crawl-delay: 1          # 默认爬取延迟(秒)
+
+

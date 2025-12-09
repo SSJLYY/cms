@@ -12,6 +12,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import javax.mail.internet.MimeMessage;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -38,7 +39,7 @@ public class EmailServiceImpl implements EmailService {
     private JavaMailSender getConfiguredMailSender() {
         try {
             // 从数据库获取邮件配置
-            List<String> mailConfigKeys = List.of(
+            List<String> mailConfigKeys = Arrays.asList(
                 "email.smtp.host",
                 "email.smtp.port",
                 "email.username",
@@ -92,7 +93,7 @@ public class EmailServiceImpl implements EmailService {
      */
     private String getFromAddress() {
         try {
-            Map<String, String> mailConfigs = configService.getConfigsByKeys(List.of("email.from", "email.username"));
+            Map<String, String> mailConfigs = configService.getConfigsByKeys(Arrays.asList("email.from", "email.username"));
             String from = mailConfigs.get("email.from");
             if (from != null && !from.isEmpty()) {
                 return from;

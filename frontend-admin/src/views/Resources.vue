@@ -7,6 +7,26 @@
         添加资源
       </el-button>
       
+      <!-- 批量操作按钮 -->
+      <div class="batch-operations" v-if="selectedResources.length > 0">
+        <el-button type="success" @click="handleBatchPublish">
+          <el-icon><Check /></el-icon>
+          批量发布 ({{ selectedResources.length }})
+        </el-button>
+        <el-button type="warning" @click="handleBatchUnpublish">
+          <el-icon><Close /></el-icon>
+          批量下架 ({{ selectedResources.length }})
+        </el-button>
+        <el-button type="info" @click="showBatchMoveDialog = true">
+          <el-icon><FolderOpened /></el-icon>
+          批量移动 ({{ selectedResources.length }})
+        </el-button>
+        <el-button type="danger" @click="handleBatchDelete">
+          <el-icon><Delete /></el-icon>
+          批量删除 ({{ selectedResources.length }})
+        </el-button>
+      </div>
+      
       <div class="toolbar-right">
         <el-input
           v-model="queryParams.keyword"
@@ -48,6 +68,18 @@
           <el-option label="已下架" :value="0" />
         </el-select>
         
+        <el-select
+          v-model="queryParams.source"
+          placeholder="来源"
+          clearable
+          style="width: 120px"
+          @change="loadResources"
+        >
+          <el-option label="全部来源" :value="null" />
+          <el-option label="爬虫采集" value="crawler" />
+          <el-option label="手动添加" value="manual" />
+        </el-select>
+        
         <el-button type="primary" @click="loadResources">
           <el-icon><Search /></el-icon>
           搜索
@@ -65,7 +97,9 @@
       :data="resources" 
       style="width: 100%"
       v-loading="tableLoading"
+      @selection-change="handleSelectionChange"
     >
+      <el-table-column type="selection" width="55" align="center" />
       <el-table-column prop="id" label="ID" width="80" align="center" />
       <el-table-column label="编号" width="100" align="center">
         <template #default="{ row }">
@@ -88,6 +122,18 @@
       <el-table-column label="分类" width="120" align="center">
         <template #default="{ row }">
           <el-tag size="small">{{ row.categoryName }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="来源" width="120" align="center">
+        <template #default="{ row }">
+          <el-tag v-if="row.crawlerTaskId" type="warning" size="small">
+            <el-icon><Compass /></el-icon>
+            爬虫采集
+          </el-tag>
+          <el-tag v-else type="info" size="small">
+            <el-icon><Edit /></el-icon>
+            手动添加
+          </el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="downloadCount" label="下载量" width="100" align="center" />
@@ -300,14 +346,44 @@
         <el-button type="primary" @click="handleSave" :loading="saveLoading">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 批量移动分类对话框 -->
+    <el-dialog
+      v-model="showBatchMoveDialog"
+      title="批量移动到分类"
+      width="400px"
+      :close-on-click-modal="false"
+    >
+      <el-form>
+        <el-form-item label="目标分类">
+          <el-select v-model="batchMoveTargetCategory" placeholder="请选择目标分类" style="width: 100%">
+            <el-option 
+              v-for="cat in categories" 
+              :key="cat.id" 
+              :label="cat.name" 
+              :value="cat.id" 
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <div class="batch-info">
+            将移动 <strong>{{ selectedResources.length }}</strong> 个资源到选定分类
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showBatchMoveDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleConfirmBatchMove" :loading="batchLoading">确定移动</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search, Refresh, Edit, Delete, Switch, Picture } from '@element-plus/icons-vue'
-import { getResourceList, createResource, updateResource, deleteResource, toggleResourceStatus } from '../api/resource'
+import { Plus, Search, Refresh, Edit, Delete, Switch, Picture, Compass, Check, Close, FolderOpened } from '@element-plus/icons-vue'
+import { getResourceList, createResource, updateResource, deleteResource, toggleResourceStatus, batchPublishResources, batchUnpublishResources, batchDeleteResources, batchMoveToCategory } from '../api/resource'
 import { getCategoryList } from '../api/category'
 import { queryImages } from '../api/image'
 import { getLinkTypes } from '../api/linkType'
@@ -318,10 +394,14 @@ const linkTypes = ref([])
 const availableImages = ref([])
 const dialogVisible = ref(false)
 const showImageSelector = ref(false)
+const showBatchMoveDialog = ref(false)
 const tableLoading = ref(false)
 const saveLoading = ref(false)
+const batchLoading = ref(false)
 const total = ref(0)
 const formRef = ref(null)
+const selectedResources = ref([])
+const batchMoveTargetCategory = ref(null)
 
 const queryParams = reactive({
   keyword: '',
@@ -578,6 +658,137 @@ const handleDelete = async (id) => {
   }
 }
 
+// 批量操作相关方法
+const handleSelectionChange = (selection) => {
+  selectedResources.value = selection
+}
+
+const handleBatchPublish = async () => {
+  if (selectedResources.value.length === 0) {
+    ElMessage.warning('请先选择要发布的资源')
+    return
+  }
+  
+  try {
+    await ElMessageBox.confirm(
+      `确定要发布选中的 ${selectedResources.value.length} 个资源吗？`,
+      '批量发布确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    batchLoading.value = true
+    const ids = selectedResources.value.map(item => item.id)
+    const result = await batchPublishResources(ids)
+    
+    ElMessage.success(`成功发布 ${result.data} 个资源`)
+    selectedResources.value = []
+    loadResources()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('批量发布失败', error)
+      ElMessage.error('批量发布失败')
+    }
+  } finally {
+    batchLoading.value = false
+  }
+}
+
+const handleBatchUnpublish = async () => {
+  if (selectedResources.value.length === 0) {
+    ElMessage.warning('请先选择要下架的资源')
+    return
+  }
+  
+  try {
+    await ElMessageBox.confirm(
+      `确定要下架选中的 ${selectedResources.value.length} 个资源吗？`,
+      '批量下架确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    batchLoading.value = true
+    const ids = selectedResources.value.map(item => item.id)
+    const result = await batchUnpublishResources(ids)
+    
+    ElMessage.success(`成功下架 ${result.data} 个资源`)
+    selectedResources.value = []
+    loadResources()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('批量下架失败', error)
+      ElMessage.error('批量下架失败')
+    }
+  } finally {
+    batchLoading.value = false
+  }
+}
+
+const handleBatchDelete = async () => {
+  if (selectedResources.value.length === 0) {
+    ElMessage.warning('请先选择要删除的资源')
+    return
+  }
+  
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedResources.value.length} 个资源吗？删除后无法恢复！`,
+      '批量删除确认',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'error'
+      }
+    )
+    
+    batchLoading.value = true
+    const ids = selectedResources.value.map(item => item.id)
+    const result = await batchDeleteResources(ids)
+    
+    ElMessage.success(`成功删除 ${result.data} 个资源`)
+    selectedResources.value = []
+    loadResources()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('批量删除失败', error)
+      ElMessage.error('批量删除失败')
+    }
+  } finally {
+    batchLoading.value = false
+  }
+}
+
+const handleConfirmBatchMove = async () => {
+  if (!batchMoveTargetCategory.value) {
+    ElMessage.warning('请选择目标分类')
+    return
+  }
+  
+  try {
+    batchLoading.value = true
+    const ids = selectedResources.value.map(item => item.id)
+    const result = await batchMoveToCategory(ids, batchMoveTargetCategory.value)
+    
+    ElMessage.success(`成功移动 ${result.data} 个资源`)
+    selectedResources.value = []
+    showBatchMoveDialog.value = false
+    batchMoveTargetCategory.value = null
+    loadResources()
+  } catch (error) {
+    console.error('批量移动失败', error)
+    ElMessage.error('批量移动失败')
+  } finally {
+    batchLoading.value = false
+  }
+}
+
 onMounted(() => {
   loadResources()
   loadCategories()
@@ -606,6 +817,21 @@ onMounted(() => {
   display: flex;
   gap: 10px;
   align-items: center;
+}
+
+.batch-operations {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-left: 20px;
+  padding-left: 20px;
+  border-left: 1px solid #e4e7ed;
+}
+
+.batch-info {
+  color: #606266;
+  font-size: 14px;
+  text-align: center;
 }
 
 .resource-icon {

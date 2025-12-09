@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 public class AdvertisementDTO {
     private Long id;
     private String name;
+    private String title;
     private String position;
     private String type;
     private String imageUrl;

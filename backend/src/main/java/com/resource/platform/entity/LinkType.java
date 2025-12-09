@@ -26,6 +26,11 @@ public class LinkType {
     private String typeName;
     
     /**
+     * 名称（兼容性字段）
+     */
+    private String name;
+    
+    /**
      * 图标
      */
     private String icon;

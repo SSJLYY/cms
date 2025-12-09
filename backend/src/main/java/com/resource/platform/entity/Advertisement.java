@@ -12,6 +12,8 @@ public class Advertisement {
     
     private String name;
     
+    private String title;
+    
     private String position;
     
     private String type;

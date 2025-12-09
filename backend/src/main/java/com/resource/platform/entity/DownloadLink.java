@@ -12,11 +12,15 @@ public class DownloadLink {
     
     private Long resourceId;
     
+    private String title;
+    
     private String linkName;
     
     private String linkType;
     
     private String linkUrl;
+    
+    private String downloadUrl;
     
     private String password;
     

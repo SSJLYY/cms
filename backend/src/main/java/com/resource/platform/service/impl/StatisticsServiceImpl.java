@@ -12,6 +12,7 @@ import com.resource.platform.mapper.CategoryMapper;
 import com.resource.platform.mapper.ResourceMapper;
 import com.resource.platform.service.StatisticsService;
 import com.resource.platform.vo.StatisticsOverviewVO;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,20 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * 统计服务实现类
+ * 
+ * 功能说明：
+ * - 实现系统统计的核心业务逻辑
+ * - 处理访问日志的统计分析
+ * - 提供多维度的数据统计
+ * - 支持不同时间周期的统计查询
+ * - 生成实时活动监控数据
+ * 
+ * @author 系统
+ * @since 1.0
+ */
+@Slf4j
 @Service
 public class StatisticsServiceImpl implements StatisticsService {
     
@@ -31,32 +46,59 @@ public class StatisticsServiceImpl implements StatisticsService {
     @Autowired
     private CategoryMapper categoryMapper;
     
+    /**
+     * 获取统计概览
+     * 
+     * 业务逻辑：
+     * 1. 根据时间周期计算起始时间
+     * 2. 统计指定时间范围内的下载量
+     * 3. 统计指定时间范围内的访问量
+     * 4. 计算新增访问量
+     * 5. 返回统计概览数据
+     * 
+     * @param period 统计周期
+     * @return 统计概览数据
+     */
     @Override
     public StatisticsOverviewVO getOverview(String period) {
+        // 记录统计开始
+        log.info("开始获取统计概览: period={}", period);
+        
+        // 创建概览对象
         StatisticsOverviewVO overview = new StatisticsOverviewVO();
         overview.setPeriod(period);
         
+        // 步骤1：计算统计起始时间
         LocalDateTime startTime = getStartTime(period);
+        log.debug("统计时间范围: {} 至 现在", startTime);
         
+        // 步骤2：统计总下载量
+        log.debug("统计下载量");
         LambdaQueryWrapper<AccessLog> wrapper = new LambdaQueryWrapper<>();
         wrapper.ge(AccessLog::getCreateTime, startTime);
-        
-        // 总下载量
         wrapper.eq(AccessLog::getActionType, "download");
-        overview.setTotalDownloads(accessLogMapper.selectCount(wrapper).intValue());
+        int totalDownloads = accessLogMapper.selectCount(wrapper).intValue();
+        overview.setTotalDownloads(totalDownloads);
+        log.debug("总下载量: {}", totalDownloads);
         
-        // 总访问量
+        // 步骤3：统计总访问量
+        log.debug("统计访问量");
         wrapper = new LambdaQueryWrapper<>();
         wrapper.ge(AccessLog::getCreateTime, startTime);
         wrapper.eq(AccessLog::getActionType, "visit");
-        overview.setTotalVisits(accessLogMapper.selectCount(wrapper).intValue());
+        int totalVisits = accessLogMapper.selectCount(wrapper).intValue();
+        overview.setTotalVisits(totalVisits);
+        log.debug("总访问量: {}", totalVisits);
         
-        // 新增访问（今日）
-        if ("today".equals(period)) {
-            overview.setNewVisits(overview.getTotalVisits());
-        } else {
-            overview.setNewVisits(0);
-        }
+        // 步骤4：计算新增访问量
+        // 今日的访问量即为新增访问量，其他周期暂设为0
+        int newVisits = "today".equals(period) ? totalVisits : 0;
+        overview.setNewVisits(newVisits);
+        log.debug("新增访问量: {}", newVisits);
+        
+        // 记录统计成功
+        log.info("获取统计概览成功: period={}, downloads={}, visits={}, newVisits={}", 
+            period, totalDownloads, totalVisits, newVisits);
         
         return overview;
     }

@@ -99,11 +99,15 @@
         </div>
       </div>
     </div>
+
+    <!-- 右下角操作按钮 -->
+    <ActionButtons />
   </div>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router'
+import ActionButtons from '../components/ActionButtons.vue'
 
 const router = useRouter()
 

@@ -14,6 +14,7 @@ import com.resource.platform.mapper.FeedbackMapper;
 import com.resource.platform.service.FeedbackService;
 import com.resource.platform.vo.FeedbackStatsVO;
 import com.resource.platform.vo.FeedbackVO;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,20 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 反馈服务实现类
+ * 
+ * 功能说明：
+ * - 实现用户反馈的核心业务逻辑
+ * - 处理反馈的提交、查询和管理
+ * - 管理反馈的状态流转
+ * - 处理反馈回复和邮件通知
+ * - 提供反馈统计信息
+ * 
+ * @author 系统
+ * @since 1.0
+ */
+@Slf4j
 @Service
 public class FeedbackServiceImpl implements FeedbackService {
     
@@ -32,41 +47,98 @@ public class FeedbackServiceImpl implements FeedbackService {
     @Autowired
     private com.resource.platform.service.EmailService emailService;
     
+    // 日期时间格式化器
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
+    /**
+     * 提交用户反馈
+     * 
+     * 业务逻辑：
+     * 1. 将DTO数据复制到实体对象
+     * 2. 设置反馈状态为待处理
+     * 3. 设置删除标记为未删除
+     * 4. 保存反馈到数据库
+     * 
+     * @param dto 反馈提交数据
+     */
     @Override
     public void submitFeedback(FeedbackSubmitDTO dto) {
+        // 记录提交开始
+        log.info("开始提交用户反馈: type={}, title={}, contactEmail={}", 
+            dto.getType(), dto.getTitle(), dto.getContactEmail());
+        
+        // 步骤1：创建反馈实体对象
         Feedback feedback = new Feedback();
         BeanUtils.copyProperties(dto, feedback);
-        feedback.setStatus("PENDING");
-        feedback.setDeleted(0);
-        feedbackMapper.insert(feedback);
+        
+        // 步骤2：设置默认状态
+        feedback.setStatus("PENDING"); // 待处理状态
+        feedback.setDeleted(0); // 未删除
+        
+        // 步骤3：保存到数据库
+        log.debug("保存反馈到数据库: title={}", dto.getTitle());
+        int rows = feedbackMapper.insert(feedback);
+        
+        // 记录提交成功
+        log.info("用户反馈提交成功: feedbackId={}, type={}, title={}, affectedRows={}", 
+            feedback.getId(), dto.getType(), dto.getTitle(), rows);
     }
     
+    /**
+     * 获取反馈统计信息
+     * 
+     * 业务逻辑：
+     * 1. 统计总反馈数量（未删除）
+     * 2. 统计待处理反馈数量
+     * 3. 统计已处理反馈数量
+     * 4. 统计今日反馈数量
+     * 
+     * @return 反馈统计信息
+     */
     @Override
     public FeedbackStatsVO getStats() {
+        // 记录统计开始
+        log.info("开始获取反馈统计信息");
+        
+        // 创建统计结果对象
         FeedbackStatsVO stats = new FeedbackStatsVO();
         
-        // 总反馈数
+        // 步骤1：统计总反馈数（只统计未删除的）
+        log.debug("统计总反馈数量");
         LambdaQueryWrapper<Feedback> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Feedback::getDeleted, 0);
-        stats.setTotalFeedback(feedbackMapper.selectCount(wrapper).intValue());
+        int totalFeedback = feedbackMapper.selectCount(wrapper).intValue();
+        stats.setTotalFeedback(totalFeedback);
+        log.debug("总反馈数: {}", totalFeedback);
         
-        // 待处理（PENDING状态）
+        // 步骤2：统计待处理反馈数（PENDING状态）
+        log.debug("统计待处理反馈数量");
         wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Feedback::getStatus, "PENDING").eq(Feedback::getDeleted, 0);
-        stats.setPendingFeedback(feedbackMapper.selectCount(wrapper).intValue());
+        int pendingFeedback = feedbackMapper.selectCount(wrapper).intValue();
+        stats.setPendingFeedback(pendingFeedback);
+        log.debug("待处理反馈数: {}", pendingFeedback);
         
-        // 已处理（COMPLETED和CLOSED状态）
+        // 步骤3：统计已处理反馈数（COMPLETED和CLOSED状态）
+        log.debug("统计已处理反馈数量");
         wrapper = new LambdaQueryWrapper<>();
         wrapper.in(Feedback::getStatus, "COMPLETED", "CLOSED").eq(Feedback::getDeleted, 0);
-        stats.setProcessedFeedback(feedbackMapper.selectCount(wrapper).intValue());
+        int processedFeedback = feedbackMapper.selectCount(wrapper).intValue();
+        stats.setProcessedFeedback(processedFeedback);
+        log.debug("已处理反馈数: {}", processedFeedback);
         
-        // 今日反馈
+        // 步骤4：统计今日反馈数
+        log.debug("统计今日反馈数量");
         wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Feedback::getDeleted, 0)
                .ge(Feedback::getCreateTime, java.time.LocalDate.now().atStartOfDay());
-        stats.setTodayFeedback(feedbackMapper.selectCount(wrapper).intValue());
+        int todayFeedback = feedbackMapper.selectCount(wrapper).intValue();
+        stats.setTodayFeedback(todayFeedback);
+        log.debug("今日反馈数: {}", todayFeedback);
+        
+        // 记录统计成功
+        log.info("获取反馈统计信息成功: total={}, pending={}, processed={}, today={}", 
+            totalFeedback, pendingFeedback, processedFeedback, todayFeedback);
         
         return stats;
     }

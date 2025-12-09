@@ -22,7 +22,16 @@ import java.time.LocalTime;
 import java.util.List;
 
 /**
- * 日志服务实现
+ * 日志服务实现类
+ * 
+ * 功能说明：
+ * - 实现系统日志的核心业务逻辑
+ * - 处理日志的查询、统计和管理
+ * - 提供日志的清理和导出功能
+ * - 支持多维度的日志筛选和分析
+ * 
+ * @author 系统
+ * @since 1.0
  */
 @Slf4j
 @Service
@@ -31,15 +40,34 @@ public class LogServiceImpl implements LogService {
     @Autowired
     private SystemLogMapper systemLogMapper;
 
+    /**
+     * 获取日志统计信息
+     * 
+     * 业务逻辑：
+     * 1. 统计总日志数量
+     * 2. 统计今日日志数量
+     * 3. 统计成功和失败日志数量
+     * 4. 计算平均响应时间
+     * 5. 返回统计结果
+     * 
+     * @return 日志统计信息
+     */
     @Override
     public LogStatisticsVO getStatistics() {
+        // 记录统计开始
+        log.info("开始获取日志统计信息");
+        
+        // 创建统计结果对象
         LogStatisticsVO statistics = new LogStatisticsVO();
         
-        // 总日志数
+        // 步骤1：统计总日志数
+        log.debug("统计总日志数量");
         Long totalLogs = systemLogMapper.selectCount(null);
         statistics.setTotalLogs(totalLogs);
+        log.debug("总日志数: {}", totalLogs);
         
-        // 今日日志数
+        // 步骤2：统计今日日志数
+        log.debug("统计今日日志数量");
         LocalDateTime todayStart = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
         LocalDateTime todayEnd = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
         Long todayLogs = systemLogMapper.selectCount(
@@ -47,34 +75,50 @@ public class LogServiceImpl implements LogService {
                 .between(SystemLog::getCreateTime, todayStart, todayEnd)
         );
         statistics.setTodayLogs(todayLogs);
+        log.debug("今日日志数: {}", todayLogs);
         
-        // 成功日志数
+        // 步骤3：统计成功日志数
+        log.debug("统计成功日志数量");
         Long successLogs = systemLogMapper.selectCount(
             new LambdaQueryWrapper<SystemLog>()
                 .eq(SystemLog::getStatus, "SUCCESS")
         );
         statistics.setSuccessLogs(successLogs);
+        log.debug("成功日志数: {}", successLogs);
         
-        // 失败日志数
+        // 步骤4：统计失败日志数
+        log.debug("统计失败日志数量");
         Long errorLogs = systemLogMapper.selectCount(
             new LambdaQueryWrapper<SystemLog>()
                 .eq(SystemLog::getStatus, "ERROR")
         );
         statistics.setErrorLogs(errorLogs);
+        log.debug("失败日志数: {}", errorLogs);
         
-        // 平均响应时间
+        // 步骤5：计算平均响应时间
+        log.debug("计算平均响应时间");
         List<SystemLog> allLogs = systemLogMapper.selectList(
             new LambdaQueryWrapper<SystemLog>()
                 .isNotNull(SystemLog::getDuration)
         );
+        
+        long avgDuration;
         if (!allLogs.isEmpty()) {
+            // 计算所有日志的总耗时
             long totalDuration = allLogs.stream()
                 .mapToLong(SystemLog::getDuration)
                 .sum();
-            statistics.setAvgDuration(totalDuration / allLogs.size());
+            // 计算平均值
+            avgDuration = totalDuration / allLogs.size();
         } else {
-            statistics.setAvgDuration(0L);
+            avgDuration = 0L;
         }
+        statistics.setAvgDuration(avgDuration);
+        log.debug("平均响应时间: {}ms", avgDuration);
+        
+        // 记录统计成功
+        log.info("获取日志统计信息成功: total={}, today={}, success={}, error={}, avgDuration={}ms", 
+            totalLogs, todayLogs, successLogs, errorLogs, avgDuration);
         
         return statistics;
     }

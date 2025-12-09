@@ -91,13 +91,55 @@
           </div>
         </div>
 
+        <!-- 广告位 -->
+        <div v-if="advertisements.length > 0" class="advertisement-section">
+          <div 
+            v-for="ad in advertisements" 
+            :key="ad.id"
+            class="advertisement-item"
+            @click="handleAdClick(ad)"
+          >
+            <img 
+              v-if="ad.imageUrl" 
+              :src="ad.imageUrl" 
+              :alt="ad.name"
+              class="ad-image"
+            />
+            <div v-else class="ad-placeholder">
+              <i class="fas fa-image"></i>
+              <span>{{ ad.name }}</span>
+            </div>
+          </div>
+        </div>
+
         <!-- 底部信息栏 -->
+        <!-- 已下载过此资源提示 -->
+        <div v-if="hasDownloaded" class="download-notice download-notice-info">
+          <i class="fas fa-info-circle"></i>
+          您今日已下载过此资源，重复下载不会计数
+        </div>
+
+        <!-- 下载次数已满提示 -->
+        <div 
+          v-else-if="remainingDownloads === 0" 
+          ref="warningNotice"
+          class="download-notice download-notice-warning"
+          :class="{ 'shake': isShaking }"
+        >
+          <i class="fas fa-exclamation-circle"></i>
+          您今日下载次数已满，无法下载，请明日再下载
+        </div>
+
         <div class="bottom-info-bar">
           <div class="update-time-info">
             更新时间：{{ formatDate(resource.updateTime || resource.createTime) }}
           </div>
           <div class="download-count-info">
             下载次数：{{ resource.downloadCount || 0 }}
+          </div>
+          <div class="remaining-downloads-info">
+            <i class="fas fa-clock"></i>
+            今日剩余下载次数：{{ remainingDownloads }}
           </div>
         </div>
 
@@ -107,11 +149,11 @@
             <a 
               v-for="link in filteredDownloadLinks" 
               :key="link.id"
-              :href="getFullUrl(link.linkUrl)"
-              class="download-btn-green"
-              target="_blank"
-              rel="noopener noreferrer"
-              @click="handleDownload(link.linkType)"
+              :href="remainingDownloads > 0 ? getFullUrl(link.linkUrl) : 'javascript:void(0)'"
+              :class="['download-btn-green', { 'disabled': remainingDownloads === 0 }]"
+              :target="remainingDownloads > 0 ? '_blank' : ''"
+              :rel="remainingDownloads > 0 ? 'noopener noreferrer' : ''"
+              @click="handleDownload(link.linkType, $event)"
             >
               <i class="fas fa-download"></i>
               立即下载
@@ -170,13 +212,18 @@
         <i class="fas fa-chevron-right"></i>
       </button>
     </div>
+
+    <!-- 右下角操作按钮 -->
+    <ActionButtons />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { getResourceDetail, recordDownload, getLinkTypes } from '../api/resource'
+import { getResourceDetail, recordDownload, getLinkTypes, getRemainingDownloads, checkDownloaded } from '../api/resource'
+import { getActiveAdvertisements, recordClick } from '../api/promotion'
+import ActionButtons from '../components/ActionButtons.vue'
 
 const route = useRoute()
 const resource = ref(null)
@@ -186,6 +233,12 @@ const modalImageIndex = ref(0)
 const currentImageIndex = ref(0)
 const linkTypes = ref([])
 const linkTypeMap = ref({})
+const remainingDownloads = ref(2)
+const hasDownloaded = ref(false)
+const isShaking = ref(false)
+const warningNotice = ref(null)
+const advertisements = ref([])
+const currentAdIndex = ref(0)
 
 // 根据URL参数过滤下载链接
 const filteredDownloadLinks = computed(() => {
@@ -246,12 +299,46 @@ const loadResourceDetail = async () => {
   }
 }
 
-const handleDownload = async (linkType) => {
+const triggerShake = () => {
+  isShaking.value = true
+  setTimeout(() => {
+    isShaking.value = false
+  }, 500)
+  
+  // 滚动到提示框位置
+  if (warningNotice.value) {
+    warningNotice.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
+const handleDownload = async (linkType, event) => {
+  // 如果下载次数已满，阻止默认行为并触发抖动
+  if (remainingDownloads.value === 0) {
+    event.preventDefault()
+    triggerShake()
+    return
+  }
+  
   try {
     await recordDownload(resource.value.id)
     console.log(`下载资源 ${resource.value.id}, 类型: ${linkType}`)
+    // 下载后更新状态
+    await loadRemainingDownloads()
+    await checkIfDownloaded()
   } catch (error) {
     console.error('记录下载失败', error)
+    if (error.response && error.response.data) {
+      const code = error.response.data.code
+      if (code === 208) {
+        // 已下载过，不显示错误，只更新状态
+        await checkIfDownloaded()
+      } else if (code === 429) {
+        // 下载次数已满
+        event.preventDefault()
+        await loadRemainingDownloads()
+        triggerShake()
+      }
+    }
   }
 }
 
@@ -335,18 +422,72 @@ const formatDate = (dateStr) => {
   return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
 }
 
+const loadRemainingDownloads = async () => {
+  try {
+    const res = await getRemainingDownloads()
+    if (res.code === 200) {
+      remainingDownloads.value = res.data
+    }
+  } catch (error) {
+    console.error('获取剩余下载次数失败', error)
+  }
+}
+
+const checkIfDownloaded = async () => {
+  try {
+    const resourceId = route.params.id
+    const res = await checkDownloaded(resourceId)
+    if (res.code === 200) {
+      hasDownloaded.value = res.data
+    }
+  } catch (error) {
+    console.error('检查下载状态失败', error)
+  }
+}
+
+const loadAdvertisements = async () => {
+  try {
+    const res = await getActiveAdvertisements('download')
+    if (res.code === 200 && res.data) {
+      advertisements.value = res.data
+    }
+  } catch (error) {
+    console.error('加载广告失败', error)
+  }
+}
+
+const handleAdClick = async (ad) => {
+  try {
+    await recordClick(ad.id)
+    if (ad.linkUrl) {
+      // 确保URL格式正确
+      let url = ad.linkUrl
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url
+      }
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  } catch (error) {
+    console.error('记录广告点击失败', error)
+  }
+}
+
 onMounted(async () => {
   await loadLinkTypes()
   await loadResourceDetail()
+  await loadRemainingDownloads()
+  await checkIfDownloaded()
+  await loadAdvertisements()
 })
 </script>
 
 <style scoped>
 .resource-detail {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: var(--bg-primary);
   font-family: 'Microsoft YaHei', Arial, sans-serif;
   padding-bottom: 40px;
+  transition: background-color 0.3s ease;
 }
 
 /* 返回链接 */
@@ -390,7 +531,7 @@ onMounted(async () => {
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.1;
-  color: #1e293b;
+  color: var(--text-primary);
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -403,7 +544,7 @@ onMounted(async () => {
 
 .dl-description {
   font-size: 1.05rem;
-  color: #64748b;
+  color: var(--text-secondary);
   margin: 0;
   opacity: 0.9;
 }
@@ -462,12 +603,13 @@ onMounted(async () => {
 .loading-container {
   text-align: center;
   padding: 100px 20px;
+  color: var(--text-primary);
 }
 
 .spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid #f3f3f3;
+  border: 4px solid var(--border-color);
   border-top: 4px solid #3b82f6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -483,16 +625,18 @@ onMounted(async () => {
 .page-container {
   max-width: 1200px;
   margin: 0 auto;
-  background: white;
+  background: var(--card-bg);
   border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .page-content {
   padding: 32px;
-  background: #fafbfc;
+  background: var(--bg-tertiary);
+  transition: background-color 0.3s ease;
 }
 
 /* 资源信息 */
@@ -503,13 +647,13 @@ onMounted(async () => {
 .resource-name {
   font-size: 1.8rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0 0 16px 0;
 }
 
 .resource-desc {
   font-size: 1rem;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.8;
   white-space: pre-line;
   word-wrap: break-word;
@@ -589,7 +733,7 @@ onMounted(async () => {
 
 .image-info small {
   font-size: 0.875rem;
-  color: #6c757d;
+  color: var(--text-secondary);
 }
 
 .carousel-indicators {
@@ -619,6 +763,58 @@ onMounted(async () => {
   border-radius: 5px;
 }
 
+/* 广告位 */
+.advertisement-section {
+  margin: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.advertisement-item {
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+  background: var(--card-bg);
+}
+
+.advertisement-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.ad-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  max-height: 140px;
+}
+
+.ad-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: var(--bg-tertiary);
+  min-height: 120px;
+  color: var(--text-tertiary);
+  gap: 12px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.ad-placeholder i {
+  font-size: 2rem;
+  opacity: 0.6;
+}
+
+.ad-placeholder span {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
 /* 底部信息栏 */
 .bottom-info-bar {
   display: flex;
@@ -626,23 +822,79 @@ onMounted(async () => {
   align-items: center;
   margin: 20px 0;
   padding: 12px 15px;
-  background: #f8f9fa;
+  background: var(--bg-tertiary);
   border-radius: 8px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 12px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .update-time-info,
-.download-count-info {
+.download-count-info,
+.remaining-downloads-info {
   font-size: 0.875rem;
-  color: #6c757d;
+  color: var(--text-secondary);
+}
+
+.remaining-downloads-info {
+  color: #3b82f6;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.remaining-downloads-info i {
+  font-size: 0.9rem;
+}
+
+/* 下载提示 */
+.download-notice {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.download-notice i {
+  font-size: 1.1rem;
+}
+
+.download-notice-info {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.download-notice-warning {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+/* 抖动动画 */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+  20%, 40%, 60%, 80% { transform: translateX(10px); }
+}
+
+.download-notice.shake {
+  animation: shake 0.5s ease-in-out;
 }
 
 /* 底部按钮 */
 .page-footer {
   padding: 24px 0 0;
   background: transparent;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--border-color);
   margin-top: 24px;
+  transition: border-color 0.3s ease;
 }
 
 .download-buttons-container {
@@ -683,6 +935,18 @@ onMounted(async () => {
   text-decoration: none;
 }
 
+.download-btn-green.disabled {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.download-btn-green.disabled:hover {
+  transform: none;
+  box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+}
+
 .download-btn-blue {
   background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
   box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
@@ -704,11 +968,12 @@ onMounted(async () => {
 .no-resource {
   text-align: center;
   padding: 100px 20px;
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   max-width: 600px;
   margin: 40px auto;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
+  transition: background-color 0.3s ease;
 }
 
 .no-resource-icon {
@@ -718,7 +983,7 @@ onMounted(async () => {
 
 .no-resource-text {
   font-size: 1.5em;
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 30px;
 }
 
@@ -939,6 +1204,15 @@ onMounted(async () => {
     width: 35px;
     height: 35px;
   }
+
+  .ad-image {
+    max-height: 120px;
+  }
+
+  .ad-placeholder {
+    padding: 30px 20px;
+    min-height: 100px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -989,6 +1263,23 @@ onMounted(async () => {
   .modal-image-counter {
     font-size: 14px;
     padding: 6px 12px;
+  }
+
+  .ad-image {
+    max-height: 100px;
+  }
+
+  .ad-placeholder {
+    padding: 20px 16px;
+    min-height: 80px;
+  }
+
+  .ad-placeholder i {
+    font-size: 1.5rem;
+  }
+
+  .ad-placeholder span {
+    font-size: 0.9rem;
   }
 }
 </style>

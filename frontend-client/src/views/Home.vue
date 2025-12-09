@@ -83,6 +83,27 @@
         </div>
       </div>
 
+      <!-- 广告位 -->
+      <div v-if="advertisements.length > 0" class="home-advertisement-section">
+        <div 
+          v-for="ad in advertisements" 
+          :key="ad.id"
+          class="home-advertisement-item"
+          @click="handleAdClick(ad)"
+        >
+          <img 
+            v-if="ad.imageUrl" 
+            :src="ad.imageUrl" 
+            :alt="ad.name"
+            class="home-ad-image"
+          />
+          <div v-else class="home-ad-placeholder">
+            <i class="fas fa-ad"></i>
+            <span>{{ ad.name }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- 加载动画 -->
       <div v-if="loading" class="loading">
         搜索中<span>.</span><span>.</span><span>.</span>
@@ -103,6 +124,7 @@
           :id="`resource-${resource.id}`"
           class="software-card"
         >
+          <ChristmasHat v-if="isChristmasTheme" />
           <span class="card-number">{{ formatCardNumber((currentPage - 1) * pageSize + index + 1) }}</span>
           <div class="software-name">{{ getIcon(resource.categoryName) }} {{ resource.title }}</div>
           <div class="software-desc">{{ resource.description || '暂无描述' }}</div>
@@ -169,14 +191,6 @@
         </button>
       </div>
     </div>
-
-    <!-- 底部 -->
-    <footer>
-      <div class="copyright">
-        {{ config['site.copyright'] || '© 2025 个人备份库 | 仅供个人备份学习，请勿用于商业用途' }}<br>
-        <span class="build-time">建站时间：{{ config['site.buildTime'] || '2025年01月01日' }}</span>
-      </div>
-    </footer>
     
     <!-- 图片查看器模态框 -->
     <div v-if="showImageModal" class="image-modal" @click="closeImageModal">
@@ -190,8 +204,11 @@
       </div>
     </div>
 
-    <!-- 反馈按钮 -->
-    <FeedbackButton />
+    <!-- 友链按钮 -->
+    <FriendLinkButton />
+
+    <!-- 右下角操作按钮（反馈+帮助） -->
+    <ActionButtons />
 
     <!-- 免责声明弹窗 -->
     <DisclaimerModal />
@@ -201,8 +218,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { getResourceList, recordDownload, recordVisit, getConfig, getLinkTypes } from '../api/resource'
-import FeedbackButton from '../components/FeedbackButton.vue'
+import { getActiveAdvertisements, recordClick } from '../api/promotion'
+import FriendLinkButton from '../components/FriendLinkButton.vue'
+import ActionButtons from '../components/ActionButtons.vue'
 import DisclaimerModal from '../components/DisclaimerModal.vue'
+import ChristmasHat from '../components/ChristmasHat.vue'
 
 const resources = ref([])
 const categories = ref([])
@@ -218,6 +238,10 @@ const modalImageSrc = ref('')
 const modalImageAlt = ref('')
 const currentPage = ref(1)
 const pageSize = 9
+const advertisements = ref([])
+const isChristmasTheme = computed(() => {
+  return document.documentElement.getAttribute('data-theme') === 'christmas'
+})
 
 const filteredResources = computed(() => {
   let filtered = resources.value
@@ -398,11 +422,39 @@ const loadLinkTypes = async () => {
   }
 }
 
+const loadAdvertisements = async () => {
+  try {
+    const res = await getActiveAdvertisements('homepage')
+    if (res.code === 200 && res.data) {
+      advertisements.value = res.data
+    }
+  } catch (error) {
+    console.error('加载广告失败', error)
+  }
+}
+
+const handleAdClick = async (ad) => {
+  try {
+    await recordClick(ad.id)
+    if (ad.linkUrl) {
+      // 确保URL格式正确
+      let url = ad.linkUrl
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url
+      }
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  } catch (error) {
+    console.error('记录广告点击失败', error)
+  }
+}
+
 onMounted(async () => {
   await loadConfig()
   await loadResources()
   await loadCategories()
   await loadLinkTypes()
+  await loadAdvertisements()
 })
 </script>
 
@@ -435,10 +487,11 @@ onMounted(async () => {
 
 .home {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: var(--bg-primary);
   font-family: 'Microsoft YaHei', Arial, sans-serif;
-  color: #333;
+  color: var(--text-primary);
   line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .container {
@@ -641,11 +694,11 @@ onMounted(async () => {
 
 .category-btn {
   padding: 10px 20px;
-  background: white;
-  border: 1px solid #e0e6ed;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 20px;
   font-size: 0.95rem;
-  color: #666;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -660,6 +713,60 @@ onMounted(async () => {
   background: #3498db;
   border-color: #3498db;
   color: white;
+}
+
+/* 首页广告位 */
+.home-advertisement-section {
+  margin: 30px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.home-advertisement-item {
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+  background: var(--card-bg);
+}
+
+.home-advertisement-item:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.home-ad-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  min-height: 150px;
+  max-height: 200px;
+}
+
+.home-ad-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  gap: 12px;
+  min-height: 150px;
+}
+
+.home-ad-placeholder i {
+  font-size: 2.5rem;
+  opacity: 0.9;
+}
+
+.home-ad-placeholder span {
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: center;
 }
 
 /* 搜索框样式 */
@@ -688,22 +795,22 @@ onMounted(async () => {
   width: 100%;
   padding: 14px 22px 14px 45px;
   font-size: 1.05em;
-  border: 2px solid #e0e6ed;
+  border: 2px solid var(--input-border);
   border-radius: 30px;
   outline: none;
   transition: all 0.3s ease;
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--input-bg);
+  color: var(--text-primary);
 }
 
 .search-input:focus {
-  border-color: #3498db;
+  border-color: var(--input-focus-border);
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05), 0 0 8px rgba(52, 152, 219, 0.2);
-  background: #fff;
 }
 
 .search-input::placeholder {
-  color: #b0b8c4;
+  color: var(--text-tertiary);
   font-weight: 400;
 }
 
@@ -741,27 +848,27 @@ onMounted(async () => {
 .no-result {
   text-align: center;
   padding: 60px 20px;
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-md);
   margin-bottom: 40px;
 }
 
 .no-result-icon {
   font-size: 3em;
-  color: #e0e6ed;
+  color: var(--border-color);
   margin-bottom: 15px;
 }
 
 .no-result-text {
   font-size: 1.1em;
-  color: #888;
+  color: var(--text-secondary);
   margin-bottom: 8px;
 }
 
 .no-result-subtext {
   font-size: 0.9em;
-  color: #b0b8c4;
+  color: var(--text-tertiary);
 }
 
 /* 软件列表 */
@@ -773,11 +880,11 @@ onMounted(async () => {
 }
 
 .software-card {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-  transition: transform 0.3s, box-shadow 0.3s;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -785,7 +892,7 @@ onMounted(async () => {
 
 .software-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-lg);
 }
 
 .card-number {
@@ -802,14 +909,14 @@ onMounted(async () => {
 
 .software-name {
   font-size: 1.3em;
-  color: #2c3e50;
+  color: var(--text-primary);
   margin-bottom: 12px;
   font-weight: 600;
   padding-right: 60px;
 }
 
 .software-desc {
-  color: #555;
+  color: var(--text-secondary);
   font-size: 0.95em;
   margin-bottom: 15px;
   line-height: 1.6;
@@ -982,11 +1089,11 @@ onMounted(async () => {
 
 .pagination-btn {
   padding: 10px 16px;
-  background: white;
-  border: 1px solid #e0e6ed;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.9em;
-  color: #666;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.3s ease;
   min-width: 44px;
@@ -1013,25 +1120,6 @@ onMounted(async () => {
 .pagination-number {
   min-width: 40px;
   padding: 10px 12px;
-}
-
-/* 底部样式 */
-footer {
-  text-align: center;
-  padding: 25px 0;
-  margin-top: 20px;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.copyright {
-  color: #888;
-  font-size: 0.9em;
-  line-height: 1.8;
-}
-
-.build-time {
-  font-size: 0.85em;
-  color: #999;
 }
 
 /* 图片模态框 */
@@ -1206,6 +1294,30 @@ footer {
     width: 35px;
     height: 35px;
   }
+
+  .home-advertisement-section {
+    grid-template-columns: 1fr;
+    margin: 20px 0;
+    gap: 15px;
+  }
+
+  .home-ad-image {
+    max-height: 150px;
+    min-height: 120px;
+  }
+
+  .home-ad-placeholder {
+    padding: 40px 20px;
+    min-height: 120px;
+  }
+
+  .home-ad-placeholder i {
+    font-size: 2rem;
+  }
+
+  .home-ad-placeholder span {
+    font-size: 1rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1259,6 +1371,24 @@ footer {
     padding: 6px 10px;
     font-size: 0.8em;
     min-width: 36px;
+  }
+
+  .home-ad-image {
+    max-height: 120px;
+    min-height: 100px;
+  }
+
+  .home-ad-placeholder {
+    padding: 30px 15px;
+    min-height: 100px;
+  }
+
+  .home-ad-placeholder i {
+    font-size: 1.8rem;
+  }
+
+  .home-ad-placeholder span {
+    font-size: 0.9rem;
   }
 }
 </style>

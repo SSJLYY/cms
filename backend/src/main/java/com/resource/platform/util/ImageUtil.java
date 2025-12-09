@@ -45,22 +45,53 @@ public class ImageUtil {
      * 获取图片尺寸
      */
     public static int[] getImageDimensions(File file) throws IOException {
-        BufferedImage image = ImageIO.read(file);
-        if (image == null) {
-            throw new IOException("无法读取图片文件");
+        try {
+            BufferedImage image = ImageIO.read(file);
+            if (image == null) {
+                // 对于不支持的格式（如WebP），返回默认尺寸
+                String fileName = file.getName().toLowerCase();
+                if (fileName.endsWith(".webp") || fileName.endsWith(".avif") || fileName.endsWith(".heic")) {
+                    return new int[]{800, 600}; // 默认尺寸
+                }
+                throw new IOException("无法读取图片文件");
+            }
+            return new int[]{image.getWidth(), image.getHeight()};
+        } catch (Exception e) {
+            // 对于任何读取异常，检查是否是已知的不支持格式
+            String fileName = file.getName().toLowerCase();
+            if (fileName.endsWith(".webp") || fileName.endsWith(".avif") || fileName.endsWith(".heic")) {
+                return new int[]{800, 600}; // 默认尺寸
+            }
+            throw new IOException("无法读取图片文件: " + e.getMessage());
         }
-        return new int[]{image.getWidth(), image.getHeight()};
     }
 
     /**
      * 获取图片尺寸（从MultipartFile）
      */
     public static int[] getImageDimensions(MultipartFile file) throws IOException {
-        BufferedImage image = ImageIO.read(file.getInputStream());
-        if (image == null) {
-            throw new IOException("无法读取图片文件");
+        String fileName = file.getOriginalFilename();
+        
+        // 先检查是否是不支持的格式
+        if (fileName != null) {
+            String lowerFileName = fileName.toLowerCase();
+            if (lowerFileName.endsWith(".webp") || lowerFileName.endsWith(".avif") || lowerFileName.endsWith(".heic")) {
+                log.info("检测到不支持的图片格式，使用默认尺寸: {}", fileName);
+                return new int[]{800, 600}; // 默认尺寸
+            }
         }
-        return new int[]{image.getWidth(), image.getHeight()};
+        
+        try {
+            BufferedImage image = ImageIO.read(file.getInputStream());
+            if (image == null) {
+                log.warn("无法读取图片文件，使用默认尺寸: {}", fileName);
+                return new int[]{800, 600}; // 默认尺寸
+            }
+            return new int[]{image.getWidth(), image.getHeight()};
+        } catch (Exception e) {
+            log.warn("读取图片尺寸失败，使用默认尺寸: {}, error: {}", fileName, e.getMessage());
+            return new int[]{800, 600}; // 默认尺寸
+        }
     }
 
     /**
@@ -75,6 +106,16 @@ public class ImageUtil {
     public static void generateThumbnail(File sourceFile, File targetFile, 
                                         int width, int height, boolean keepAspectRatio) throws IOException {
         try {
+            // 检查是否是不支持的格式
+            String fileName = sourceFile.getName().toLowerCase();
+            if (fileName.endsWith(".webp") || fileName.endsWith(".avif") || fileName.endsWith(".heic")) {
+                // 对于不支持的格式，直接复制原文件作为缩略图
+                java.nio.file.Files.copy(sourceFile.toPath(), targetFile.toPath(), 
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                log.info("不支持的图片格式，直接复制原文件作为缩略图: {}", targetFile.getAbsolutePath());
+                return;
+            }
+            
             if (keepAspectRatio) {
                 Thumbnails.of(sourceFile)
                     .size(width, height)
@@ -87,7 +128,15 @@ public class ImageUtil {
             log.info("缩略图生成成功: {}", targetFile.getAbsolutePath());
         } catch (IOException e) {
             log.error("生成缩略图失败: {}", e.getMessage());
-            throw e;
+            // 如果缩略图生成失败，尝试直接复制原文件
+            try {
+                java.nio.file.Files.copy(sourceFile.toPath(), targetFile.toPath(), 
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                log.info("缩略图生成失败，使用原文件: {}", targetFile.getAbsolutePath());
+            } catch (IOException copyError) {
+                log.error("复制原文件也失败: {}", copyError.getMessage());
+                throw e;
+            }
         }
     }
 
@@ -110,9 +159,10 @@ public class ImageUtil {
             }
             
             return outputStream.toByteArray();
-        } catch (IOException e) {
-            log.error("生成缩略图失败: {}", e.getMessage());
-            throw e;
+        } catch (Exception e) {
+            log.warn("生成缩略图失败，返回原图片数据: {}", e.getMessage());
+            // 对于不支持的格式（如WebP），直接返回原图片数据
+            return imageBytes;
         }
     }
 
@@ -206,7 +256,22 @@ public class ImageUtil {
         String extension = getFileExtension(filename).toLowerCase();
         return extension.equals(".jpg") || extension.equals(".jpeg") || 
                extension.equals(".png") || extension.equals(".gif") || 
-               extension.equals(".bmp") || extension.equals(".webp");
+               extension.equals(".bmp") || extension.equals(".webp") ||
+               extension.equals(".avif") || extension.equals(".heic");
+    }
+
+    /**
+     * 检查图片格式是否被Java ImageIO支持
+     */
+    public static boolean isImageIOSupported(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return false;
+        }
+        String extension = getFileExtension(filename).toLowerCase();
+        // Java ImageIO 原生支持的格式
+        return extension.equals(".jpg") || extension.equals(".jpeg") || 
+               extension.equals(".png") || extension.equals(".gif") || 
+               extension.equals(".bmp");
     }
 
     /**
@@ -229,5 +294,19 @@ public class ImageUtil {
             default:
                 return "application/octet-stream";
         }
+    }
+
+    /**
+     * 检查图片格式是否支持缩略图生成
+     */
+    public static boolean isThumbnailSupported(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return false;
+        }
+        String extension = getFileExtension(filename).toLowerCase();
+        // Thumbnailator 支持的格式
+        return extension.equals(".jpg") || extension.equals(".jpeg") || 
+               extension.equals(".png") || extension.equals(".gif") || 
+               extension.equals(".bmp");
     }
 }

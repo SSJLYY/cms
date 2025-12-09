@@ -36,6 +36,10 @@ public class Resource {
     
     private Long auditorId;
     
+    private Long crawlerTaskId;
+    
+    private String sourceUrl;
+    
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     

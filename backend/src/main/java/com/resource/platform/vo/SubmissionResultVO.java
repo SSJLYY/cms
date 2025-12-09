@@ -8,4 +8,9 @@ public class SubmissionResultVO {
     private String message;
     private Integer successCount;
     private Integer failedCount;
+    
+    // 为了兼容性，添加isSuccess()方法
+    public Boolean isSuccess() {
+        return success;
+    }
 }

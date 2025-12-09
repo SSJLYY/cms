@@ -1,5 +1,13 @@
+/**
+ * 管理后台路由配置
+ * 定义应用的路由结构和导航守卫
+ */
 import { createRouter, createWebHistory } from 'vue-router'
 
+/**
+ * 路由配置数组
+ * 包含登录页面和主要的管理功能页面
+ */
 const routes = [
   {
     path: '/login',
@@ -71,16 +79,34 @@ const routes = [
         path: '/friendlink',
         name: 'FriendLink',
         component: () => import('../views/FriendLink.vue')
+      },
+      {
+        path: '/theme-settings',
+        name: 'ThemeSettings',
+        component: () => import('../views/ThemeSettings.vue')
+      },
+      {
+        path: '/crawler',
+        name: 'Crawler',
+        component: () => import('../views/Crawler.vue')
       }
     ]
   }
 ]
 
+/**
+ * 创建路由实例
+ * 使用HTML5 History模式
+ */
 const router = createRouter({
   history: createWebHistory(),
   routes
 })
 
+/**
+ * 全局前置守卫
+ * 检查用户认证状态，未登录用户重定向到登录页
+ */
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   if (to.path !== '/login' && !token) {

@@ -1,8 +1,8 @@
 -- ============================================
 -- 资源下载平台 - 完整数据库初始化脚本
--- 版本: 2.0
--- 描述: 包含所有表结构、初始数据和测试数据
--- 最后更新: 2024-12-03
+-- 版本: 3.0
+-- 描述: 包含所有表结构、初始数据和测试数据，确保前后端字段完全匹配
+-- 最后更新: 2025-12-09
 -- ============================================
 
 -- 创建数据库
@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS `resource` (
   `audit_status` VARCHAR(20) DEFAULT 'approved' COMMENT '审核状态：pending-待审核，approved-已通过，rejected-已拒绝',
   `audit_time` DATETIME COMMENT '审核时间',
   `auditor_id` BIGINT COMMENT '审核人ID',
+  `crawler_task_id` BIGINT COMMENT '爬虫任务ID',
+  `source_url` VARCHAR(500) COMMENT '来源URL',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标记：0-未删除，1-已删除',
@@ -73,15 +75,18 @@ CREATE TABLE IF NOT EXISTS `resource` (
   KEY `idx_create_time` (`create_time`),
   KEY `idx_cover_image_id` (`cover_image_id`),
   KEY `idx_is_pinned` (`is_pinned`),
-  KEY `idx_audit_status` (`audit_status`)
+  KEY `idx_audit_status` (`audit_status`),
+  KEY `idx_crawler_task_id` (`crawler_task_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资源表';
 
 -- 4. 下载链接表
 CREATE TABLE IF NOT EXISTS `download_link` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `resource_id` BIGINT NOT NULL COMMENT '资源ID',
+  `title` VARCHAR(200) COMMENT '链接标题',
   `link_name` VARCHAR(100) NOT NULL COMMENT '链接名称',
   `link_url` VARCHAR(500) NOT NULL COMMENT '下载链接',
+  `download_url` VARCHAR(500) COMMENT '实际下载地址',
   `link_type` VARCHAR(20) NOT NULL COMMENT '链接类型：baidu、aliyun、lanzou、direct、quark、xunlei、mobile、uc',
   `password` VARCHAR(50) COMMENT '提取码',
   `is_valid` TINYINT NOT NULL DEFAULT 1 COMMENT '是否有效：0-失效，1-有效',
@@ -216,6 +221,32 @@ CREATE TABLE IF NOT EXISTS `access_log` (
   KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='访问日志表';
 
+-- 9.1 IP下载记录表
+CREATE TABLE IF NOT EXISTS `ip_download_record` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `ip_address` VARCHAR(50) NOT NULL COMMENT 'IP地址',
+  `download_date` DATE NOT NULL COMMENT '下载日期',
+  `download_count` INT NOT NULL DEFAULT 0 COMMENT '当日下载次数',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ip_date` (`ip_address`, `download_date`),
+  KEY `idx_download_date` (`download_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IP下载记录表';
+
+-- 9.2 IP资源下载详细记录表
+CREATE TABLE IF NOT EXISTS `ip_resource_download` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `ip_address` VARCHAR(50) NOT NULL COMMENT 'IP地址',
+  `resource_id` BIGINT NOT NULL COMMENT '资源ID',
+  `download_date` DATE NOT NULL COMMENT '下载日期',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ip_resource_date` (`ip_address`, `resource_id`, `download_date`),
+  KEY `idx_resource_id` (`resource_id`),
+  KEY `idx_download_date` (`download_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IP资源下载详细记录表';
+
 -- 10. 审计日志表
 CREATE TABLE IF NOT EXISTS `audit_log` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -262,7 +293,54 @@ CREATE TABLE IF NOT EXISTS `system_config` (
 -- 第三部分：扩展功能表
 -- ============================================
 
--- 12. SEO提交记录表
+-- 12. 爬虫任务表
+CREATE TABLE IF NOT EXISTS `crawler_task` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `name` VARCHAR(100) NOT NULL COMMENT '任务名称',
+  `target_url` VARCHAR(500) NOT NULL COMMENT '目标网站URL',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态: 0-禁用, 1-启用',
+  `crawl_interval` INT NOT NULL DEFAULT 24 COMMENT '爬取间隔(小时)',
+  `max_depth` INT NOT NULL DEFAULT 2 COMMENT '最大爬取深度',
+  `category_mapping` TEXT COMMENT '分类映射(JSON)',
+  `intelligent_mode` TINYINT NOT NULL DEFAULT 1 COMMENT '智能模式: 0-关闭, 1-开启',
+  `custom_rules` TEXT COMMENT '自定义规则(JSON)',
+  `total_crawled` INT NOT NULL DEFAULT 0 COMMENT '累计爬取数量',
+  `total_success` INT NOT NULL DEFAULT 0 COMMENT '累计成功数量',
+  `total_failed` INT NOT NULL DEFAULT 0 COMMENT '累计失败数量',
+  `last_execute_time` DATETIME COMMENT '最后执行时间',
+  `next_execute_time` DATETIME COMMENT '下次执行时间',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标记：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_next_execute_time` (`next_execute_time`),
+  KEY `idx_deleted` (`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='爬虫任务表';
+
+-- 13. 爬虫执行日志表
+CREATE TABLE IF NOT EXISTS `crawler_log` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `task_id` BIGINT NOT NULL COMMENT '任务ID',
+  `task_name` VARCHAR(100) COMMENT '任务名称',
+  `execute_type` TINYINT COMMENT '执行类型: 1-定时, 2-手动',
+  `status` TINYINT COMMENT '状态: 1-执行中, 2-成功, 3-失败',
+  `crawled_count` INT NOT NULL DEFAULT 0 COMMENT '爬取数量',
+  `success_count` INT NOT NULL DEFAULT 0 COMMENT '成功数量',
+  `failed_count` INT NOT NULL DEFAULT 0 COMMENT '失败数量',
+  `duration` INT COMMENT '执行时长(秒)',
+  `error_message` TEXT COMMENT '错误信息',
+  `error_type` VARCHAR(50) COMMENT '错误类型',
+  `start_time` DATETIME COMMENT '开始时间',
+  `end_time` DATETIME COMMENT '结束时间',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_task_id` (`task_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='爬虫执行日志表';
+
+-- 14. SEO提交记录表
 CREATE TABLE IF NOT EXISTS `seo_submission` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `engine` VARCHAR(20) NOT NULL COMMENT '搜索引擎：baidu-百度，bing-必应，google-谷歌',
@@ -276,10 +354,11 @@ CREATE TABLE IF NOT EXISTS `seo_submission` (
   KEY `idx_submit_time` (`submit_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='SEO提交记录表';
 
--- 13. 广告表
+-- 15. 广告表
 CREATE TABLE IF NOT EXISTS `advertisement` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `name` VARCHAR(100) NOT NULL COMMENT '广告名称',
+  `title` VARCHAR(200) COMMENT '广告标题',
   `position` VARCHAR(50) NOT NULL COMMENT '广告位置：homepage-首页，download-下载页，category-分类页，custom-自定义',
   `type` VARCHAR(20) NOT NULL COMMENT '广告类型：image-图片，text-文字，video-视频',
   `image_url` VARCHAR(500) COMMENT '广告图片URL',
@@ -300,7 +379,7 @@ CREATE TABLE IF NOT EXISTS `advertisement` (
   KEY `idx_deleted` (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='广告表';
 
--- 14. 友情链接表
+-- 16. 友情链接表
 CREATE TABLE IF NOT EXISTS `friend_link` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `name` VARCHAR(100) NOT NULL COMMENT '网站名称',
@@ -318,7 +397,7 @@ CREATE TABLE IF NOT EXISTS `friend_link` (
   KEY `idx_deleted` (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='友情链接表';
 
--- 15. 收益记录表
+-- 17. 收益记录表
 CREATE TABLE IF NOT EXISTS `revenue` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `source` VARCHAR(100) NOT NULL COMMENT '收益来源',
@@ -335,11 +414,12 @@ CREATE TABLE IF NOT EXISTS `revenue` (
   INDEX `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='收益记录表';
 
--- 16. 网盘类型配置表
+-- 18. 网盘类型配置表
 CREATE TABLE IF NOT EXISTS `link_type` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `type_code` VARCHAR(50) NOT NULL COMMENT '类型代码（英文标识）',
   `type_name` VARCHAR(100) NOT NULL COMMENT '类型名称（中文显示）',
+  `name` VARCHAR(100) COMMENT '名称（兼容性字段）',
   `icon` VARCHAR(100) COMMENT '图标',
   `color` VARCHAR(20) COMMENT '颜色代码',
   `sort_order` INT NOT NULL DEFAULT 0 COMMENT '排序序号',
@@ -354,6 +434,46 @@ CREATE TABLE IF NOT EXISTS `link_type` (
   KEY `idx_sort_order` (`sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='网盘类型配置表';
 
+-- 19. 系统公告表
+CREATE TABLE IF NOT EXISTS `system_announcement` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `title` VARCHAR(200) NOT NULL COMMENT '公告标题',
+  `content` TEXT NOT NULL COMMENT '公告内容',
+  `type` VARCHAR(20) NOT NULL DEFAULT 'info' COMMENT '公告类型：info-信息，warning-警告，error-错误',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+  `start_time` DATETIME COMMENT '开始时间',
+  `end_time` DATETIME COMMENT '结束时间',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_type` (`type`),
+  KEY `idx_status` (`status`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统公告表';
+
+-- 20. 资源标签表
+CREATE TABLE IF NOT EXISTS `resource_tag` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `tag_name` VARCHAR(50) NOT NULL COMMENT '标签名称',
+  `use_count` INT NOT NULL DEFAULT 0 COMMENT '使用次数',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tag_name` (`tag_name`),
+  KEY `idx_use_count` (`use_count`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资源标签表';
+
+-- 21. 资源标签关联表
+CREATE TABLE IF NOT EXISTS `resource_tag_relation` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `resource_id` BIGINT NOT NULL COMMENT '资源ID',
+  `tag_id` BIGINT NOT NULL COMMENT '标签ID',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_resource_tag` (`resource_id`, `tag_id`),
+  KEY `idx_resource_id` (`resource_id`),
+  KEY `idx_tag_id` (`tag_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资源标签关联表';
+
 -- ============================================
 -- 第四部分：初始数据
 -- ============================================
@@ -364,16 +484,17 @@ INSERT INTO `user` (`username`, `password`, `role`, `status`) VALUES
 ON DUPLICATE KEY UPDATE username=username;
 
 -- 插入默认网盘类型配置
-INSERT INTO `link_type` (`type_code`, `type_name`, `icon`, `color`, `sort_order`, `status`, `description`) VALUES
-('quark', '夸克网盘', 'cloud', '#f5576c', 1, 1, '夸克网盘下载链接'),
-('xunlei', '迅雷下载', 'download', '#ff8c00', 2, 1, '迅雷下载链接'),
-('baidu', '百度网盘', 'cloud-download', '#00f2fe', 3, 1, '百度网盘下载链接'),
-('aliyun', '阿里云盘', 'cloud-upload', '#38f9d7', 4, 1, '阿里云盘下载链接'),
-('lanzou', '蓝奏云', 'folder', '#764ba2', 5, 1, '蓝奏云下载链接'),
-('guanfang', '官方', 'link', '#ef2715ff', 5, 1, '官方链接'),
-('direct', '直链下载', 'link', '#667eea', 6, 1, '直接下载链接')
+INSERT INTO `link_type` (`type_code`, `type_name`, `name`, `icon`, `color`, `sort_order`, `status`, `description`) VALUES
+('quark', '夸克网盘', '夸克网盘', 'cloud', '#f5576c', 1, 1, '夸克网盘下载链接'),
+('xunlei', '迅雷下载', '迅雷下载', 'download', '#ff8c00', 2, 1, '迅雷下载链接'),
+('baidu', '百度网盘', '百度网盘', 'cloud-download', '#00f2fe', 3, 1, '百度网盘下载链接'),
+('aliyun', '阿里云盘', '阿里云盘', 'cloud-upload', '#38f9d7', 4, 1, '阿里云盘下载链接'),
+('lanzou', '蓝奏云', '蓝奏云', 'folder', '#764ba2', 5, 1, '蓝奏云下载链接'),
+('guanfang', '官方', '官方', 'link', '#ef2715ff', 5, 1, '官方链接'),
+('direct', '直链下载', '直链下载', 'link', '#667eea', 6, 1, '直接下载链接')
 ON DUPLICATE KEY UPDATE 
   type_name = VALUES(type_name),
+  name = VALUES(name),
   icon = VALUES(icon),
   color = VALUES(color),
   sort_order = VALUES(sort_order),
@@ -414,19 +535,21 @@ ON DUPLICATE KEY UPDATE
   status = VALUES(status);
 
 -- 插入示例下载链接数据
-INSERT INTO `download_link` (`resource_id`, `link_name`, `link_type`, `link_url`, `password`, `is_valid`, `sort_order`) VALUES
-(1, '官方下载', 'direct', 'https://www.winrar.com/download.html', NULL, 1, 0),
-(1, '百度网盘', 'baidu', 'https://pan.baidu.com/s/1xxxxx', 'abc123', 1, 1),
-(2, '夸克网盘', 'quark', 'https://pan.quark.cn/s/xxxxx', 'ps2024', 1, 0),
-(2, '阿里云盘', 'aliyun', 'https://www.aliyundrive.com/s/xxxxx', 'ali123', 1, 1),
-(3, '官方下载', 'direct', 'https://music.163.com/download', NULL, 1, 0),
-(4, '官方下载', 'direct', 'https://code.visualstudio.com/download', NULL, 1, 0),
-(4, '百度网盘', 'baidu', 'https://pan.baidu.com/s/2xxxxx', 'vscode', 1, 1),
-(5, '官方下载', 'direct', 'https://www.google.com/chrome/', NULL, 1, 0)
+INSERT INTO `download_link` (`resource_id`, `title`, `link_name`, `link_type`, `link_url`, `download_url`, `password`, `is_valid`, `sort_order`) VALUES
+(1, 'WinRar官方下载', '官方下载', 'direct', 'https://www.winrar.com/download.html', 'https://www.winrar.com/download.html', NULL, 1, 0),
+(1, 'WinRar百度网盘', '百度网盘', 'baidu', 'https://pan.baidu.com/s/1xxxxx', NULL, 'abc123', 1, 1),
+(2, 'Photoshop夸克网盘', '夸克网盘', 'quark', 'https://pan.quark.cn/s/xxxxx', NULL, 'ps2024', 1, 0),
+(2, 'Photoshop阿里云盘', '阿里云盘', 'aliyun', 'https://www.aliyundrive.com/s/xxxxx', NULL, 'ali123', 1, 1),
+(3, '网易云音乐官方', '官方下载', 'direct', 'https://music.163.com/download', 'https://music.163.com/download', NULL, 1, 0),
+(4, 'VSCode官方下载', '官方下载', 'direct', 'https://code.visualstudio.com/download', 'https://code.visualstudio.com/download', NULL, 1, 0),
+(4, 'VSCode百度网盘', '百度网盘', 'baidu', 'https://pan.baidu.com/s/2xxxxx', NULL, 'vscode', 1, 1),
+(5, 'Chrome官方下载', '官方下载', 'direct', 'https://www.google.com/chrome/', 'https://www.google.com/chrome/', NULL, 1, 0)
 ON DUPLICATE KEY UPDATE 
+  title = VALUES(title),
   link_name = VALUES(link_name),
   link_type = VALUES(link_type),
   link_url = VALUES(link_url),
+  download_url = VALUES(download_url),
   password = VALUES(password),
   is_valid = VALUES(is_valid),
   sort_order = VALUES(sort_order);
@@ -439,6 +562,7 @@ INSERT INTO `system_config` (`config_key`, `config_value`, `category`, `descript
 ('site.description', '提供优质资源下载服务', 'basic', '网站描述', '提供优质资源下载服务', 3),
 ('site.keywords', '资源,下载,分享', 'basic', '网站关键词', '资源,下载,分享', 4),
 ('site.icp', '', 'basic', 'ICP备案号', '', 5),
+('site.theme', 'user-choice', 'basic', '网站主题', 'user-choice', 6),
 
 -- SEO设置
 ('seo.title', '资源下载平台', 'seo', 'SEO标题', '资源下载平台', 1),

@@ -72,6 +72,18 @@
             </el-menu-item>
           </el-sub-menu>
 
+          <!-- 插件管理 -->
+          <el-sub-menu index="plugin-group">
+            <template #title>
+              <el-icon><Grid /></el-icon>
+              <span>插件管理</span>
+            </template>
+            <el-menu-item index="/crawler">
+              <el-icon><Compass /></el-icon>
+              <span>爬虫管理</span>
+            </el-menu-item>
+          </el-sub-menu>
+
           <!-- 系统与配置 -->
           <el-sub-menu index="system-group">
             <template #title>
@@ -80,7 +92,11 @@
             </template>
             <el-menu-item index="/config">
               <el-icon><Setting /></el-icon>
-              <span>系统设置</span>
+              <span>基本设置</span>
+            </el-menu-item>
+            <el-menu-item index="/theme-settings">
+              <el-icon><Brush /></el-icon>
+              <span>主题设置</span>
             </el-menu-item>
             <el-menu-item index="/seo">
               <el-icon><Search /></el-icon>
@@ -142,7 +158,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { DataAnalysis, Document, Folder, Setting, User, ArrowDown, SwitchButton, ChatDotRound, Tickets, Picture, Search, TrendCharts, Connection, Money, Promotion } from '@element-plus/icons-vue'
+import { DataAnalysis, Document, Folder, Setting, User, ArrowDown, SwitchButton, ChatDotRound, Tickets, Picture, Search, TrendCharts, Connection, Money, Promotion, Brush, Grid, Compass } from '@element-plus/icons-vue'
 import { getCurrentUser, logout } from '../api/user'
 
 const router = useRouter()
@@ -150,13 +166,14 @@ const route = useRoute()
 const username = ref('')
 
 // 默认展开的菜单组
-const defaultOpeneds = ref(['content-group', 'operation-group', 'system-group'])
+const defaultOpeneds = ref(['content-group', 'operation-group', 'plugin-group', 'system-group'])
 
 const breadcrumbMap = {
   '/dashboard': '控制面板',
   '/resources': '资源管理',
   '/categories': '分类管理',
-  '/config': '系统设置',
+  '/config': '基本设置',
+  '/theme-settings': '主题设置',
   '/feedback': '用户反馈',
   '/logs': '日志管理',
   '/files': '图片管理',
@@ -164,7 +181,8 @@ const breadcrumbMap = {
   '/statistics': '统计管理',
   '/revenue': '收益概况',
   '/promotion': '推广管理',
-  '/friendlink': '友联管理'
+  '/friendlink': '友联管理',
+  '/crawler': '爬虫管理'
 }
 
 const getBreadcrumb = () => {
