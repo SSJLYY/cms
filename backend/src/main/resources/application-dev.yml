@@ -1,0 +1,40 @@
+# ==========================================
+# 开发环境配置 (application-dev.yml)
+# 仅在 SPRING_PROFILES_ACTIVE=dev 时生效
+# ==========================================
+
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/resource_platform?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: root
+    password: root
+    hikari:
+      minimum-idle: 3
+      maximum-pool-size: 20
+
+  quartz:
+    jdbc:
+      initialize-schema: embedded  # dev环境首次自动建表
+
+# dev环境开启SQL日志
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# dev环境开放Swagger文档
+knife4j:
+  production: false
+
+# dev环境JWT Secret（仅测试用）
+jwt:
+  secret: dev-secret-key-only-for-development-not-use-in-production
+
+# Actuator dev全开
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always

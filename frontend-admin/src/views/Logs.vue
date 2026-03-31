@@ -1,111 +1,195 @@
 <template>
   <div class="logs-container">
-    <el-card class="statistics-card">
-      <div class="statistics-grid">
-        <div class="stat-item">
-          <div class="stat-label">总日志数</div>
+    <!-- 统计卡片 -->
+    <div class="statistics-cards">
+      <div class="stat-card stat-primary">
+        <div class="stat-icon">
+          <el-icon><Document /></el-icon>
+        </div>
+        <div class="stat-content">
           <div class="stat-value">{{ statistics.totalLogs || 0 }}</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">今日日志</div>
-          <div class="stat-value">{{ statistics.todayLogs || 0 }}</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">成功日志</div>
-          <div class="stat-value success">{{ statistics.successLogs || 0 }}</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">失败日志</div>
-          <div class="stat-value error">{{ statistics.errorLogs || 0 }}</div>
+          <div class="stat-label">总日志数</div>
         </div>
       </div>
-    </el-card>
+      <div class="stat-card stat-info">
+        <div class="stat-icon">
+          <el-icon><Calendar /></el-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ statistics.todayLogs || 0 }}</div>
+          <div class="stat-label">今日日志</div>
+        </div>
+      </div>
+      <div class="stat-card stat-success">
+        <div class="stat-icon">
+          <el-icon><CircleCheck /></el-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ statistics.successLogs || 0 }}</div>
+          <div class="stat-label">成功日志</div>
+        </div>
+      </div>
+      <div class="stat-card stat-danger">
+        <div class="stat-icon">
+          <el-icon><CircleClose /></el-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ statistics.errorLogs || 0 }}</div>
+          <div class="stat-label">失败日志</div>
+        </div>
+      </div>
+    </div>
 
-    <el-card class="filter-card">
-      <el-form :inline="true" :model="queryForm" class="filter-form">
-        <el-form-item label="模块">
-          <el-input v-model="queryForm.module" placeholder="请输入模块" clearable />
-        </el-form-item>
-        <el-form-item label="类型">
-          <el-input v-model="queryForm.type" placeholder="请输入类型" clearable />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="queryForm.status" placeholder="请选择状态" clearable>
-            <el-option label="成功" value="SUCCESS" />
-            <el-option label="失败" value="ERROR" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="关键词">
-          <el-input v-model="queryForm.keyword" placeholder="搜索关键词" clearable />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleQuery">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-          <el-button type="warning" @click="handleExport">导出</el-button>
-          <el-button type="danger" @click="handleClean">清理日志</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+    <!-- 筛选工具栏 -->
+    <div class="filter-bar">
+      <div class="filter-row">
+        <el-input
+          v-model="queryForm.module"
+          placeholder="模块"
+          clearable
+          class="filter-input"
+        />
+        <el-input
+          v-model="queryForm.type"
+          placeholder="类型"
+          clearable
+          class="filter-input"
+        />
+        <el-select
+          v-model="queryForm.status"
+          placeholder="状态"
+          clearable
+          class="filter-select"
+        >
+          <el-option label="成功" value="SUCCESS" />
+          <el-option label="失败" value="ERROR" />
+        </el-select>
+        <el-input
+          v-model="queryForm.keyword"
+          placeholder="搜索关键词"
+          clearable
+          class="filter-input search-input"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+      </div>
+      <div class="filter-actions">
+        <el-button type="primary" @click="handleQuery" class="gradient-btn">
+          <el-icon><Search /></el-icon>
+          查询
+        </el-button>
+        <el-button @click="handleReset">
+          <el-icon><Refresh /></el-icon>
+          重置
+        </el-button>
+        <el-button type="warning" @click="handleExport">
+          <el-icon><Download /></el-icon>
+          导出
+        </el-button>
+        <el-button type="danger" @click="handleClean">
+          <el-icon><Delete /></el-icon>
+          清理
+        </el-button>
+      </div>
+    </div>
 
-    <el-card class="table-card">
-      <el-table :data="logList" v-loading="loading" border stripe>
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="module" label="模块" width="120" />
-        <el-table-column prop="type" label="类型" width="100" />
-        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="requestUrl" label="请求URL" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="status" label="状态" width="100">
+    <!-- 日志表格 -->
+    <div class="table-card">
+      <el-table 
+        :data="logList" 
+        v-loading="loading" 
+        stripe 
+        class="modern-table"
+      >
+        <el-table-column prop="id" label="ID" width="80" align="center" />
+        <el-table-column prop="module" label="模块" width="120" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'SUCCESS' ? 'success' : 'danger'">
+            <el-tag size="small" type="primary" effect="plain">{{ row.module }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="type" label="类型" width="100" align="center">
+          <template #default="{ row }">
+            <span class="type-label">{{ row.type }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="requestUrl" label="请求URL" min-width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <code class="url-code">{{ row.requestUrl }}</code>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 'SUCCESS' ? 'success' : 'danger'" size="small" effect="dark">
               {{ row.status }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="duration" label="耗时(ms)" width="100" />
-        <el-table-column prop="createTime" label="创建时间" width="180" />
-        <el-table-column label="操作" width="100" fixed="right">
+        <el-table-column prop="duration" label="耗时" width="100" align="center">
           <template #default="{ row }">
-            <el-button type="text" @click="handleView(row)">详情</el-button>
+            <span class="duration-value" :class="{ 'slow': row.duration > 1000 }">
+              {{ row.duration }}ms
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" width="180" align="center">
+          <template #default="{ row }">
+            <span class="time-value">{{ row.createTime }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" fixed="right" align="center">
+          <template #default="{ row }">
+            <el-button type="primary" link size="small" @click="handleView(row)">
+              <el-icon><View /></el-icon>
+              详情
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <el-pagination
-        v-model:current-page="queryForm.page"
-        v-model:page-size="queryForm.pageSize"
-        :total="total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleQuery"
-        @current-change="handleQuery"
-      />
-    </el-card>
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="queryForm.page"
+          v-model:page-size="queryForm.pageSize"
+          :total="total"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleQuery"
+          @current-change="handleQuery"
+          background
+        />
+      </div>
+    </div>
 
     <!-- 日志详情对话框 -->
-    <el-dialog v-model="detailVisible" title="日志详情" width="800px">
-      <el-descriptions :column="2" border v-if="currentLog">
+    <el-dialog v-model="detailVisible" title="日志详情" width="800px" class="detail-dialog" destroy-on-close>
+      <el-descriptions :column="2" border v-if="currentLog" class="detail-descriptions">
         <el-descriptions-item label="ID">{{ currentLog.id }}</el-descriptions-item>
         <el-descriptions-item label="模块">{{ currentLog.module }}</el-descriptions-item>
         <el-descriptions-item label="类型">{{ currentLog.type }}</el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="currentLog.status === 'SUCCESS' ? 'success' : 'danger'">
+          <el-tag :type="currentLog.status === 'SUCCESS' ? 'success' : 'danger'" effect="dark">
             {{ currentLog.status }}
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="描述" :span="2">{{ currentLog.description }}</el-descriptions-item>
-        <el-descriptions-item label="请求URL" :span="2">{{ currentLog.requestUrl }}</el-descriptions-item>
+        <el-descriptions-item label="请求URL" :span="2">
+          <code>{{ currentLog.requestUrl }}</code>
+        </el-descriptions-item>
         <el-descriptions-item label="请求方法">{{ currentLog.requestMethod }}</el-descriptions-item>
         <el-descriptions-item label="IP地址">{{ currentLog.ip }}</el-descriptions-item>
         <el-descriptions-item label="耗时">{{ currentLog.duration }}ms</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ currentLog.createTime }}</el-descriptions-item>
         <el-descriptions-item label="请求参数" :span="2">
-          <pre>{{ currentLog.requestParams }}</pre>
+          <pre class="code-block">{{ currentLog.requestParams }}</pre>
         </el-descriptions-item>
         <el-descriptions-item label="响应数据" :span="2" v-if="currentLog.responseData">
-          <pre>{{ currentLog.responseData }}</pre>
+          <pre class="code-block">{{ currentLog.responseData }}</pre>
         </el-descriptions-item>
         <el-descriptions-item label="错误信息" :span="2" v-if="currentLog.errorMessage">
-          <el-text type="danger">{{ currentLog.errorMessage }}</el-text>
+          <el-text type="danger" class="error-text">{{ currentLog.errorMessage }}</el-text>
         </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
@@ -115,6 +199,10 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import {
+  Document, Calendar, CircleCheck, CircleClose, Search, Refresh,
+  Download, Delete, View
+} from '@element-plus/icons-vue'
 import {
   getLogStatistics,
   queryLogs,
@@ -212,58 +300,227 @@ onMounted(() => {
 
 <style scoped>
 .logs-container {
-  padding: 20px;
+  padding: 24px;
+  background: #f5f7fa;
+  min-height: calc(100vh - 60px);
 }
 
-.statistics-card {
-  margin-bottom: 20px;
-}
-
-.statistics-grid {
+/* 统计卡片 */
+.statistics-cards {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
+  margin-bottom: 24px;
 }
 
-.stat-item {
-  text-align: center;
+.stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: white;
+}
+
+.stat-primary .stat-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-info .stat-icon {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stat-success .stat-icon {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.stat-danger .stat-icon {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #303133;
+  line-height: 1;
+  margin-bottom: 8px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #666;
-  margin-bottom: 10px;
+  color: #909399;
 }
 
-.stat-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #409eff;
+/* 筛选工具栏 */
+.filter-bar {
+  background: white;
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
-.stat-value.success {
+.filter-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-input {
+  width: 160px;
+}
+
+.search-input {
+  width: 220px;
+}
+
+.filter-select {
+  width: 140px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.gradient-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+}
+
+.gradient-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+/* 表格 */
+.table-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.modern-table :deep(.el-table__header th) {
+  background: #f8f9fc;
+  color: #606266;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.modern-table :deep(.el-table__row) {
+  transition: all 0.3s;
+}
+
+.modern-table :deep(.el-table__row:hover) {
+  background: #f5f7fa;
+}
+
+.type-label {
+  font-weight: 500;
+  color: #667eea;
+}
+
+.url-code {
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 12px;
+  background: #f5f7fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #667eea;
+}
+
+.duration-value {
+  font-weight: 600;
   color: #67c23a;
 }
 
-.stat-value.error {
+.duration-value.slow {
   color: #f56c6c;
 }
 
-.filter-card,
-.table-card {
-  margin-bottom: 20px;
+.time-value {
+  font-size: 13px;
+  color: #909399;
 }
 
-.el-pagination {
+.pagination-wrapper {
   margin-top: 20px;
+  display: flex;
   justify-content: flex-end;
 }
 
-pre {
-  max-height: 300px;
+/* 详情对话框 */
+.detail-descriptions :deep(.el-descriptions__label) {
+  font-weight: 600;
+  background: #f8f9fc;
+}
+
+.code-block {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 12px;
+  border-radius: 8px;
+  max-height: 200px;
   overflow: auto;
-  background: #f5f5f5;
-  padding: 10px;
-  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 12px;
+  margin: 0;
+}
+
+.error-text {
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 13px;
+}
+
+/* 响应式 */
+@media (max-width: 1200px) {
+  .statistics-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .statistics-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .filter-row {
+    flex-direction: column;
+  }
+  
+  .filter-input,
+  .filter-select,
+  .search-input {
+    width: 100%;
+  }
+  
+  .filter-actions {
+    flex-wrap: wrap;
+  }
 }
 </style>

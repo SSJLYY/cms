@@ -73,22 +73,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 const showModal = ref(false)
 const agreed = ref(false)
+const disclaimerTimer = ref(null)
 
 const DISCLAIMER_KEY = 'disclaimer_agreed'
 
 onMounted(() => {
-  // 检查用户是否已经同意过
   const hasAgreed = localStorage.getItem(DISCLAIMER_KEY)
-  
   if (!hasAgreed) {
-    // 3秒后显示弹窗
-    setTimeout(() => {
+    disclaimerTimer.value = setTimeout(() => {
       showModal.value = true
     }, 3000)
+  }
+})
+
+onUnmounted(() => {
+  if (disclaimerTimer.value) {
+    clearTimeout(disclaimerTimer.value)
   }
 })
 

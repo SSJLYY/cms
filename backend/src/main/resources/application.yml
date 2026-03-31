@@ -1,83 +1,133 @@
 spring:
   application:
     name: resource-platform
-  
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
   # 文件上传配置
   servlet:
     multipart:
       enabled: true
       max-file-size: 10MB
       max-request-size: 10MB
-  
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/resource_platform?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
-    username: root
-    password: g!GNidTxcwymw85N69Iu0oHwP8GhYidz!h!
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/resource_platform?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
     hikari:
-      minimum-idle: 5
-      maximum-pool-size: 20
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-  
+      minimum-idle: 10
+      maximum-pool-size: 50
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      keepalive-time: 60000
+      leak-detection-threshold: 60000
+      connection-test-query: SELECT 1
+
   redis:
-    host: localhost
-    port: 6379
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
     database: 0
     timeout: 3000
-  
+    lettuce:
+      pool:
+        min-idle: 5
+        max-idle: 20
+        max-active: 50
+        max-wait: 2000
+
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
-  
-  # Quartz Configuration
+    default-property-inclusion: non_null
+
+  # Quartz 定时任务
   quartz:
     job-store-type: jdbc
     jdbc:
-      initialize-schema: always
+      initialize-schema: never   # ✅ 修复：生产环境不重建表，首次部署手动执行SQL
+    properties:
+      org.quartz.threadPool.threadCount: 5
+      org.quartz.jobStore.misfireThreshold: 60000
 
-# MyBatis Plus Configuration
+# MyBatis Plus 配置
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # ✅ 修复：生产环境不打印SQL，通过 application-dev.yml 覆盖开启
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+    default-fetch-size: 100
+    default-statement-timeout: 30
   global-config:
     db-config:
       id-type: auto
       logic-delete-field: deleted
       logic-delete-value: 1
       logic-not-delete-value: 0
+    banner: false
   mapper-locations: classpath*:/mapper/**/*.xml
 
-# JWT Configuration
+# JWT 配置
 jwt:
-  secret: resource-platform-secret-key-change-in-production-2025
-  expiration: 86400000
+  secret: ${JWT_SECRET:please-change-this-secret-key-in-production-environment-min32chars}
+  expiration: ${JWT_EXPIRATION:86400000}
 
-# Server Configuration
+# 服务器配置
 server:
-  port: 9090
+  port: ${SERVER_PORT:9090}
   servlet:
     context-path: /
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,application/javascript,application/json
+    min-response-size: 1024
+  tomcat:
+    threads:
+      min-spare: 10
+      max: 200
+    accept-count: 100
+    connection-timeout: 20000
 
-# Actuator Configuration
+# Actuator 监控配置
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        # ✅ 开放更多端点用于监控
+        include: health,info,metrics,prometheus,loggers,threaddump
+      base-path: /actuator
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized  # ✅ 修复：需授权才能查看详情
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${SPRING_PROFILES_ACTIVE:dev}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
-# Knife4j Configuration
+# Knife4j API 文档
 knife4j:
   enable: true
   setting:
     language: zh_cn
+  # ✅ 生产环境关闭文档（通过 prod profile 覆盖）
+  production: false
 
-# SpringDoc Configuration
+# SpringDoc 配置
 springdoc:
   api-docs:
     enabled: true
@@ -86,31 +136,31 @@ springdoc:
     enabled: true
     path: /swagger-ui.html
 
-# Storage Configuration
+# 存储配置
 storage:
-  type: local  # local, oss, cos, qiniu
+  type: ${STORAGE_TYPE:local}
   local:
-    path: /data/uploads
+    path: ${STORAGE_LOCAL_PATH:/data/uploads}
     url-prefix: /uploads
   oss:
-    endpoint: 
-    access-key-id: 
-    access-key-secret: 
-    bucket-name: 
-    url-prefix: 
+    endpoint: ${OSS_ENDPOINT:}
+    access-key-id: ${OSS_ACCESS_KEY_ID:}
+    access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
+    bucket-name: ${OSS_BUCKET_NAME:}
+    url-prefix: ${OSS_URL_PREFIX:}
   cos:
-    region: 
-    secret-id: 
-    secret-key: 
-    bucket-name: 
-    url-prefix: 
+    region: ${COS_REGION:}
+    secret-id: ${COS_SECRET_ID:}
+    secret-key: ${COS_SECRET_KEY:}
+    bucket-name: ${COS_BUCKET_NAME:}
+    url-prefix: ${COS_URL_PREFIX:}
   qiniu:
-    access-key: 
-    secret-key: 
-    bucket-name: 
-    url-prefix: 
+    access-key: ${QINIU_ACCESS_KEY:}
+    secret-key: ${QINIU_SECRET_KEY:}
+    bucket-name: ${QINIU_BUCKET_NAME:}
+    url-prefix: ${QINIU_URL_PREFIX:}
 
-# File Upload Configuration
+# 文件上传配置
 file:
   upload:
     max-size: 10485760  # 10MB
@@ -123,27 +173,72 @@ file:
     compress:
       quality: 0.8
 
-# Crawler Configuration
+# CORS 跨域配置（生产环境改为实际域名）
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8080,http://localhost:8081,http://127.0.0.1:8080,http://127.0.0.1:8081}
+
+# 爬虫配置
 crawler:
-  # 线程池配置
   thread-pool:
-    core-size: 5
-    max-size: 10
-    queue-capacity: 100
-  # 请求配置
+    core-size: 3
+    max-size: 5         # ✅ 减少最大并发，避免抢占业务资源
+    queue-capacity: 50
   request:
-    connect-timeout: 30000  # 连接超时(毫秒)
-    read-timeout: 60000     # 读取超时(毫秒)
-    max-retries: 3          # 最大重试次数
-    retry-delay: 2000       # 重试延迟(毫秒)
-  # 资源限制
+    connect-timeout: 30000
+    read-timeout: 60000
+    max-retries: 3
+    retry-delay: 2000
   limits:
-    max-pages: 1000         # 单次爬取最大页面数
-    max-page-size: 10485760 # 单个页面最大大小(10MB)
-    max-image-size: 5242880 # 单张图片最大大小(5MB)
-  # 速率限制
+    max-pages: 1000
+    max-page-size: 10485760
+    max-image-size: 5242880
   rate-limit:
-    requests-per-second: 2  # 每秒最大请求数
-    crawl-delay: 1          # 默认爬取延迟(秒)
+    requests-per-second: 2
+    crawl-delay: 1
 
+# 限流配置
+rate-limit:
+  enabled: true
+  # 全局默认：每IP每分钟最多200次请求
+  global:
+    limit: 200
+    window-seconds: 60
+  # 公开接口：每IP每分钟100次
+  public:
+    limit: 100
+    window-seconds: 60
+  # 登录接口：每IP每分钟10次（防暴力破解）
+  login:
+    limit: 10
+    window-seconds: 60
 
+# Resilience4j 熔断配置
+resilience4j:
+  circuitbreaker:
+    instances:
+      storage-service:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        slow-call-duration-threshold: 3s
+        slow-call-rate-threshold: 80
+      crawler-service:
+        sliding-window-size: 5
+        failure-rate-threshold: 60
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 2
+      email-service:
+        sliding-window-size: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 120s
+  retry:
+    instances:
+      storage-service:
+        max-attempts: 3
+        wait-duration: 1s
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+      email-service:
+        max-attempts: 2
+        wait-duration: 2s

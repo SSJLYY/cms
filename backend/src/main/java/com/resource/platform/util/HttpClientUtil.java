@@ -1,28 +1,65 @@
 package com.resource.platform.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.core5.util.Timeout;
 import org.springframework.http.*;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
 /**
- * HTTP客户端工具类
- * 提供HTTP请求功能，支持重试机制和超时处理
+ * HTTP 客户端工具类
+ *
+ * <p>提供 HTTP 请求功能，基于连接池优化，支持重试机制和超时处理。
+ * <ul>
+ *   <li>连接池：最大 200 连接，每路由 50 连接</li>
+ *   <li>超时：连接 5s，读取 10s</li>
+ *   <li>重试：默认最多 3 次，指数退避</li>
+ * </ul>
  */
 @Slf4j
 public class HttpClientUtil {
 
-    private static final RestTemplate restTemplate = new RestTemplate();
-    
+    private static final RestTemplate restTemplate;
+
     // 默认重试次数
     private static final int DEFAULT_MAX_RETRIES = 3;
-    
-    // 默认超时时间（毫秒）
-    private static final int DEFAULT_TIMEOUT = 10000;
-    
+
     // 重试间隔（毫秒）
     private static final int RETRY_INTERVAL = 1000;
+
+    static {
+        // ========== 配置连接池 ==========
+        PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager();
+        connManager.setMaxTotal(200);         // 最大连接数
+        connManager.setDefaultMaxPerRoute(50);  // 每个路由最大连接数
+
+        connManager.setDefaultConnectionConfig(ConnectionConfig.custom()
+            .setConnectTimeout(Timeout.ofSeconds(5))
+            .setSocketTimeout(Timeout.ofSeconds(10))
+            .build());
+
+        RequestConfig requestConfig = RequestConfig.custom()
+            .setConnectionRequestTimeout(Timeout.ofSeconds(5))
+            .setResponseTimeout(Timeout.ofSeconds(10))
+            .build();
+
+        CloseableHttpClient httpClient = HttpClients.custom()
+            .setConnectionManager(connManager)
+            .setDefaultRequestConfig(requestConfig)
+            .build();
+
+        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
+        restTemplate = new RestTemplate(factory);
+
+        log.info("HttpClientUtil 初始化完成: maxTotal=200, maxPerRoute=50, connectTimeout=5s, socketTimeout=10s");
+    }
 
     /**
      * 发送GET请求

@@ -1,50 +1,56 @@
 <template>
   <div class="resources-container">
-    <!-- 顶部工具栏 -->
-    <div class="toolbar">
-      <el-button type="primary" @click="showDialog()">
-        <el-icon><Plus /></el-icon>
-        添加资源
-      </el-button>
-      
-      <!-- 批量操作按钮 -->
-      <div class="batch-operations" v-if="selectedResources.length > 0">
-        <el-button type="success" @click="handleBatchPublish">
-          <el-icon><Check /></el-icon>
-          批量发布 ({{ selectedResources.length }})
+    <!-- 现代化工具栏 -->
+    <div class="modern-toolbar">
+      <div class="toolbar-left">
+        <el-button type="primary" class="gradient-btn" @click="showDialog()">
+          <el-icon><Plus /></el-icon>
+          添加资源
         </el-button>
-        <el-button type="warning" @click="handleBatchUnpublish">
-          <el-icon><Close /></el-icon>
-          批量下架 ({{ selectedResources.length }})
-        </el-button>
-        <el-button type="info" @click="showBatchMoveDialog = true">
-          <el-icon><FolderOpened /></el-icon>
-          批量移动 ({{ selectedResources.length }})
-        </el-button>
-        <el-button type="danger" @click="handleBatchDelete">
-          <el-icon><Delete /></el-icon>
-          批量删除 ({{ selectedResources.length }})
-        </el-button>
+        
+        <!-- 批量操作按钮 -->
+        <transition name="fade-slide">
+          <div class="batch-operations" v-if="selectedResources.length > 0">
+            <span class="batch-count">{{ selectedResources.length }} 项已选中</span>
+            <el-button type="success" @click="handleBatchPublish">
+              <el-icon><Check /></el-icon>
+              批量发布
+            </el-button>
+            <el-button type="warning" @click="handleBatchUnpublish">
+              <el-icon><Close /></el-icon>
+              批量下架
+            </el-button>
+            <el-button type="info" @click="showBatchMoveDialog = true">
+              <el-icon><FolderOpened /></el-icon>
+              移动
+            </el-button>
+            <el-button type="danger" @click="handleBatchDelete">
+              <el-icon><Delete /></el-icon>
+              删除
+            </el-button>
+          </div>
+        </transition>
       </div>
       
       <div class="toolbar-right">
-        <el-input
-          v-model="queryParams.keyword"
-          placeholder="搜索标题/描述"
-          style="width: 200px"
-          clearable
-          @clear="loadResources"
-        >
-          <template #prefix>
-            <el-icon><Search /></el-icon>
-          </template>
-        </el-input>
+        <div class="search-wrapper">
+          <el-input
+            v-model="queryParams.keyword"
+            placeholder="搜索标题/描述"
+            clearable
+            @clear="loadResources"
+            @keyup.enter="loadResources"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
         
         <el-select
           v-model="queryParams.categoryId"
           placeholder="选择分类"
           clearable
-          style="width: 150px"
           @change="loadResources"
         >
           <el-option label="全部分类" :value="null" />
@@ -60,7 +66,6 @@
           v-model="queryParams.status"
           placeholder="状态"
           clearable
-          style="width: 120px"
           @change="loadResources"
         >
           <el-option label="全部状态" :value="null" />
@@ -72,7 +77,6 @@
           v-model="queryParams.source"
           placeholder="来源"
           clearable
-          style="width: 120px"
           @change="loadResources"
         >
           <el-option label="全部来源" :value="null" />
@@ -80,120 +84,134 @@
           <el-option label="手动添加" value="manual" />
         </el-select>
         
-        <el-button type="primary" @click="loadResources">
+        <el-button type="primary" @click="loadResources" class="search-btn">
           <el-icon><Search /></el-icon>
           搜索
         </el-button>
         
-        <el-button @click="handleReset">
+        <el-button @click="handleReset" class="reset-btn">
           <el-icon><Refresh /></el-icon>
-          重置
         </el-button>
       </div>
     </div>
 
     <!-- 资源列表表格 -->
-    <el-table 
-      :data="resources" 
-      style="width: 100%"
-      v-loading="tableLoading"
-      @selection-change="handleSelectionChange"
-    >
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column prop="id" label="ID" width="80" align="center" />
-      <el-table-column label="编号" width="100" align="center">
-        <template #default="{ row }">
-          A{{ String(row.id).padStart(3, '0') }}
-        </template>
-      </el-table-column>
-      <el-table-column label="图片" width="80" align="center">
-        <template #default="{ row }">
-          <div class="resource-icon">{{ getIcon(row.categoryName) }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column prop="title" label="标题" min-width="200">
-        <template #default="{ row }">
-          <div class="title-cell">
-            <div class="title-text">{{ row.title }}</div>
-            <div class="desc-text">{{ row.description || '暂无描述' }}</div>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column label="分类" width="120" align="center">
-        <template #default="{ row }">
-          <el-tag size="small">{{ row.categoryName }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="来源" width="120" align="center">
-        <template #default="{ row }">
-          <el-tag v-if="row.crawlerTaskId" type="warning" size="small">
-            <el-icon><Compass /></el-icon>
-            爬虫采集
-          </el-tag>
-          <el-tag v-else type="info" size="small">
-            <el-icon><Edit /></el-icon>
-            手动添加
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="downloadCount" label="下载量" width="100" align="center" />
-      <el-table-column label="状态" width="100" align="center">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
-            {{ row.status === 1 ? '已发布' : '已下架' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="添加时间" width="180" align="center">
-        <template #default="{ row }">
-          {{ formatDateTime(row.createTime) }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="viewCount" label="阅读数" width="100" align="center" />
-      <el-table-column label="操作" width="220" align="center" fixed="right">
-        <template #default="{ row }">
-          <el-button 
-            size="small" 
-            type="primary" 
-            link
-            @click="showDialog(row)"
-          >
-            <el-icon><Edit /></el-icon>
-            编辑
-          </el-button>
-          <el-button 
-            size="small" 
-            type="info" 
-            link
-            @click="handleToggleStatus(row)"
-          >
-            <el-icon><Switch /></el-icon>
-            {{ row.status === 1 ? '下架' : '发布' }}
-          </el-button>
-          <el-button 
-            size="small" 
-            type="danger" 
-            link
-            @click="handleDelete(row.id)"
-          >
-            <el-icon><Delete /></el-icon>
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="table-card">
+      <el-table 
+        :data="resources" 
+        style="width: 100%"
+        v-loading="tableLoading"
+        @selection-change="handleSelectionChange"
+        stripe
+        class="modern-table"
+      >
+        <el-table-column type="selection" width="55" align="center" />
+        <el-table-column prop="id" label="ID" width="80" align="center" />
+        <el-table-column label="编号" width="100" align="center">
+          <template #default="{ row }">
+            <span class="resource-code">A{{ String(row.id).padStart(3, '0') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="图标" width="80" align="center">
+          <template #default="{ row }">
+            <div class="resource-icon">{{ getIcon(row.categoryName) }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="title" label="标题" min-width="200">
+          <template #default="{ row }">
+            <div class="title-cell">
+              <div class="title-text">{{ row.title }}</div>
+              <div class="desc-text">{{ row.description || '暂无描述' }}</div>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="分类" width="120" align="center">
+          <template #default="{ row }">
+            <el-tag size="small" type="primary" effect="plain">{{ row.categoryName }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="来源" width="120" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.crawlerTaskId" type="warning" size="small" effect="dark">
+              <el-icon><Compass /></el-icon>
+              爬虫
+            </el-tag>
+            <el-tag v-else type="info" size="small" effect="plain">
+              <el-icon><Edit /></el-icon>
+              手动
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="downloadCount" label="下载量" width="100" align="center">
+          <template #default="{ row }">
+            <span class="stat-number">{{ row.downloadCount || 0 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small" effect="dark">
+              {{ row.status === 1 ? '已发布' : '已下架' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="添加时间" width="180" align="center">
+          <template #default="{ row }">
+            <span class="time-text">{{ formatDateTime(row.createTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="viewCount" label="阅读数" width="100" align="center">
+          <template #default="{ row }">
+            <span class="stat-number">{{ row.viewCount || 0 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220" align="center" fixed="right">
+          <template #default="{ row }">
+            <div class="action-buttons">
+              <el-button 
+                size="small" 
+                type="primary" 
+                link
+                @click="showDialog(row)"
+              >
+                <el-icon><Edit /></el-icon>
+                编辑
+              </el-button>
+              <el-button 
+                size="small" 
+                type="warning" 
+                link
+                @click="handleToggleStatus(row)"
+              >
+                <el-icon><Switch /></el-icon>
+                {{ row.status === 1 ? '下架' : '发布' }}
+              </el-button>
+              <el-button 
+                size="small" 
+                type="danger" 
+                link
+                @click="handleDelete(row.id)"
+              >
+                <el-icon><Delete /></el-icon>
+                删除
+              </el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <!-- 分页 -->
-    <div class="pagination">
-      <el-pagination
-        v-model:current-page="queryParams.pageNum"
-        v-model:page-size="queryParams.pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        :total="total"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="loadResources"
-        @current-change="loadResources"
-      />
+      <!-- 分页 -->
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="queryParams.pageNum"
+          v-model:page-size="queryParams.pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="loadResources"
+          @current-change="loadResources"
+          background
+        />
+      </div>
     </div>
 
     <!-- 图片选择器对话框 -->
@@ -202,6 +220,8 @@
       title="选择封面图片"
       width="900px"
       :close-on-click-modal="false"
+      class="image-selector-dialog"
+      destroy-on-close
     >
       <div class="image-selector">
         <el-scrollbar height="500px">
@@ -217,8 +237,12 @@
                 :src="img.thumbnailUrl || img.fileUrl" 
                 fit="cover"
                 style="width: 100%; height: 100%"
+                loading="lazy"
               />
               <div class="image-name">{{ img.originalName }}</div>
+              <div class="image-overlay">
+                <el-icon><Check /></el-icon>
+              </div>
             </div>
           </div>
         </el-scrollbar>
@@ -235,8 +259,10 @@
       :title="form.id ? '编辑资源' : '添加资源'" 
       width="700px"
       :close-on-click-modal="false"
+      class="resource-dialog"
+      destroy-on-close
     >
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="100px" class="resource-form">
         <el-form-item label="资源标题" prop="title">
           <el-input v-model="form.title" placeholder="请输入资源标题" />
         </el-form-item>
@@ -281,7 +307,7 @@
                   >
                     设为封面
                   </el-button>
-                  <el-tag v-else type="success" size="small">封面</el-tag>
+                  <el-tag v-else type="success" size="small" effect="dark">封面</el-tag>
                   <el-button 
                     type="danger" 
                     size="small" 
@@ -309,7 +335,10 @@
           </el-radio-group>
         </el-form-item>
         
-        <el-divider content-position="left">下载链接</el-divider>
+        <el-divider content-position="left">
+          <el-icon><Link /></el-icon>
+          下载链接
+        </el-divider>
         
         <el-form-item 
           v-for="(link, index) in form.downloadLinks" 
@@ -343,7 +372,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave" :loading="saveLoading">保存</el-button>
+        <el-button type="primary" @click="handleSave" :loading="saveLoading" class="save-btn">保存</el-button>
       </template>
     </el-dialog>
 
@@ -353,6 +382,7 @@
       title="批量移动到分类"
       width="400px"
       :close-on-click-modal="false"
+      destroy-on-close
     >
       <el-form>
         <el-form-item label="目标分类">
@@ -382,7 +412,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search, Refresh, Edit, Delete, Switch, Picture, Compass, Check, Close, FolderOpened } from '@element-plus/icons-vue'
+import { Plus, Search, Refresh, Edit, Delete, Switch, Picture, Compass, Check, Close, FolderOpened, Link } from '@element-plus/icons-vue'
 import { getResourceList, createResource, updateResource, deleteResource, toggleResourceStatus, batchPublishResources, batchUnpublishResources, batchDeleteResources, batchMoveToCategory } from '../api/resource'
 import { getCategoryList } from '../api/category'
 import { queryImages } from '../api/image'
@@ -420,8 +450,8 @@ const form = reactive({
   categoryId: null,
   status: 1,
   downloadLinks: [],
-  imageIds: [],  // 资源关联的图片ID列表
-  images: []  // 资源关联的图片对象列表（用于显示）
+  imageIds: [],
+  images: []
 })
 
 const rules = {
@@ -461,7 +491,6 @@ const loadResources = async () => {
     resources.value = res.data.records || []
     total.value = res.data.total || 0
   } catch (error) {
-    console.error('加载资源失败', error)
     ElMessage.error('加载资源失败')
   } finally {
     tableLoading.value = false
@@ -471,7 +500,6 @@ const loadResources = async () => {
 const loadCategories = async () => {
   try {
     const res = await getCategoryList()
-    // 将树形结构扁平化为列表
     const flattenCategories = (tree, result = []) => {
       tree.forEach(node => {
         result.push({ id: node.id, name: node.name })
@@ -483,7 +511,7 @@ const loadCategories = async () => {
     }
     categories.value = flattenCategories(res.data || [])
   } catch (error) {
-    console.error('加载分类失败', error)
+    ElMessage.error('加载分类失败')
   }
 }
 
@@ -492,7 +520,7 @@ const loadLinkTypes = async () => {
     const res = await getLinkTypes()
     linkTypes.value = res.data || []
   } catch (error) {
-    console.error('加载网盘类型失败', error)
+    ElMessage.error('加载网盘类型失败')
   }
 }
 
@@ -513,12 +541,11 @@ const loadImages = async () => {
     })
     availableImages.value = res.data.records || []
   } catch (error) {
-    console.error('加载图片失败', error)
+    ElMessage.error('加载图片失败')
   }
 }
 
 const selectCoverImage = (img) => {
-  // 添加图片到资源图片列表（如果还没有）
   if (!form.images.find(i => i.id === img.id)) {
     if (form.images.length >= 5) {
       ElMessage.warning('最多只能添加5张图片')
@@ -552,7 +579,6 @@ const removeImage = (index) => {
   form.images.splice(index, 1)
   form.imageIds.splice(index, 1)
   
-  // 如果删除的是封面图片，清除封面设置
   if (removedImage.id === form.coverImageId) {
     form.coverImageId = null
     form.coverImageUrl = ''
@@ -603,7 +629,6 @@ const handleSave = async () => {
     await formRef.value.validate()
     saveLoading.value = true
     
-    // 准备提交的数据
     const submitData = {
       ...form,
       imageIds: form.imageIds,
@@ -621,7 +646,6 @@ const handleSave = async () => {
     loadResources()
   } catch (error) {
     if (error !== false) {
-      console.error('保存失败', error)
       ElMessage.error('保存失败')
     }
   } finally {
@@ -635,7 +659,6 @@ const handleToggleStatus = async (row) => {
     ElMessage.success('状态切换成功')
     loadResources()
   } catch (error) {
-    console.error('状态切换失败', error)
     ElMessage.error('状态切换失败')
   }
 }
@@ -652,13 +675,11 @@ const handleDelete = async (id) => {
     loadResources()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('删除失败', error)
       ElMessage.error('删除失败')
     }
   }
 }
 
-// 批量操作相关方法
 const handleSelectionChange = (selection) => {
   selectedResources.value = selection
 }
@@ -689,7 +710,6 @@ const handleBatchPublish = async () => {
     loadResources()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('批量发布失败', error)
       ElMessage.error('批量发布失败')
     }
   } finally {
@@ -723,7 +743,6 @@ const handleBatchUnpublish = async () => {
     loadResources()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('批量下架失败', error)
       ElMessage.error('批量下架失败')
     }
   } finally {
@@ -757,7 +776,6 @@ const handleBatchDelete = async () => {
     loadResources()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('批量删除失败', error)
       ElMessage.error('批量删除失败')
     }
   } finally {
@@ -782,7 +800,6 @@ const handleConfirmBatchMove = async () => {
     batchMoveTargetCategory.value = null
     loadResources()
   } catch (error) {
-    console.error('批量移动失败', error)
     ElMessage.error('批量移动失败')
   } finally {
     batchLoading.value = false
@@ -799,43 +816,113 @@ onMounted(() => {
 
 <style scoped>
 .resources-container {
-  padding: 20px;
+  padding: 24px;
+  background: #f5f7fa;
+  min-height: calc(100vh - 60px);
 }
 
-.toolbar {
+/* 现代化工具栏 */
+.modern-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding: 15px;
-  background: #fff;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .toolbar-right {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
 }
 
+.search-wrapper :deep(.el-input__wrapper) {
+  border-radius: 50px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: none;
+}
+
+.search-btn {
+  border-radius: 50px;
+}
+
+.reset-btn {
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+/* 渐变按钮 */
+.gradient-btn {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border: none;
+  box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+}
+
+.gradient-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 87, 108, 0.5);
+}
+
+/* 批量操作 */
 .batch-operations {
   display: flex;
-  gap: 10px;
   align-items: center;
-  margin-left: 20px;
-  padding-left: 20px;
-  border-left: 1px solid #e4e7ed;
+  gap: 10px;
+  padding-left: 16px;
+  border-left: 2px solid rgba(255, 255, 255, 0.3);
 }
 
-.batch-info {
+.batch-count {
+  color: white;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+/* 表格卡片 */
+.table-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.modern-table :deep(.el-table__header th) {
+  background: #f8f9fc;
   color: #606266;
+  font-weight: 600;
   font-size: 14px;
-  text-align: center;
+}
+
+.modern-table :deep(.el-table__row) {
+  transition: all 0.3s;
+}
+
+.modern-table :deep(.el-table__row:hover) {
+  background: #f5f7fa;
+}
+
+.resource-code {
+  font-weight: 600;
+  color: #667eea;
+  font-family: 'Monaco', monospace;
 }
 
 .resource-icon {
-  font-size: 32px;
+  font-size: 28px;
   line-height: 1;
 }
 
@@ -846,8 +933,9 @@ onMounted(() => {
 }
 
 .title-text {
-  font-weight: 500;
+  font-weight: 600;
   color: #303133;
+  font-size: 14px;
 }
 
 .desc-text {
@@ -856,45 +944,36 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 250px;
 }
 
-.pagination {
+.stat-number {
+  font-weight: 600;
+  color: #667eea;
+}
+
+.time-text {
+  font-size: 13px;
+  color: #909399;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+/* 分页 */
+.pagination-wrapper {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
 }
 
-:deep(.el-table) {
-  background: #fff;
-  border-radius: 4px;
+.pagination-wrapper :deep(.el-pagination__total) {
+  font-weight: 500;
 }
 
-:deep(.el-table th) {
-  background: #f5f7fa;
-  color: #606266;
-  font-weight: 600;
-}
-
-:deep(.el-table td) {
-  padding: 12px 0;
-}
-
-/* 封面图片选择器样式 */
-.cover-image-selector {
-  width: 100%;
-}
-
-.cover-preview {
-  position: relative;
-  display: inline-block;
-}
-
-.remove-cover-btn {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-}
-
+/* 图片选择器 */
 .image-selector {
   padding: 10px;
 }
@@ -902,29 +981,29 @@ onMounted(() => {
 .image-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 15px;
+  gap: 16px;
 }
 
 .image-item {
   position: relative;
   width: 100%;
   height: 150px;
-  border: 2px solid #dcdfe6;
-  border-radius: 8px;
+  border: 3px solid #e4e7ed;
+  border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .image-item:hover {
-  border-color: #409eff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+  border-color: #667eea;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
 }
 
 .image-item.selected {
-  border-color: #409eff;
-  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.2);
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
 }
 
 .image-name {
@@ -933,7 +1012,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   padding: 8px;
-  background: rgba(0, 0, 0, 0.7);
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
   color: white;
   font-size: 12px;
   text-align: center;
@@ -942,7 +1021,30 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-/* 资源图片管理样式 */
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(102, 126, 234, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.image-item.selected .image-overlay {
+  opacity: 1;
+}
+
+.image-overlay .el-icon {
+  font-size: 32px;
+  color: white;
+}
+
+/* 资源图片管理 */
 .resource-images-container {
   width: 100%;
 }
@@ -950,28 +1052,28 @@ onMounted(() => {
 .images-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .image-card {
   position: relative;
   width: 100%;
   height: 120px;
-  border: 2px solid #dcdfe6;
-  border-radius: 8px;
+  border: 2px solid #e4e7ed;
+  border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s;
 }
 
 .image-card:hover {
-  border-color: #409eff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+  border-color: #667eea;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
 }
 
 .image-card.is-cover {
   border-color: #67c23a;
-  box-shadow: 0 0 0 3px rgba(103, 194, 58, 0.2);
+  box-shadow: 0 0 0 3px rgba(103, 194, 58, 0.3);
 }
 
 .image-actions {
@@ -980,7 +1082,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   padding: 8px;
-  background: rgba(0, 0, 0, 0.7);
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -995,20 +1097,88 @@ onMounted(() => {
   width: 100%;
   height: 120px;
   border: 2px dashed #dcdfe6;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s;
   color: #909399;
 }
 
 .add-image-card:hover {
-  border-color: #409eff;
-  color: #409eff;
+  border-color: #667eea;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
 }
 
 .add-image-card .tip {
   font-size: 12px;
   margin-top: 4px;
   color: #c0c4cc;
+}
+
+/* 批量信息 */
+.batch-info {
+  color: #606266;
+  font-size: 14px;
+  text-align: center;
+  padding: 16px;
+  background: #f5f7fa;
+  border-radius: 8px;
+}
+
+/* 保存按钮 */
+.save-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.save-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+/* 过渡动画 */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+/* 响应式 */
+@media (max-width: 1200px) {
+  .modern-toolbar {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .toolbar-left,
+  .toolbar-right {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .resources-container {
+    padding: 16px;
+  }
+  
+  .toolbar-right {
+    flex-wrap: wrap;
+  }
+  
+  .batch-operations {
+    width: 100%;
+    flex-wrap: wrap;
+    border-left: none;
+    padding-left: 0;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    margin-top: 12px;
+  }
 }
 </style>

@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -15,9 +15,9 @@ import java.util.regex.Pattern;
 @Slf4j
 public class FileValidationUtil {
 
-    // 默认允许的图片类型
-    private static final Set<String> DEFAULT_ALLOWED_IMAGE_TYPES = new HashSet<>(
-        Arrays.asList("jpg", "jpeg", "png", "gif", "bmp", "webp")
+    // 默认允许的图片类型（不可变集合，防止意外修改）
+    private static final Set<String> DEFAULT_ALLOWED_IMAGE_TYPES = Collections.unmodifiableSet(
+        new HashSet<>(Arrays.asList("jpg", "jpeg", "png", "gif", "bmp", "webp"))
     );
 
     // 默认最大文件大小 (10MB)

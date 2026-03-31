@@ -1,9 +1,14 @@
 package com.resource.platform.util;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -11,6 +16,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
+@Slf4j
 @Component
 public class JwtUtil {
 
@@ -62,7 +68,20 @@ public class JwtUtil {
                     .build()
                     .parseClaimsJws(token);
             return !isTokenExpired(token);
-        } catch (Exception e) {
+        } catch (ExpiredJwtException e) {
+            log.debug("JWT令牌已过期");
+            return false;
+        } catch (SignatureException e) {
+            log.warn("JWT签名验证失败: {}", e.getMessage());
+            return false;
+        } catch (MalformedJwtException e) {
+            log.warn("JWT令牌格式错误: {}", e.getMessage());
+            return false;
+        } catch (UnsupportedJwtException e) {
+            log.warn("不支持的JWT令牌: {}", e.getMessage());
+            return false;
+        } catch (IllegalArgumentException e) {
+            log.warn("JWT令牌参数非法: {}", e.getMessage());
             return false;
         }
     }
@@ -78,7 +97,11 @@ public class JwtUtil {
                     .parseClaimsJws(token)
                     .getBody();
             return claims.getExpiration().before(new Date());
+        } catch (ExpiredJwtException e) {
+            log.debug("JWT令牌已过期");
+            return true;
         } catch (Exception e) {
+            log.warn("检查JWT令牌过期状态异常: {}", e.getMessage());
             return true;
         }
     }

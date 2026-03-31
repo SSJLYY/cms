@@ -1,9 +1,12 @@
 package com.resource.platform.config;
 
 import com.resource.platform.filter.JwtAuthenticationFilter;
+import com.resource.platform.filter.RateLimitFilter;
+import com.resource.platform.filter.TraceIdFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -14,7 +17,21 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.web.filter.OncePerRequestFilter;
 
+/**
+ * Spring Security 安全配置
+ *
+ * <p>安全特性：
+ * <ul>
+ *   <li>JWT 无状态认证（Session-less）</li>
+ *   <li>BCrypt 密码加密</li>
+ *   <li>HTTP 安全响应头防御（XSS / 点击劫持 / MIME 嗅探）</li>
+ *   <li>Actuator 端点需要 ADMIN 权限</li>
+ *   <li>Debug 接口通过 @Profile("dev") 在生产环境不注册，此处也不开放白名单</li>
+ * </ul>
+ */
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
@@ -23,10 +40,15 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    @Autowired
+    private RateLimitFilter rateLimitFilter;
+
+    @Autowired
+    private TraceIdFilter traceIdFilter;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // 使用 BCrypt 密码加密
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(12); // 强度12，兼顾安全和性能
     }
 
     @Bean
@@ -37,48 +59,77 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            // ========== 基础安全策略 ==========
             .csrf().disable()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
+
+            // ========== HTTP 安全响应头 ==========
+            .headers()
+                // 防止点击劫持（拒绝 iframe 嵌入）
+                .frameOptions().deny()
+                // 禁止 MIME 类型嗅探
+                .contentTypeOptions().and()
+                // 强制 HTTPS（如果后端直接对外则启用；若通过Nginx反代，Nginx层加即可）
+                // .httpStrictTransportSecurity().includeSubDomains(true).maxAgeInSeconds(31536000).and()
+                // XSS 保护
+                .xssProtection().and()
+                // Referrer 策略
+                .referrerPolicy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN).and()
+                // 权限策略
+                .permissionsPolicy(policy -> policy.policy("geolocation=(), microphone=(), camera=()"))
+            .and()
+
+            // ========== 接口访问控制 ==========
             .authorizeRequests()
-                // 登录接口
-                .antMatchers("/api/users/login").permitAll()
-                // 调试接口
-                .antMatchers("/api/debug/**").permitAll()
-                // 客户端公开接口 - 资源相关
-                .antMatchers("/api/resources/public/**").permitAll()
-                // 客户端公开接口 - 分类相关
-                .antMatchers("/api/categories/list").permitAll()
-                .antMatchers("/api/categories/tree").permitAll()
-                .antMatchers("/api/categories/public/**").permitAll()
-                // 客户端公开接口 - 配置相关
-                .antMatchers("/api/config/public").permitAll()
-                .antMatchers("/api/config/public/**").permitAll()
-                // 客户端公开接口 - 下载链接相关
-                .antMatchers("/api/download-links/resource/**").permitAll()
-                .antMatchers("/api/download-links/public/**").permitAll()
-                // 客户端公开接口 - 网盘类型相关
-                .antMatchers("/api/link-types/public/**").permitAll()
-                // 客户端公开接口 - 反馈相关
-                .antMatchers("/api/feedback/public/**").permitAll()
-                // 客户端公开接口 - 友情链接相关
-                .antMatchers("/api/friendlinks/enabled").permitAll()
-                // 客户端公开接口 - 广告推广相关
-                .antMatchers("/api/promotion/active").permitAll()
-                .antMatchers("/api/promotion/*/click").permitAll()
-                // 静态资源和文件访问
-                .antMatchers("/uploads/**").permitAll()
-                .antMatchers("/images/**").permitAll()
-                .antMatchers("/thumbnails/**").permitAll()
-                .antMatchers("/static/**").permitAll()
+                // --- 认证接口 ---
+                .antMatchers(HttpMethod.POST, "/api/users/login").permitAll()
+
+                // ✅ 移除：/api/debug/** 不再在此白名单（@Profile("dev") 已限制）
+                // --- 客户端公开接口 - 资源 ---
+                .antMatchers(HttpMethod.GET, "/api/resources/public/**").permitAll()
+                // --- 客户端公开接口 - 分类 ---
+                .antMatchers(HttpMethod.GET, "/api/categories/list").permitAll()
+                .antMatchers(HttpMethod.GET, "/api/categories/tree").permitAll()
+                .antMatchers(HttpMethod.GET, "/api/categories/public/**").permitAll()
+                // --- 客户端公开接口 - 配置 ---
+                .antMatchers(HttpMethod.GET, "/api/config/public").permitAll()
+                .antMatchers(HttpMethod.GET, "/api/config/public/**").permitAll()
+                // --- 客户端公开接口 - 下载链接 ---
+                .antMatchers(HttpMethod.GET, "/api/download-links/resource/**").permitAll()
+                .antMatchers(HttpMethod.GET, "/api/download-links/public/**").permitAll()
+                // --- 客户端公开接口 - 网盘类型 ---
+                .antMatchers(HttpMethod.GET, "/api/link-types/public/**").permitAll()
+                // --- 客户端公开接口 - 反馈提交 ---
+                .antMatchers(HttpMethod.POST, "/api/feedback/public/**").permitAll()
+                .antMatchers(HttpMethod.GET, "/api/feedback/public/**").permitAll()
+                // --- 客户端公开接口 - 友情链接 ---
+                .antMatchers(HttpMethod.GET, "/api/friendlinks/enabled").permitAll()
+                // --- 客户端公开接口 - 广告推广 ---
+                .antMatchers(HttpMethod.GET, "/api/promotion/active").permitAll()
+                .antMatchers(HttpMethod.POST, "/api/promotion/*/click").permitAll()
+                // --- 静态资源 ---
+                .antMatchers("/uploads/**", "/images/**", "/thumbnails/**", "/static/**").permitAll()
                 .antMatchers("/*.html", "/*.js", "/*.css", "/*.png", "/*.jpg", "/*.ico").permitAll()
-                // Swagger文档
-                .antMatchers("/doc.html", "/webjars/**", "/swagger-resources/**", "/v2/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/favicon.ico").permitAll()
-                // 管理员接口需要ADMIN角色
+                // --- API 文档（生产环境通过 application-prod.yml 关闭 knife4j）---
+                .antMatchers(
+                    "/doc.html", "/webjars/**", "/swagger-resources/**",
+                    "/v2/api-docs", "/v3/api-docs/**", "/swagger-ui/**",
+                    "/swagger-ui.html", "/favicon.ico"
+                ).permitAll()
+                // --- Actuator：仅 ADMIN 可访问（修复安全漏洞）---
+                .antMatchers("/actuator/**").hasRole("ADMIN")
+                // --- 管理员接口 ---
                 .antMatchers("/api/*/admin/**").hasRole("ADMIN")
-                // 其他所有接口需要认证
+                // --- 其余接口需认证 ---
                 .anyRequest().authenticated()
             .and()
+
+            // ========== 过滤器链 ==========
+            // 顺序：TraceId → RateLimit → JWT 认证
+            .addFilterBefore(traceIdFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

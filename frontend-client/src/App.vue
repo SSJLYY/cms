@@ -55,7 +55,7 @@ const loadAdminTheme = async () => {
       document.documentElement.setAttribute('data-theme', userTheme)
     }
   } catch (error) {
-    console.error('加载主题配置失败', error)
+    // 使用默认主题即可
   }
 }
 

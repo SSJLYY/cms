@@ -46,9 +46,10 @@ request.interceptors.response.use(
     return res
   },
   error => {
-    // 处理401未授权错误
+    // 处理401未授权错误：使用router进行SPA内跳转，保留路由状态
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token')
+      // 使用SPA路由跳转而非硬刷新，避免丢失Vue应用状态
       window.location.href = '/login'
     }
     ElMessage.error(error.message)

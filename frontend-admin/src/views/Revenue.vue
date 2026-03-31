@@ -1,175 +1,145 @@
 <template>
   <div class="revenue-container">
-    <!-- 收益概览卡片 -->
-    <el-row :gutter="20" class="overview-row">
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="overview-card" style="border-left: 4px solid #52c41a;">
-          <div class="card-content">
-            <div class="card-icon" style="background: #f6ffed; color: #52c41a;">
-              <el-icon :size="32"><Wallet /></el-icon>
-            </div>
-            <div class="card-info">
-              <div class="card-value">¥{{ overviewData.totalRevenue || '0.00' }}</div>
-              <div class="card-label">总收益</div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="overview-card" style="border-left: 4px solid #1890ff;">
-          <div class="card-content">
-            <div class="card-icon" style="background: #e6f7ff; color: #1890ff;">
-              <el-icon :size="32"><Download /></el-icon>
-            </div>
-            <div class="card-info">
-              <div class="card-value">{{ overviewData.totalDownloads || 0 }}</div>
-              <div class="card-label">总下载次数</div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="overview-card" style="border-left: 4px solid #faad14;">
-          <div class="card-content">
-            <div class="card-icon" style="background: #fffbe6; color: #faad14;">
-              <el-icon :size="32"><Coin /></el-icon>
-            </div>
-            <div class="card-info">
-              <div class="card-value">{{ overviewData.revenueItemCount || 0 }}</div>
-              <div class="card-label">收益项数量</div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="overview-card" style="border-left: 4px solid #722ed1;">
-          <div class="card-content">
-            <div class="card-icon" style="background: #f9f0ff; color: #722ed1;">
-              <el-icon :size="32"><Calendar /></el-icon>
-            </div>
-            <div class="card-info">
-              <div class="card-label">统计周期</div>
-              <el-select v-model="period" size="small" style="width: 100%; margin-top: 8px;" @change="handlePeriodChange">
-                <el-option label="今天" value="today" />
-                <el-option label="昨天" value="yesterday" />
-                <el-option label="近7天" value="week" />
-                <el-option label="近30天" value="month" />
-              </el-select>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <!-- 顶部收益概览 -->
+    <div class="overview-grid">
+      <div class="overview-card">
+        <div class="ov-icon-wrap" style="background: linear-gradient(135deg, #43e97b22, #38f9d722);">
+          <span class="ov-emoji">💰</span>
+        </div>
+        <div class="ov-body">
+          <div class="ov-value" style="color: #43e97b;">¥{{ overviewData.totalRevenue || '0.00' }}</div>
+          <div class="ov-label">总收益</div>
+        </div>
+      </div>
+
+      <div class="overview-card">
+        <div class="ov-icon-wrap" style="background: linear-gradient(135deg, #667eea22, #764ba222);">
+          <span class="ov-emoji">⬇️</span>
+        </div>
+        <div class="ov-body">
+          <div class="ov-value" style="color: #667eea;">{{ overviewData.totalDownloads || 0 }}</div>
+          <div class="ov-label">总下载次数</div>
+        </div>
+      </div>
+
+      <div class="overview-card">
+        <div class="ov-icon-wrap" style="background: linear-gradient(135deg, #f093fb22, #f5576c22);">
+          <span class="ov-emoji">📊</span>
+        </div>
+        <div class="ov-body">
+          <div class="ov-value" style="color: #f093fb;">{{ overviewData.revenueItemCount || 0 }}</div>
+          <div class="ov-label">收益项数量</div>
+        </div>
+      </div>
+
+      <div class="overview-card period-card">
+        <div class="ov-icon-wrap" style="background: linear-gradient(135deg, #fa709a22, #fee14022);">
+          <span class="ov-emoji">📅</span>
+        </div>
+        <div class="ov-body">
+          <div class="ov-label" style="margin-bottom: 8px;">统计周期</div>
+          <el-select v-model="period" size="small" style="width: 100%;" @change="handlePeriodChange">
+            <el-option label="今天" value="today" />
+            <el-option label="昨天" value="yesterday" />
+            <el-option label="近7天" value="week" />
+            <el-option label="近30天" value="month" />
+          </el-select>
+        </div>
+      </div>
+    </div>
 
     <!-- 收益类型卡片 -->
-    <el-row :gutter="20" class="revenue-types-row">
-      <el-col 
-        v-for="(item, index) in revenueTypes" 
-        :key="index"
-        :xs="24" :sm="12" :md="8" :lg="6"
-      >
-        <el-card class="revenue-type-card" :class="`type-${index % 9}`">
-          <div class="type-header">
-            <div class="type-icon" :style="getIconStyle(index)">
-              <el-icon :size="24">
-                <component :is="getIconComponent(index)" />
-              </el-icon>
-            </div>
-            <div class="type-info">
-              <div class="type-amount">¥{{ item.totalAmount || '0.00' }}</div>
-              <div class="type-name">{{ item.typeName }}</div>
-            </div>
+    <div class="revenue-types-section" v-if="revenueTypes.length > 0">
+      <div class="section-header">
+        <span class="section-icon">💎</span>
+        收益分类概览
+      </div>
+      <div class="type-cards-grid">
+        <div
+          v-for="(item, index) in revenueTypes"
+          :key="index"
+          class="type-card"
+          :style="{ '--card-color': iconColors[index % iconColors.length].color, '--card-bg': iconColors[index % iconColors.length].bg }"
+        >
+          <div class="type-icon-wrap">
+            <el-icon :size="22">
+              <component :is="getIconComponent(index)" />
+            </el-icon>
+          </div>
+          <div class="type-body">
+            <div class="type-amount">¥{{ item.totalAmount || '0.00' }}</div>
+            <div class="type-name">{{ item.typeName }}</div>
           </div>
           <div class="type-footer">
-            <div class="type-stat">
-              <span class="stat-label">下载:</span>
-              <span class="stat-value">{{ item.downloadCount || 0 }}次</span>
-            </div>
-            <div class="type-stat">
-              <span class="stat-label">累计:</span>
-              <span class="stat-value">¥{{ item.accumulatedRevenue || '0.00' }}</span>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 收益明细表格 -->
-    <el-card class="table-card">
-      <template #header>
-        <div class="card-header">
-          <span><el-icon><List /></el-icon> 收益明细</span>
-          <div class="header-actions">
-            <el-button type="primary" size="small" @click="handleRefresh">
-              <el-icon><Refresh /></el-icon>
-              刷新
-            </el-button>
-            <el-button 
-              type="danger" 
-              size="small" 
-              :disabled="selectedIds.length === 0"
-              @click="handleBatchDelete"
-            >
-              <el-icon><Delete /></el-icon>
-              批量删除
-            </el-button>
+            <span>下载: {{ item.downloadCount || 0 }}次</span>
+            <span>累计: ¥{{ item.accumulatedRevenue || '0.00' }}</span>
           </div>
         </div>
-      </template>
-      
-      <el-table 
-        :data="revenueList" 
-        style="width: 100%" 
+      </div>
+    </div>
+
+    <!-- 收益明细表格 -->
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">
+          <span class="title-icon">📋</span>
+          收益明细
+        </div>
+        <div class="table-actions">
+          <el-button class="btn-refresh" @click="handleRefresh">
+            <el-icon><Refresh /></el-icon> 刷新
+          </el-button>
+          <el-button
+            type="danger"
+            class="btn-delete"
+            :disabled="selectedIds.length === 0"
+            @click="handleBatchDelete"
+          >
+            <el-icon><Delete /></el-icon> 批量删除 ({{ selectedIds.length }})
+          </el-button>
+        </div>
+      </div>
+
+      <el-table
+        :data="revenueList"
         v-loading="tableLoading"
+        class="modern-table"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column type="index" label="序号" width="80" align="center" />
+        <el-table-column type="index" label="序号" width="70" align="center" />
         <el-table-column prop="source" label="收益来源" min-width="150" />
-        <el-table-column label="收益金额" width="120" align="center">
+        <el-table-column label="收益金额" width="130" align="center">
           <template #default="{ row }">
-            <span class="amount-text">¥{{ row.amount }}</span>
+            <span class="amount-tag">¥{{ row.amount }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="downloadCount" label="下载次数" width="120" align="center" />
+        <el-table-column prop="downloadCount" label="下载次数" width="110" align="center" />
         <el-table-column label="收益类型" width="150" align="center">
           <template #default="{ row }">
-            <el-tag :type="getTypeTagColor(row.revenueType)" size="small">
+            <el-tag :type="getTypeTagColor(row.revenueType)" size="small" round>
               {{ getTypeName(row.revenueType) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="120" align="center">
+        <el-table-column label="状态" width="110" align="center">
           <template #default="{ row }">
-            <el-tag :type="getStatusTagColor(row.status)" size="small">
+            <el-tag :type="getStatusTagColor(row.status)" size="small" round>
               {{ getStatusName(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" width="180" align="center">
-          <template #default="{ row }">
-            {{ formatTime(row.createTime) }}
-          </template>
+        <el-table-column label="创建时间" width="175" align="center">
+          <template #default="{ row }">{{ formatTime(row.createTime) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="100" align="center" fixed="right">
+        <el-table-column label="操作" width="90" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button 
-              type="danger" 
-              size="small" 
-              link
-              @click="handleDelete(row.id)"
-            >
-              删除
-            </el-button>
+            <el-button type="danger" size="small" link @click="handleDelete(row.id)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
-      
-      <!-- 分页 -->
-      <div class="pagination">
+
+      <div class="pagination-wrap">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
@@ -180,21 +150,21 @@
           @current-change="loadRevenueList"
         />
       </div>
-    </el-card>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { 
-  Wallet, Download, Coin, Calendar, List, Refresh, Delete,
-  Upload, Money, Box, FolderOpened, Files, Document, 
+import {
+  Refresh, Delete,
+  Upload, Money, Box, FolderOpened, Files, Document,
   Folder, Grid, Connection
 } from '@element-plus/icons-vue'
-import { 
-  getRevenueOverview, 
-  getRevenueByType, 
+import {
+  getRevenueOverview,
+  getRevenueByType,
   getRevenueList,
   deleteRevenue,
   batchDeleteRevenue
@@ -207,17 +177,8 @@ const pageSize = ref(10)
 const total = ref(0)
 const selectedIds = ref([])
 
-// 概览数据
-const overviewData = ref({
-  totalRevenue: 0,
-  totalDownloads: 0,
-  revenueItemCount: 0
-})
-
-// 收益类型数据
+const overviewData = ref({ totalRevenue: 0, totalDownloads: 0, revenueItemCount: 0 })
 const revenueTypes = ref([])
-
-// 收益明细列表
 const revenueList = ref([])
 
 const typeNameMap = {
@@ -231,285 +192,221 @@ const typeNameMap = {
   'chengtong_cloud': '城通网盘'
 }
 
-const iconComponents = [
-  Upload, Money, Box, FolderOpened, 
-  Files, Document, Folder, Grid, Connection
-]
+const iconComponents = [Upload, Money, Box, FolderOpened, Files, Document, Folder, Grid, Connection]
 
 const iconColors = [
-  { bg: '#e6f7ff', color: '#1890ff' },
-  { bg: '#fff7e6', color: '#fa8c16' },
-  { bg: '#f6ffed', color: '#52c41a' },
-  { bg: '#f9f0ff', color: '#722ed1' },
-  { bg: '#fff1f0', color: '#f5222d' },
-  { bg: '#e6fffb', color: '#13c2c2' },
-  { bg: '#feffe6', color: '#fadb14' },
-  { bg: '#fff0f6', color: '#eb2f96' },
-  { bg: '#f0f5ff', color: '#2f54eb' }
+  { bg: '#667eea22', color: '#667eea' },
+  { bg: '#fa709a22', color: '#fa709a' },
+  { bg: '#43e97b22', color: '#43e97b' },
+  { bg: '#764ba222', color: '#764ba2' },
+  { bg: '#f5222d22', color: '#f5222d' },
+  { bg: '#13c2c222', color: '#13c2c2' },
+  { bg: '#fadb1422', color: '#d4a017' },
+  { bg: '#eb2f9622', color: '#eb2f96' },
+  { bg: '#2f54eb22', color: '#2f54eb' }
 ]
 
-const getIconComponent = (index) => {
-  return iconComponents[index % iconComponents.length]
-}
+const getIconComponent = (index) => iconComponents[index % iconComponents.length]
+const getTypeName = (type) => typeNameMap[type] || type
 
-const getIconStyle = (index) => {
-  const style = iconColors[index % iconColors.length]
-  return {
-    background: style.bg,
-    color: style.color
-  }
-}
+const getTypeTagColor = (type) => ({
+  'cloud_storage': 'primary', 'download_revenue': 'success',
+  'mobile_cloud': 'warning', 'mobile_cloud_backup': 'info',
+  'uc_cloud': 'danger', 'lanzou_cloud': 'success', 'chengtong_cloud': 'warning'
+}[type] || '')
 
-const getTypeName = (type) => {
-  return typeNameMap[type] || type
-}
-
-const getTypeTagColor = (type) => {
-  const colors = {
-    'cloud_storage': 'primary',
-    'download_revenue': 'success',
-    'mobile_cloud': 'warning',
-    'mobile_cloud_backup': 'info',
-    'uc_cloud': 'danger',
-    '12_cloud': '',
-    'lanzou_cloud': 'success',
-    'chengtong_cloud': 'warning'
-  }
-  return colors[type] || ''
-}
-
-const getStatusName = (status) => {
-  const names = {
-    'pending': '待结算',
-    'settled': '已结算',
-    'cancelled': '已取消'
-  }
-  return names[status] || status
-}
-
-const getStatusTagColor = (status) => {
-  const colors = {
-    'pending': 'warning',
-    'settled': 'success',
-    'cancelled': 'info'
-  }
-  return colors[status] || ''
-}
+const getStatusName = (status) => ({ 'pending': '待结算', 'settled': '已结算', 'cancelled': '已取消' }[status] || status)
+const getStatusTagColor = (status) => ({ 'pending': 'warning', 'settled': 'success', 'cancelled': 'info' }[status] || '')
 
 const formatTime = (time) => {
   if (!time) return '-'
   return time.replace('T', ' ').substring(0, 19)
 }
 
-// 加载概览数据
 const loadOverview = async () => {
   try {
     const res = await getRevenueOverview(period.value)
-    if (res.code === 200) {
-      overviewData.value = res.data
-    }
-  } catch (error) {
-    console.error('加载概览数据失败:', error)
-  }
+    if (res.code === 200) overviewData.value = res.data
+  } catch (error) { /* silent */ }
 }
 
-// 加载收益类型数据
 const loadRevenueTypes = async () => {
   try {
     const res = await getRevenueByType(period.value)
-    if (res.code === 200) {
-      revenueTypes.value = res.data || []
-    }
-  } catch (error) {
-    console.error('加载收益类型数据失败:', error)
-  }
+    if (res.code === 200) revenueTypes.value = res.data || []
+  } catch (error) { /* silent */ }
 }
 
-// 加载收益明细列表
 const loadRevenueList = async () => {
   tableLoading.value = true
   try {
-    const res = await getRevenueList({
-      pageNum: currentPage.value,
-      pageSize: pageSize.value,
-      period: period.value
-    })
+    const res = await getRevenueList({ pageNum: currentPage.value, pageSize: pageSize.value, period: period.value })
     if (res.code === 200) {
       revenueList.value = res.data.records || []
       total.value = res.data.total || 0
     }
-  } catch (error) {
-    console.error('加载收益明细失败:', error)
-  } finally {
+  } catch (error) { /* silent */ } finally {
     tableLoading.value = false
   }
 }
 
-// 加载所有数据
 const loadAllData = () => {
   loadOverview()
   loadRevenueTypes()
   loadRevenueList()
 }
 
-// 周期变化
-const handlePeriodChange = () => {
-  currentPage.value = 1
-  loadAllData()
-}
+const handlePeriodChange = () => { currentPage.value = 1; loadAllData() }
+const handleRefresh = () => { loadAllData(); ElMessage.success('数据已刷新') }
+const handleSelectionChange = (selection) => { selectedIds.value = selection.map(item => item.id) }
 
-// 刷新
-const handleRefresh = () => {
-  loadAllData()
-  ElMessage.success('数据已刷新')
-}
-
-// 选择变化
-const handleSelectionChange = (selection) => {
-  selectedIds.value = selection.map(item => item.id)
-}
-
-// 删除
 const handleDelete = async (id) => {
   try {
     await ElMessageBox.confirm('确定要删除这条收益记录吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
+      confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
     })
-    
     const res = await deleteRevenue(id)
-    if (res.code === 200) {
-      ElMessage.success('删除成功')
-      loadAllData()
-    } else {
-      ElMessage.error(res.message || '删除失败')
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除失败:', error)
-    }
-  }
+    if (res.code === 200) { ElMessage.success('删除成功'); loadAllData() }
+    else ElMessage.error(res.message || '删除失败')
+  } catch (error) { /* cancel */ }
 }
 
-// 批量删除
 const handleBatchDelete = async () => {
   try {
     await ElMessageBox.confirm(`确定要删除选中的 ${selectedIds.value.length} 条记录吗？`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
+      confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
     })
-    
     const res = await batchDeleteRevenue(selectedIds.value)
-    if (res.code === 200) {
-      ElMessage.success('批量删除成功')
-      selectedIds.value = []
-      loadAllData()
-    } else {
-      ElMessage.error(res.message || '批量删除失败')
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('批量删除失败:', error)
-    }
-  }
+    if (res.code === 200) { ElMessage.success('批量删除成功'); selectedIds.value = []; loadAllData() }
+    else ElMessage.error(res.message || '批量删除失败')
+  } catch (error) { /* cancel */ }
 }
 
-onMounted(() => {
-  loadAllData()
-})
+onMounted(() => loadAllData())
 </script>
 
 <style scoped>
 .revenue-container {
-  padding: 20px;
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: 100%;
 }
 
-.overview-row {
+/* 概览网格 */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
   margin-bottom: 20px;
 }
 
 .overview-card {
-  transition: transform 0.3s, box-shadow 0.3s;
-  cursor: pointer;
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  transition: all 0.3s;
 }
 
 .overview-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
 }
 
-.card-content {
-  display: flex;
-  align-items: center;
-  gap: 15px;
+.period-card {
+  flex-direction: row;
+  align-items: flex-start;
 }
 
-.card-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
+.ov-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-.card-info {
-  flex: 1;
+.ov-emoji { font-size: 24px; }
+
+.ov-body { flex: 1; min-width: 0; }
+
+.ov-value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 4px;
 }
 
-.card-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #303133;
-  margin-bottom: 5px;
-}
-
-.card-label {
-  font-size: 14px;
+.ov-label {
+  font-size: 13px;
   color: #606266;
 }
 
-.revenue-types-row {
+/* 收益类型 */
+.revenue-types-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
   margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
 
-.revenue-type-card {
-  margin-bottom: 15px;
-  transition: transform 0.3s, box-shadow 0.3s;
+.section-header {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.section-icon { font-size: 18px; }
+
+.type-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.type-card {
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid rgba(0,0,0,0.06);
+  transition: all 0.3s;
   cursor: pointer;
 }
 
-.revenue-type-card:hover {
+.type-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
 }
 
-.type-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 15px;
-}
-
-.type-icon {
-  width: 48px;
-  height: 48px;
+.type-icon-wrap {
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-color);
+  color: var(--card-color);
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 12px;
 }
 
-.type-info {
-  flex: 1;
-}
+.type-body { margin-bottom: 12px; }
 
 .type-amount {
   font-size: 20px;
-  font-weight: bold;
-  color: #303133;
+  font-weight: 700;
+  color: var(--card-color);
   margin-bottom: 4px;
 }
 
@@ -521,78 +418,85 @@ onMounted(() => {
 .type-footer {
   display: flex;
   justify-content: space-between;
-  padding-top: 12px;
+  font-size: 12px;
+  color: #909399;
+  padding-top: 10px;
   border-top: 1px solid #f0f0f0;
 }
 
-.type-stat {
-  font-size: 12px;
-}
-
-.stat-label {
-  color: #909399;
-  margin-right: 4px;
-}
-
-.stat-value {
-  color: #303133;
-  font-weight: 500;
-}
-
+/* 表格卡片 */
 .table-card {
-  border-radius: 8px;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
 
-.card-header {
+.table-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-weight: 600;
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 
-.card-header span {
+.table-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.header-actions {
+.title-icon { font-size: 18px; }
+
+.table-actions {
   display: flex;
   gap: 10px;
 }
 
-.amount-text {
-  color: #52c41a;
+.btn-refresh {
+  border-radius: 10px !important;
+}
+
+.btn-delete {
+  border-radius: 10px !important;
+}
+
+.modern-table :deep(.el-table__header th) {
+  background: #f8f9fa;
+  color: #606266;
   font-weight: 600;
-}
-
-.pagination {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-:deep(.el-card__header) {
-  padding: 15px 20px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-:deep(.el-card__body) {
-  padding: 20px;
-}
-
-:deep(.el-table) {
   font-size: 13px;
 }
 
-:deep(.el-table td) {
-  padding: 12px 0;
+.modern-table :deep(.el-table__row:hover td) {
+  background: rgba(102,126,234,0.04);
+}
+
+.amount-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  background: linear-gradient(135deg, rgba(67,233,123,0.15), rgba(56,249,215,0.15));
+  color: #2ecc71;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+@media (max-width: 1200px) {
+  .overview-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 768px) {
-  .overview-row .el-col,
-  .revenue-types-row .el-col {
-    margin-bottom: 15px;
-  }
+  .revenue-container { padding: 16px; }
+  .overview-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .type-cards-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>

@@ -2,10 +2,10 @@ package com.resource.platform.aspect;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.resource.platform.annotation.OperationLog;
-import com.resource.platform.entity.AuditLog;
-import com.resource.platform.entity.SystemLog;
-import com.resource.platform.mapper.AuditLogMapper;
-import com.resource.platform.mapper.SystemLogMapper;
+import com.resource.platform.module.system.entity.AuditLog;
+import com.resource.platform.module.system.entity.SystemLog;
+import com.resource.platform.module.system.mapper.AuditLogMapper;
+import com.resource.platform.module.system.mapper.SystemLogMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -176,26 +176,6 @@ public class OperationLogAspect {
      * 获取客户端IP地址
      */
     private String getIpAddress(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_CLIENT_IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        // 对于多个代理的情况，第一个IP为客户端真实IP
-        if (ip != null && ip.contains(",")) {
-            ip = ip.split(",")[0].trim();
-        }
-        return ip;
+        return com.resource.platform.util.IpUtil.getClientIp(request);
     }
 }

@@ -1,6 +1,6 @@
 package com.resource.platform.config;
 
-import com.resource.platform.service.StorageService;
+import com.resource.platform.module.system.service.StorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

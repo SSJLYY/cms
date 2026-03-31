@@ -4,6 +4,7 @@
  * 相比管理端，客户端不需要认证功能
  */
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
 /**
  * 创建axios请求实例
@@ -36,13 +37,13 @@ request.interceptors.response.use(
     const res = response.data
     // 检查业务状态码
     if (res.code !== 200) {
-      console.error(res.message || 'Error')
+      ElMessage.error(res.message || '请求失败')
       return Promise.reject(new Error(res.message || 'Error'))
     }
     return res
   },
   error => {
-    console.error(error.message)
+    ElMessage.error('网络错误，请检查网络连接')
     return Promise.reject(error)
   }
 )

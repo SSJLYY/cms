@@ -1,103 +1,174 @@
 <template>
   <div class="crawler-container">
-    <el-card class="header-card">
+    <!-- 页面标题 -->
+    <div class="page-header">
       <div class="header-content">
         <div class="header-left">
-          <h2>🕷️ 爬虫管理</h2>
-          <p class="subtitle">自动化采集网站资源</p>
+          <h2>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 8V7l-3 2-3-2v1l3 2 3-2z"/>
+              <path d="M3 16v3h3"/>
+              <path d="M21 19v-3h-3"/>
+              <path d="M3 11v-3h3"/>
+              <path d="M21 14v3h-3"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            爬虫管理
+          </h2>
+          <p class="subtitle">自动化采集网站资源，智能识别页面结构</p>
         </div>
         <div class="header-right">
-          <el-button type="primary" @click="showCreateDialog">
-            <el-icon><Plus /></el-icon>
+          <el-button type="primary" @click="showCreateDialog" class="gradient-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
             新建任务
           </el-button>
         </div>
       </div>
-    </el-card>
+    </div>
 
-    <!-- 搜索和筛选 -->
-    <el-card class="filter-card">
-      <el-form :inline="true" :model="queryForm">
-        <el-form-item label="任务名称">
-          <el-input v-model="queryForm.name" placeholder="请输入任务名称" clearable />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="queryForm.status" placeholder="请选择状态" clearable>
-            <el-option label="全部" :value="null" />
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="loadTasks">查询</el-button>
-          <el-button @click="resetQuery">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+    <!-- 筛选工具栏 -->
+    <div class="filter-bar">
+      <div class="filter-row">
+        <el-input
+          v-model="queryForm.name"
+          placeholder="任务名称"
+          clearable
+          class="filter-input"
+        />
+        <el-select
+          v-model="queryForm.status"
+          placeholder="状态"
+          clearable
+          class="filter-select"
+        >
+          <el-option label="全部" :value="null" />
+          <el-option label="启用" :value="1" />
+          <el-option label="禁用" :value="0" />
+        </el-select>
+      </div>
+      <div class="filter-actions">
+        <el-button type="primary" @click="loadTasks" class="search-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          查询
+        </el-button>
+        <el-button @click="resetQuery">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+          </svg>
+          重置
+        </el-button>
+      </div>
+    </div>
 
     <!-- 任务列表 -->
-    <el-card class="table-card">
-      <el-table :data="tasks" v-loading="loading" stripe>
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="name" label="任务名称" min-width="150" />
-        <el-table-column prop="targetUrl" label="目标URL" min-width="200" show-overflow-tooltip />
-        <el-table-column label="状态" width="100">
+    <div class="table-card">
+      <el-table :data="tasks" v-loading="loading" stripe class="modern-table">
+        <el-table-column prop="id" label="ID" width="80" align="center" />
+        <el-table-column prop="name" label="任务名称" min-width="150">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'info'">
+            <div class="task-name">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4"/>
+              </svg>
+              <span>{{ row.name }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="targetUrl" label="目标URL" min-width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <code class="url-code">{{ row.targetUrl }}</code>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small" effect="dark">
               {{ row.status === 1 ? '启用' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="爬取间隔" width="120">
+        <el-table-column label="爬取间隔" width="100" align="center">
           <template #default="{ row }">
-            {{ row.crawlInterval }}小时
+            <span class="interval-value">{{ row.crawlInterval }}h</span>
           </template>
         </el-table-column>
         <el-table-column label="统计" width="180">
           <template #default="{ row }">
-            <div class="stats">
-              <span>总计: {{ row.totalCrawled }}</span>
-              <span>成功: {{ row.totalSuccess }}</span>
-              <span>失败: {{ row.totalFailed }}</span>
+            <div class="stats-grid">
+              <div class="stat-item">
+                <span class="stat-label">总计</span>
+                <span class="stat-value">{{ row.totalCrawled || 0 }}</span>
+              </div>
+              <div class="stat-item success">
+                <span class="stat-label">成功</span>
+                <span class="stat-value">{{ row.totalSuccess || 0 }}</span>
+              </div>
+              <div class="stat-item danger">
+                <span class="stat-label">失败</span>
+                <span class="stat-value">{{ row.totalFailed || 0 }}</span>
+              </div>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="成功率" width="100">
+        <el-table-column label="成功率" width="120" align="center">
           <template #default="{ row }">
             <el-progress 
               :percentage="calculateSuccessRate(row)" 
               :color="getProgressColor(row)"
               :stroke-width="8"
+              style="width: 80px; display: inline-block;"
             />
           </template>
         </el-table-column>
-        <el-table-column label="下次执行" width="180">
+        <el-table-column label="下次执行" width="160" align="center">
           <template #default="{ row }">
-            {{ formatTime(row.nextExecuteTime) }}
+            <span class="time-value">{{ formatTime(row.nextExecuteTime) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button size="small" @click="showEditDialog(row)">编辑</el-button>
-            <el-button size="small" type="primary" @click="handleTrigger(row)">
-              立即爬取
-            </el-button>
-            <el-button 
-              size="small" 
-              :type="row.status === 1 ? 'warning' : 'success'"
-              @click="handleToggleStatus(row)"
-            >
-              {{ row.status === 1 ? '禁用' : '启用' }}
-            </el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">
-              删除
-            </el-button>
+            <div class="action-buttons">
+              <el-button size="small" type="primary" link @click="showEditDialog(row)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+                编辑
+              </el-button>
+              <el-button size="small" type="success" link @click="handleTrigger(row)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                爬取
+              </el-button>
+              <el-button 
+                size="small" 
+                :type="row.status === 1 ? 'warning' : 'success'" 
+                link
+                @click="handleToggleStatus(row)"
+              >
+                {{ row.status === 1 ? '禁用' : '启用' }}
+              </el-button>
+              <el-button size="small" type="danger" link @click="handleDelete(row)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                删除
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
-      <div class="pagination">
+      <div class="pagination-wrapper">
         <el-pagination
           v-model:current-page="queryForm.page"
           v-model:page-size="queryForm.size"
@@ -106,9 +177,10 @@
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="loadTasks"
           @current-change="loadTasks"
+          background
         />
       </div>
-    </el-card>
+    </div>
 
     <!-- 创建/编辑任务对话框 -->
     <el-dialog
@@ -116,42 +188,35 @@
       :title="dialogTitle"
       width="800px"
       @close="resetForm"
+      class="task-dialog"
+      destroy-on-close
     >
-      <el-form :model="taskForm" :rules="rules" ref="formRef" label-width="120px">
+      <el-form :model="taskForm" :rules="rules" ref="formRef" label-width="120px" class="task-form">
         <el-form-item label="任务名称" prop="name">
           <el-input v-model="taskForm.name" placeholder="请输入任务名称" />
         </el-form-item>
         
         <el-form-item label="目标URL" prop="targetUrl">
-          <el-input v-model="taskForm.targetUrl" placeholder="请输入目标URL">
+          <el-input v-model="taskForm.targetUrl" placeholder="https://example.com">
             <template #append>
-              <el-button @click="handleValidateUrl" :loading="validating">验证</el-button>
+              <el-button @click="handleValidateUrl" :loading="validating" class="validate-btn">验证</el-button>
             </template>
           </el-input>
         </el-form-item>
 
         <el-form-item label="爬取间隔" prop="crawlInterval">
-          <el-input-number 
-            v-model="taskForm.crawlInterval" 
-            :min="1" 
-            :max="168"
-            placeholder="小时"
-          />
-          <span class="form-tip">单位：小时，范围：1-168</span>
+          <el-input-number v-model="taskForm.crawlInterval" :min="1" :max="168" />
+          <span class="form-tip">小时（1-168）</span>
         </el-form-item>
 
         <el-form-item label="最大深度" prop="maxDepth">
-          <el-input-number 
-            v-model="taskForm.maxDepth" 
-            :min="1" 
-            :max="5"
-          />
-          <span class="form-tip">爬取深度，范围：1-5</span>
+          <el-input-number v-model="taskForm.maxDepth" :min="1" :max="5" />
+          <span class="form-tip">深度（1-5）</span>
         </el-form-item>
 
         <el-form-item label="智能模式" prop="intelligentMode">
           <el-switch v-model="taskForm.intelligentMode" />
-          <span class="form-tip">启用智能解析，自动识别网站结构</span>
+          <span class="form-tip">自动识别网站结构</span>
         </el-form-item>
 
         <el-form-item label="状态" prop="status">
@@ -162,101 +227,75 @@
         </el-form-item>
 
         <!-- 分类映射 -->
-        <el-form-item label="分类映射">
-          <el-button size="small" @click="showCategoryMapping = !showCategoryMapping">
-            {{ showCategoryMapping ? '隐藏' : '配置' }}分类映射
-          </el-button>
-        </el-form-item>
+        <el-divider content-position="left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          分类映射
+        </el-divider>
 
-        <div v-if="showCategoryMapping" class="mapping-section">
+        <div class="mapping-section">
           <el-form-item 
             v-for="(item, index) in taskForm.categoryMapping" 
             :key="index"
             :label="`映射${index + 1}`"
           >
             <el-row :gutter="10">
-              <el-col :span="10">
+              <el-col :span="9">
                 <el-input v-model="item.sourceCategory" placeholder="源分类" />
               </el-col>
-              <el-col :span="10">
-                <el-input-number v-model="item.targetCategoryId" placeholder="目标分类ID" />
+              <el-col :span="9">
+                <el-input-number v-model="item.targetCategoryId" placeholder="目标分类ID" style="width: 100%" />
               </el-col>
-              <el-col :span="4">
-                <el-button type="danger" size="small" @click="removeCategoryMapping(index)">
-                  删除
-                </el-button>
+              <el-col :span="6">
+                <el-button type="danger" size="small" @click="removeCategoryMapping(index)">删除</el-button>
               </el-col>
             </el-row>
           </el-form-item>
-          <el-button size="small" @click="addCategoryMapping">添加映射</el-button>
+          <el-button size="small" @click="addCategoryMapping" class="add-mapping-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            添加映射
+          </el-button>
         </div>
 
         <!-- 自定义规则 -->
-        <el-form-item label="自定义规则">
-          <el-button size="small" @click="showCustomRules = !showCustomRules">
-            {{ showCustomRules ? '隐藏' : '配置' }}自定义规则
-          </el-button>
-        </el-form-item>
+        <el-divider content-position="left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+          </svg>
+          自定义规则
+        </el-divider>
 
-        <div v-if="showCustomRules" class="rules-section">
+        <div class="rules-section">
           <el-form-item label="列表页选择器">
-            <el-input v-model="taskForm.customRules.listPageSelector" placeholder="CSS选择器" />
+            <el-input v-model="taskForm.customRules.listPageSelector" placeholder=".list-item" />
           </el-form-item>
           <el-form-item label="详情页选择器">
-            <el-input v-model="taskForm.customRules.detailPageSelector" placeholder="CSS选择器" />
+            <el-input v-model="taskForm.customRules.detailPageSelector" placeholder=".detail-page" />
           </el-form-item>
           <el-form-item label="标题选择器">
-            <el-input v-model="taskForm.customRules.titleSelector" placeholder="CSS选择器" />
+            <el-input v-model="taskForm.customRules.titleSelector" placeholder=".title" />
           </el-form-item>
           <el-form-item label="描述选择器">
-            <el-input v-model="taskForm.customRules.descriptionSelector" placeholder="CSS选择器" />
+            <el-input v-model="taskForm.customRules.descriptionSelector" placeholder=".description" />
           </el-form-item>
           <el-form-item label="图片选择器">
-            <el-input v-model="taskForm.customRules.imageSelector" placeholder="CSS选择器" />
+            <el-input v-model="taskForm.customRules.imageSelector" placeholder="img.src" />
           </el-form-item>
           <el-form-item label="下载链接选择器">
-            <el-input v-model="taskForm.customRules.downloadLinkSelector" placeholder="CSS选择器" />
+            <el-input v-model="taskForm.customRules.downloadLinkSelector" placeholder=".download-link" />
           </el-form-item>
         </div>
       </el-form>
 
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit" :loading="submitting">
-          确定
-        </el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="submitting" class="submit-btn">确定</el-button>
       </template>
-    </el-dialog>
-
-    <!-- 执行日志对话框 -->
-    <el-dialog v-model="logDialogVisible" title="执行日志" width="1000px">
-      <el-table :data="logs" v-loading="logLoading">
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getLogStatusType(row.status)">
-              {{ getLogStatusText(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="统计" width="200">
-          <template #default="{ row }">
-            <div class="stats">
-              <span>爬取: {{ row.crawledCount }}</span>
-              <span>成功: {{ row.successCount }}</span>
-              <span>失败: {{ row.failedCount }}</span>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="duration" label="耗时(秒)" width="100" />
-        <el-table-column prop="errorType" label="错误类型" width="120" />
-        <el-table-column prop="errorMessage" label="错误信息" min-width="200" show-overflow-tooltip />
-        <el-table-column label="执行时间" width="180">
-          <template #default="{ row }">
-            {{ formatTime(row.startTime) }}
-          </template>
-        </el-table-column>
-      </el-table>
     </el-dialog>
   </div>
 </template>
@@ -264,7 +303,6 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
 import {
   queryTasks,
   createTask,
@@ -272,11 +310,9 @@ import {
   deleteTask,
   toggleTaskStatus,
   triggerTask,
-  validateUrl,
-  queryLogs
+  validateUrl
 } from '../api/modules/crawler'
 
-// 数据
 const loading = ref(false)
 const tasks = ref([])
 const total = ref(0)
@@ -288,7 +324,6 @@ const queryForm = reactive({
   status: null
 })
 
-// 对话框
 const dialogVisible = ref(false)
 const dialogTitle = ref('新建任务')
 const isEdit = ref(false)
@@ -328,12 +363,6 @@ const rules = {
   maxDepth: [{ required: true, message: '请输入最大深度', trigger: 'blur' }]
 }
 
-// 日志
-const logDialogVisible = ref(false)
-const logLoading = ref(false)
-const logs = ref([])
-
-// 方法
 const loadTasks = async () => {
   loading.value = true
   try {
@@ -388,21 +417,23 @@ const showEditDialog = (row) => {
 
 const resetForm = () => {
   formRef.value?.resetFields()
-  taskForm.name = ''
-  taskForm.targetUrl = ''
-  taskForm.crawlInterval = 24
-  taskForm.maxDepth = 2
-  taskForm.intelligentMode = true
-  taskForm.status = 1
-  taskForm.categoryMapping = []
-  taskForm.customRules = {
-    listPageSelector: '',
-    detailPageSelector: '',
-    titleSelector: '',
-    descriptionSelector: '',
-    imageSelector: '',
-    downloadLinkSelector: ''
-  }
+  Object.assign(taskForm, {
+    name: '',
+    targetUrl: '',
+    crawlInterval: 24,
+    maxDepth: 2,
+    intelligentMode: true,
+    status: 1,
+    categoryMapping: [],
+    customRules: {
+      listPageSelector: '',
+      detailPageSelector: '',
+      titleSelector: '',
+      descriptionSelector: '',
+      imageSelector: '',
+      downloadLinkSelector: ''
+    }
+  })
   showCategoryMapping.value = false
   showCustomRules.value = false
 }
@@ -512,16 +543,6 @@ const formatTime = (time) => {
   return new Date(time).toLocaleString('zh-CN')
 }
 
-const getLogStatusType = (status) => {
-  const map = { 1: 'info', 2: 'success', 3: 'danger' }
-  return map[status] || 'info'
-}
-
-const getLogStatusText = (status) => {
-  const map = { 1: '执行中', 2: '成功', 3: '失败' }
-  return map[status] || '未知'
-}
-
 onMounted(() => {
   loadTasks()
 })
@@ -529,62 +550,231 @@ onMounted(() => {
 
 <style scoped>
 .crawler-container {
-  padding: 20px;
+  padding: 24px;
+  background: #f5f7fa;
+  min-height: calc(100vh - 60px);
 }
 
-.header-card {
-  margin-bottom: 20px;
+.page-header {
+  margin-bottom: 24px;
 }
 
 .header-content {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  border-radius: 16px;
+  padding: 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .header-left h2 {
-  margin: 0 0 5px 0;
+  margin: 0 0 8px;
   font-size: 24px;
+  font-weight: 600;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .subtitle {
   margin: 0;
-  color: #909399;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.gradient-btn {
+  background: white;
+  border: none;
+  color: #11998e;
+  font-weight: 600;
+}
+
+.gradient-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* 筛选工具栏 */
+.filter-bar {
+  background: white;
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filter-row {
+  display: flex;
+  gap: 12px;
+}
+
+.filter-input {
+  width: 200px;
+}
+
+.filter-select {
+  width: 140px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.search-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+}
+
+/* 表格 */
+.table-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.modern-table :deep(.el-table__header th) {
+  background: #f8f9fc;
+  color: #606266;
+  font-weight: 600;
   font-size: 14px;
 }
 
-.filter-card {
-  margin-bottom: 20px;
+.modern-table :deep(.el-table__row) {
+  transition: all 0.3s;
 }
 
-.table-card {
-  margin-bottom: 20px;
+.modern-table :deep(.el-table__row:hover) {
+  background: #f5f7fa;
 }
 
-.stats {
+.task-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #667eea;
+  font-weight: 600;
+}
+
+.url-code {
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 12px;
+  background: #f5f7fa;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #667eea;
+}
+
+.interval-value {
+  font-weight: 600;
+  color: #667eea;
+}
+
+.stats-grid {
+  display: flex;
+  gap: 16px;
+}
+
+.stat-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
+  align-items: center;
 }
 
-.pagination {
+.stat-label {
+  font-size: 11px;
+  color: #909399;
+}
+
+.stat-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.stat-item.success .stat-value {
+  color: #67c23a;
+}
+
+.stat-item.danger .stat-value {
+  color: #f56c6c;
+}
+
+.time-value {
+  font-size: 13px;
+  color: #909399;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pagination-wrapper {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
 }
 
+/* 对话框 */
+.task-form :deep(.el-input__wrapper),
+.task-form :deep(.el-textarea__inner) {
+  border-radius: 10px;
+}
+
 .form-tip {
-  margin-left: 10px;
+  margin-left: 12px;
   color: #909399;
-  font-size: 12px;
+  font-size: 13px;
+}
+
+.validate-btn {
+  font-weight: 600;
 }
 
 .mapping-section,
 .rules-section {
-  padding: 15px;
-  background: #f5f7fa;
-  border-radius: 4px;
-  margin-bottom: 15px;
+  padding: 16px;
+  background: #f8f9fc;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.add-mapping-btn {
+  margin-top: 8px;
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+@media (max-width: 1200px) {
+  .filter-bar {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .filter-row,
+  .filter-actions {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
 }
 </style>

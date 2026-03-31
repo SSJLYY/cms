@@ -212,11 +212,11 @@ const toggleSection = (section) => {
   left: 50%;
   transform: translate(-50%, -50%);
   width: 90%;
-  max-width: 700px;
+  max-width: 680px;
   max-height: 85vh;
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0,0,0,0.04);
   display: flex;
   flex-direction: column;
   z-index: 1000;
@@ -318,9 +318,14 @@ const toggleSection = (section) => {
 .help-section {
   margin-bottom: 12px;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
   background: white;
+  transition: box-shadow 0.2s;
+}
+
+.help-section:hover {
+  box-shadow: 0 2px 12px rgba(102,126,234,0.1);
 }
 
 .help-section-header {
@@ -334,7 +339,7 @@ const toggleSection = (section) => {
 }
 
 .help-section-header:hover {
-  background: #f3f4f6;
+  background: rgba(102,126,234,0.04);
 }
 
 .section-title-wrapper {

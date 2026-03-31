@@ -22,12 +22,20 @@ export function getResourceList() {
  */
 export function getResourceDetail(id) {
   return request({
-    url: `/api/resources/public/list`,
+    url: `/api/resources/public/${id}`,
     method: 'get'
-  }).then(res => {
-    // 从列表中找到对应的资源
-    const resource = res.data?.find(r => r.id === parseInt(id))
-    return { data: resource }
+  }).catch(() => {
+    // 后端无详情接口时回退到列表查询
+    return request({
+      url: '/api/resources/public/list',
+      method: 'get'
+    }).then(res => {
+      const resource = res.data?.find(r => r.id === parseInt(id))
+      if (!resource) {
+        return { data: null }
+      }
+      return { data: resource }
+    })
   })
 }
 

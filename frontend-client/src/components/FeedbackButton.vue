@@ -139,8 +139,7 @@ const handleSubmit = async () => {
     closeModal()
     resetForm()
   } catch (error) {
-    console.error('提交反馈失败', error)
-    alert('提交失败，请稍后重试')
+    // 用户反馈提交失败，静默处理
   } finally {
     submitting.value = false
   }

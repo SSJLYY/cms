@@ -1,139 +1,173 @@
 <template>
   <div class="statistics-container">
     <!-- 统计卡片 -->
-    <el-row :gutter="20" class="stats-row">
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="stat-card" style="border-left: 4px solid #52c41a;">
-          <div class="stat-icon" style="background: #f6ffed; color: #52c41a;">
-            <el-icon :size="28"><Download /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ overviewData.totalDownloads }}</div>
-            <div class="stat-label">总下载量</div>
-            <div class="stat-desc">平均每日下载</div>
-          </div>
-        </el-card>
-      </el-col>
+    <div class="statistics-cards">
+      <div class="stat-card stat-success">
+        <div class="stat-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ overviewData.totalDownloads || 0 }}</div>
+          <div class="stat-label">总下载量</div>
+        </div>
+        <div class="stat-trend trend-up">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+            <polyline points="17 6 23 6 23 12"/>
+          </svg>
+        </div>
+      </div>
       
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="stat-card" style="border-left: 4px solid #faad14;">
-          <div class="stat-icon" style="background: #fffbe6; color: #faad14;">
-            <el-icon :size="28"><Warning /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ overviewData.totalVisits }}</div>
-            <div class="stat-label">总访问量</div>
-            <div class="stat-desc">独立访客IP数量</div>
-          </div>
-        </el-card>
-      </el-col>
+      <div class="stat-card stat-warning">
+        <div class="stat-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ overviewData.totalVisits || 0 }}</div>
+          <div class="stat-label">总访问量</div>
+        </div>
+        <div class="stat-trend trend-up">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+            <polyline points="17 6 23 6 23 12"/>
+          </svg>
+        </div>
+      </div>
       
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="stat-card" style="border-left: 4px solid #f5222d;">
-          <div class="stat-icon" style="background: #fff1f0; color: #f5222d;">
-            <el-icon :size="28"><TrendCharts /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ overviewData.newVisits }}</div>
-            <div class="stat-label">新增访问</div>
-            <div class="stat-desc">今日新增</div>
-          </div>
-        </el-card>
-      </el-col>
+      <div class="stat-card stat-danger">
+        <div class="stat-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ overviewData.newVisits || 0 }}</div>
+          <div class="stat-label">新增访问</div>
+        </div>
+        <div class="stat-badge">今日</div>
+      </div>
       
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="stat-card" style="border-left: 4px solid #1890ff;">
-          <div class="stat-icon" style="background: #e6f7ff; color: #1890ff;">
-            <el-icon :size="28"><Setting /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-label">统计周期</div>
-            <el-select v-model="statsPeriod" size="small" style="width: 100%; margin-top: 5px;">
-              <el-option label="今天" value="today" />
-              <el-option label="昨天" value="yesterday" />
-              <el-option label="近7天" value="week" />
-              <el-option label="近30天" value="month" />
-            </el-select>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+      <div class="stat-card stat-primary">
+        <div class="stat-content">
+          <div class="stat-label">统计周期</div>
+          <el-select v-model="statsPeriod" size="large" class="period-select">
+            <el-option label="今天" value="today" />
+            <el-option label="昨天" value="yesterday" />
+            <el-option label="近7天" value="week" />
+            <el-option label="近30天" value="month" />
+          </el-select>
+        </div>
+      </div>
+    </div>
 
-    <!-- 网站下载分布 -->
-    <el-row :gutter="20">
-      <el-col :xs="24" :lg="16">
-        <el-card class="chart-card">
-          <template #header>
-            <div class="card-header">
-              <span><el-icon><PieChart /></el-icon> 网站下载分布</span>
-              <el-button type="text" size="small" @click="handleRefreshChart">刷新</el-button>
-            </div>
-          </template>
-          <div ref="downloadChartRef" style="height: 350px"></div>
-        </el-card>
-      </el-col>
-      
-      <el-col :xs="24" :lg="8">
-        <el-card class="chart-card">
-          <template #header>
-            <div class="card-header">
-              <span><el-icon><DataLine /></el-icon> 下载排行榜（前5名）</span>
-              <el-button type="text" size="small">实时刷新</el-button>
-            </div>
-          </template>
-          <div class="ranking-list">
-            <div 
-              v-for="(item, index) in topDownloads" 
-              :key="index"
-              class="ranking-item"
-            >
-              <div class="ranking-number" :class="`rank-${index + 1}`">
-                {{ index + 1 }}
-              </div>
-              <div class="ranking-content">
-                <div class="ranking-title">{{ item.name }}</div>
-                <div class="ranking-meta">
-                  <el-tag size="small" type="info">{{ item.category }}</el-tag>
-                  <span class="ranking-count">{{ item.downloads }}次</span>
-                </div>
-              </div>
-              <div class="ranking-badge">
-                <el-icon :size="20" :color="item.trend === 'up' ? '#52c41a' : '#f5222d'">
-                  <Top v-if="item.trend === 'up'" />
-                  <Bottom v-else />
-                </el-icon>
-              </div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 访问统计表格 -->
-    <el-card class="table-card">
-      <template #header>
+    <!-- 图表区域 -->
+    <div class="charts-grid">
+      <!-- 下载分布图 -->
+      <div class="chart-card chart-large">
         <div class="card-header">
-          <span><el-icon><DataAnalysis /></el-icon> 访问统计详情</span>
-          <div class="header-actions">
-            <el-button type="primary" size="small" @click="handleExport">
-              <el-icon><Download /></el-icon>
-              导出数据
-            </el-button>
-            <el-button type="success" size="small" @click="handleRefresh">
-              <el-icon><Refresh /></el-icon>
-              刷新
-            </el-button>
+          <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+              <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+            </svg>
+            网站下载分布
+          </h3>
+          <el-button type="primary" link @click="handleRefreshChart">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            刷新
+          </el-button>
+        </div>
+        <div ref="downloadChartRef" style="height: 350px"></div>
+      </div>
+      
+      <!-- 下载排行榜 -->
+      <div class="chart-card">
+        <div class="card-header">
+          <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+            下载排行榜
+          </h3>
+          <el-tag type="success" size="small" effect="dark">TOP 5</el-tag>
+        </div>
+        <div class="ranking-list">
+          <div 
+            v-for="(item, index) in topDownloads" 
+            :key="index"
+            class="ranking-item"
+          >
+            <div class="ranking-number" :class="`rank-${index + 1}`">
+              {{ index + 1 }}
+            </div>
+            <div class="ranking-content">
+              <div class="ranking-title">{{ item.name }}</div>
+              <div class="ranking-meta">
+                <el-tag size="small" type="info" effect="plain">{{ item.category }}</el-tag>
+                <span class="ranking-count">{{ item.downloads }}次</span>
+              </div>
+            </div>
+            <div class="ranking-trend" :class="item.trend === 'up' ? 'trend-up' : 'trend-down'">
+              <svg v-if="item.trend === 'up'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="18 15 12 9 6 15"/>
+              </svg>
+              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
           </div>
         </div>
-      </template>
+      </div>
+    </div>
+
+    <!-- 访问统计表格 -->
+    <div class="table-card">
+      <div class="card-header">
+        <h3>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          </svg>
+          访问统计详情
+        </h3>
+        <div class="header-actions">
+          <el-button type="primary" size="small" @click="handleExport" class="export-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            导出数据
+          </el-button>
+          <el-button type="success" size="small" @click="handleRefresh">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            刷新
+          </el-button>
+        </div>
+      </div>
       
-      <el-table :data="visitStats" style="width: 100%" v-loading="tableLoading">
+      <el-table :data="visitStats" style="width: 100%" v-loading="tableLoading" stripe class="modern-table">
         <el-table-column type="index" label="排名" width="80" align="center">
           <template #default="{ $index }">
             <el-tag 
               :type="$index < 3 ? 'danger' : 'info'" 
               size="small"
               effect="dark"
+              class="rank-tag"
             >
               {{ $index + 1 }}
             </el-tag>
@@ -142,22 +176,28 @@
         <el-table-column prop="resource" label="资源" min-width="200">
           <template #default="{ row }">
             <div class="resource-cell">
-              <el-icon><Document /></el-icon>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
               <span>{{ row.resource }}</span>
             </div>
           </template>
         </el-table-column>
         <el-table-column label="来源地址" min-width="250">
           <template #default="{ row }">
-            <el-link :href="row.referer" target="_blank" type="primary" :underline="false">
-              <el-icon><Link /></el-icon>
+            <el-link :href="row.referer" target="_blank" type="primary" :underline="false" class="referer-link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
               {{ row.referer }}
             </el-link>
           </template>
         </el-table-column>
         <el-table-column label="浏览器" width="150" align="center">
           <template #default="{ row }">
-            <el-tag size="small">{{ row.browser }}</el-tag>
+            <el-tag size="small" type="info">{{ row.browser }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="分类" width="120" align="center">
@@ -174,7 +214,6 @@
         </el-table-column>
       </el-table>
       
-      <!-- 分页 -->
       <div class="pagination">
         <el-pagination
           v-model:current-page="currentPage"
@@ -182,21 +221,27 @@
           :page-sizes="[10, 20, 50, 100]"
           :total="total"
           layout="total, sizes, prev, pager, next, jumper"
+          background
         />
       </div>
-    </el-card>
+    </div>
 
     <!-- 实时访问监控 -->
-    <el-card class="monitor-card">
-      <template #header>
-        <div class="card-header">
-          <span><el-icon><Monitor /></el-icon> 实时访问监控</span>
-          <el-tag type="success" size="small">
-            <el-icon><View /></el-icon>
-            实时更新
-          </el-tag>
-        </div>
-      </template>
+    <div class="monitor-card">
+      <div class="card-header">
+        <h3>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          实时访问监控
+        </h3>
+        <el-tag type="success" size="small" effect="dark" class="realtime-tag">
+          <span class="pulse"></span>
+          实时更新
+        </el-tag>
+      </div>
       
       <div class="monitor-content">
         <el-timeline>
@@ -204,21 +249,32 @@
             v-for="(activity, index) in realtimeActivities"
             :key="index"
             :timestamp="activity.timestamp"
-            :type="activity.type"
+            :type="getActivityTimelineType(activity.type)"
             placement="top"
+            hollow
           >
-            <el-card>
+            <el-card class="activity-card">
               <div class="activity-item">
-                <el-icon :size="20" :color="getActivityColor(activity.type)">
-                  <User v-if="activity.type === 'visit'" />
-                  <Download v-else-if="activity.type === 'download'" />
-                  <Search v-else />
-                </el-icon>
+                <div class="activity-icon" :class="`activity-${activity.type}`">
+                  <svg v-if="activity.type === 'visit'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  <svg v-else-if="activity.type === 'download'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                </div>
                 <div class="activity-content">
                   <div class="activity-title">{{ activity.title }}</div>
                   <div class="activity-desc">{{ activity.description }}</div>
                 </div>
-                <el-tag :type="activity.type === 'download' ? 'success' : 'info'" size="small">
+                <el-tag :type="activity.type === 'download' ? 'success' : 'info'" size="small" effect="dark">
                   {{ getActivityTypeName(activity.type) }}
                 </el-tag>
               </div>
@@ -226,19 +282,13 @@
           </el-timeline-item>
         </el-timeline>
       </div>
-    </el-card>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { 
-  Download, Warning, TrendCharts, Setting, PieChart, DataLine, 
-  DataAnalysis, Refresh, Document, Link, Monitor, View, User, 
-  Search, Top, Bottom 
-} from '@element-plus/icons-vue'
-import * as echarts from 'echarts'
 import { 
   getStatisticsOverview, 
   getDownloadDistribution, 
@@ -254,20 +304,14 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
-// 统计概览数据
 const overviewData = ref({
   totalDownloads: 0,
   totalVisits: 0,
   newVisits: 0
 })
 
-// 下载排行榜数据
 const topDownloads = ref([])
-
-// 访问统计数据
 const visitStats = ref([])
-
-// 实时活动数据
 const realtimeActivities = ref([])
 
 const getCategoryColor = (category) => {
@@ -280,13 +324,13 @@ const getCategoryColor = (category) => {
   return colors[category] || 'info'
 }
 
-const getActivityColor = (type) => {
-  const colors = {
-    visit: '#1890ff',
-    download: '#52c41a',
-    search: '#faad14'
+const getActivityTimelineType = (type) => {
+  const types = {
+    visit: 'primary',
+    download: 'success',
+    search: 'warning'
   }
-  return colors[type] || '#909399'
+  return types[type] || 'info'
 }
 
 const getActivityTypeName = (type) => {
@@ -298,7 +342,6 @@ const getActivityTypeName = (type) => {
   return names[type] || '未知'
 }
 
-// 加载统计概览
 const loadOverview = async () => {
   try {
     const res = await getStatisticsOverview(statsPeriod.value)
@@ -306,18 +349,16 @@ const loadOverview = async () => {
       overviewData.value = res.data
     }
   } catch (error) {
-    console.error('加载统计概览失败:', error)
+    ElMessage.error('加载统计概览失败')
   }
 }
 
-// 加载下载分布数据
 const loadDownloadDistribution = async () => {
   try {
     const res = await getDownloadDistribution(statsPeriod.value)
     if (res.code === 200) {
       const data = res.data || []
       
-      // 更新排行榜（取前5名）
       topDownloads.value = data.slice(0, 5).map((item, index) => ({
         name: item.name,
         category: '电脑软件',
@@ -325,15 +366,13 @@ const loadDownloadDistribution = async () => {
         trend: index % 2 === 0 ? 'up' : 'down'
       }))
       
-      // 更新图表
       initDownloadChart(data)
     }
   } catch (error) {
-    console.error('加载下载分布失败:', error)
+    ElMessage.error('加载下载分布失败')
   }
 }
 
-// 加载访问统计详情
 const loadVisitDetails = async () => {
   tableLoading.value = true
   try {
@@ -347,13 +386,12 @@ const loadVisitDetails = async () => {
       total.value = res.data.total || 0
     }
   } catch (error) {
-    console.error('加载访问统计失败:', error)
+    ElMessage.error('加载访问统计失败')
   } finally {
     tableLoading.value = false
   }
 }
 
-// 加载实时活动
 const loadRealtimeActivities = async () => {
   try {
     const res = await getRealtimeActivities(10)
@@ -361,11 +399,10 @@ const loadRealtimeActivities = async () => {
       realtimeActivities.value = res.data || []
     }
   } catch (error) {
-    console.error('加载实时活动失败:', error)
+    ElMessage.error('加载实时活动失败')
   }
 }
 
-// 初始化图表
 const initDownloadChart = (data) => {
   if (!downloadChartRef.value) return
   
@@ -373,7 +410,7 @@ const initDownloadChart = (data) => {
     downloadChart = echarts.init(downloadChartRef.value)
   }
   
-  const colors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc']
+  const colors = ['#667eea', '#f093fb', '#4facfe', '#00f2fe', '#11998e', '#38ef7d', '#f5576c', '#fa8c16']
   
   const chartData = data.map((item, index) => ({
     value: item.value,
@@ -384,15 +421,16 @@ const initDownloadChart = (data) => {
   const option = {
     tooltip: {
       trigger: 'item',
-      formatter: '{b}: {c} ({d}%)'
+      formatter: '{b}: {c} ({d}%)',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#e4e7ed',
+      textStyle: { color: '#303133' }
     },
     legend: {
       orient: 'vertical',
       right: 20,
       top: 'center',
-      textStyle: {
-        fontSize: 12
-      }
+      textStyle: { fontSize: 12 }
     },
     series: [
       {
@@ -403,11 +441,9 @@ const initDownloadChart = (data) => {
         itemStyle: {
           borderRadius: 10,
           borderColor: '#fff',
-          borderWidth: 2
+          borderWidth: 3
         },
-        label: {
-          show: false
-        },
+        label: { show: false },
         emphasis: {
           label: {
             show: true,
@@ -422,7 +458,6 @@ const initDownloadChart = (data) => {
   downloadChart.setOption(option)
 }
 
-// 加载所有数据
 const loadAllData = () => {
   loadOverview()
   loadDownloadDistribution()
@@ -448,34 +483,31 @@ const handleResize = () => {
   downloadChart?.resize()
 }
 
-// 监听统计周期变化
 watch(statsPeriod, () => {
   loadAllData()
 })
 
-// 监听分页变化
 watch([currentPage, pageSize], () => {
   loadVisitDetails()
 })
 
+// 组件级定时器变量，确保 onUnmounted 能正确清理
+let realtimeTimer = null
+
 onMounted(() => {
-  // 初始加载数据
   loadAllData()
-  
-  // 定时刷新实时活动（每30秒）
-  const timer = setInterval(() => {
+
+  realtimeTimer = setInterval(() => {
     loadRealtimeActivities()
   }, 30000)
-  
+
   window.addEventListener('resize', handleResize)
-  
-  // 清理定时器
-  onUnmounted(() => {
-    clearInterval(timer)
-  })
 })
 
 onUnmounted(() => {
+  if (realtimeTimer) {
+    clearInterval(realtimeTimer)
+  }
   downloadChart?.dispose()
   window.removeEventListener('resize', handleResize)
 })
@@ -483,34 +515,62 @@ onUnmounted(() => {
 
 <style scoped>
 .statistics-container {
-  padding: 20px;
+  padding: 24px;
+  background: #f5f7fa;
+  min-height: calc(100vh - 60px);
 }
 
-.stats-row {
-  margin-bottom: 20px;
+/* 统计卡片 */
+.statistics-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
 }
 
 .stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
   display: flex;
   align-items: center;
-  padding: 20px;
-  transition: transform 0.3s, box-shadow 0.3s;
-  cursor: pointer;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 .stat-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 15px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.stat-success .stat-icon {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.stat-warning .stat-icon {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stat-danger .stat-icon {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+}
+
+.stat-primary .stat-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .stat-content {
@@ -518,77 +578,129 @@ onUnmounted(() => {
 }
 
 .stat-value {
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 32px;
+  font-weight: 700;
   color: #303133;
-  margin-bottom: 5px;
+  line-height: 1;
+  margin-bottom: 4px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #606266;
-  margin-bottom: 3px;
-}
-
-.stat-desc {
-  font-size: 12px;
   color: #909399;
 }
 
-.chart-card, .table-card, .monitor-card {
-  margin-bottom: 20px;
-  border-radius: 8px;
+.stat-trend {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.trend-up {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.trend-down {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.stat-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #fef3c7;
+  color: #d97706;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.period-select {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* 图表区域 */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: 600;
+  margin-bottom: 20px;
 }
 
-.card-header span {
+.card-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
+.export-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+}
+
+/* 排行榜 */
 .ranking-list {
-  padding: 10px 0;
+  padding: 8px 0;
 }
 
 .ranking-item {
   display: flex;
   align-items: center;
-  padding: 15px;
-  margin-bottom: 10px;
-  background: #f5f7fa;
-  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: #f8f9fc;
+  border-radius: 12px;
   transition: all 0.3s;
 }
 
 .ranking-item:hover {
-  background: #e6e8eb;
-  transform: translateX(5px);
+  background: #f1f5f9;
+  transform: translateX(4px);
 }
 
 .ranking-number {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
+  font-weight: 700;
   font-size: 16px;
-  margin-right: 15px;
-  background: #909399;
-  color: #fff;
+  margin-right: 16px;
+  background: #e2e8f0;
+  color: white;
 }
 
 .ranking-number.rank-1 {
@@ -609,9 +721,12 @@ onUnmounted(() => {
 
 .ranking-title {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #303133;
   margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ranking-meta {
@@ -625,14 +740,68 @@ onUnmounted(() => {
   color: #909399;
 }
 
-.ranking-badge {
-  margin-left: 10px;
+.ranking-trend {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ranking-trend.trend-up {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.ranking-trend.trend-down {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+/* 表格 */
+.table-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+}
+
+.modern-table :deep(.el-table__header th) {
+  background: #f8f9fc;
+  color: #606266;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.modern-table :deep(.el-table__row) {
+  transition: all 0.3s;
+}
+
+.modern-table :deep(.el-table__row:hover) {
+  background: #f5f7fa;
+}
+
+.rank-tag {
+  font-weight: 700;
 }
 
 .resource-cell {
   display: flex;
   align-items: center;
   gap: 8px;
+  color: #667eea;
+}
+
+.referer-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pagination {
@@ -641,15 +810,73 @@ onUnmounted(() => {
   justify-content: flex-end;
 }
 
+/* 实时监控 */
+.monitor-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.realtime-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pulse {
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
 .monitor-content {
-  max-height: 500px;
+  max-height: 400px;
   overflow-y: auto;
+}
+
+.activity-card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .activity-item {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 16px;
+}
+
+.activity-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.activity-visit {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.activity-download {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.activity-search {
+  background: #fef3c7;
+  color: #d97706;
 }
 
 .activity-content {
@@ -658,7 +885,7 @@ onUnmounted(() => {
 
 .activity-title {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #303133;
   margin-bottom: 4px;
 }
@@ -668,31 +895,20 @@ onUnmounted(() => {
   color: #909399;
 }
 
-:deep(.el-card__header) {
-  padding: 15px 20px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-:deep(.el-card__body) {
-  padding: 20px;
-}
-
-:deep(.el-table) {
-  font-size: 13px;
-}
-
-:deep(.el-table td) {
-  padding: 12px 0;
-}
-
-:deep(.el-timeline-item__timestamp) {
-  font-size: 12px;
-  color: #909399;
+/* 响应式 */
+@media (max-width: 1200px) {
+  .statistics-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
-  .stats-row .el-col {
-    margin-bottom: 15px;
+  .statistics-cards {
+    grid-template-columns: 1fr;
   }
 }
 </style>
