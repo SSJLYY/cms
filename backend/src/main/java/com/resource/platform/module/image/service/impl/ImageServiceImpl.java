@@ -64,10 +64,10 @@ public class ImageServiceImpl implements ImageService {
     private StorageService storageService;
     
     @Autowired
-    private com.resource.platform.mapper.ResourceImageMapper resourceImageMapper;
+    private com.resource.platform.module.image.mapper.ResourceImageMapper resourceImageMapper;
     
     @Autowired
-    private com.resource.platform.mapper.ResourceMapper resourceMapper;
+    private com.resource.platform.module.resource.mapper.ResourceMapper resourceMapper;
 
     @Value("${file.upload.max-size:10485760}")
     private long maxFileSize;

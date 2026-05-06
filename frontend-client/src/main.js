@@ -4,6 +4,8 @@
  */
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
 import App from './App.vue'
 import router from './router'
 
@@ -12,6 +14,9 @@ const app = createApp(App)
 
 // 配置状态管理
 app.use(createPinia())
+
+// 配置UI组件库
+app.use(ElementPlus)
 
 // 配置路由
 app.use(router)

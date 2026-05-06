@@ -11,6 +11,11 @@ public interface ResourceService {
      * 获取已发布的资源列表
      */
     List<ResourceVO> getPublishedResources();
+
+    /**
+     * 获取已发布资源详情
+     */
+    ResourceVO getPublishedResourceDetail(Long id);
     
     /**
      * 分页查询资源（支持搜索和筛选）

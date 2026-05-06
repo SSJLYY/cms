@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -30,6 +31,7 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/api/logs")
 @Tag(name = "日志管理", description = "系统日志和审计日志管理接口")
+@PreAuthorize("hasRole('ADMIN')")
 public class LogController {
 
     @Autowired

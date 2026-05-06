@@ -167,9 +167,9 @@ public class StatisticsServiceImpl implements StatisticsService {
                     .collect(Collectors.toMap(Resource::getId, r -> r, (a, b) -> a));
         Set<Long> catIds = resMap.values().stream()
                 .map(Resource::getCategoryId).filter(Objects::nonNull).collect(Collectors.toSet());
-        Map<Long, com.resource.platform.entity.Category> catMap = catIds.isEmpty() ? Collections.emptyMap()
+        Map<Long, com.resource.platform.module.category.entity.Category> catMap = catIds.isEmpty() ? Collections.emptyMap()
                 : categoryMapper.selectBatchIds(catIds).stream()
-                    .collect(Collectors.toMap(com.resource.platform.entity.Category::getId, c -> c, (a, b) -> a));
+                    .collect(Collectors.toMap(com.resource.platform.module.category.entity.Category::getId, c -> c, (a, b) -> a));
 
         List<Map<String, Object>> voList = visitCountMap.entrySet().stream()
                 .map(entry -> {
@@ -185,7 +185,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                         
                         // 获取分类信息
                         if (resource.getCategoryId() != null) {
-                            com.resource.platform.entity.Category category = catMap.get(resource.getCategoryId());
+                            com.resource.platform.module.category.entity.Category category = catMap.get(resource.getCategoryId());
                             map.put("category", category != null ? category.getName() : "未分类");
                         } else {
                             map.put("category", "未分类");

@@ -102,12 +102,13 @@ public class RobotsTxtParser {
      */
     private RobotsRules downloadAndParse(String domain) {
         String robotsUrl = domain + "/robots.txt";
+        HttpURLConnection conn = null;
         
         try {
             log.info("下载robots.txt: {}", robotsUrl);
             
             URL url = new URL(robotsUrl);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(10000);
             conn.setReadTimeout(10000);
@@ -141,7 +142,9 @@ public class RobotsTxtParser {
             log.error("下载robots.txt异常: url={}", robotsUrl, e);
             return null;
         } finally {
-            conn.disconnect();
+            if (conn != null) {
+                conn.disconnect();
+            }
         }
     }
 

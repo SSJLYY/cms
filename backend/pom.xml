@@ -25,7 +25,7 @@
         <knife4j.version>4.0.0</knife4j.version>
         <lombok.version>1.18.24</lombok.version>
         <resilience4j.version>1.7.1</resilience4j.version>
-        <caffeine.version>3.1.8</caffeine.version>
+        <caffeine.version>2.9.3</caffeine.version>
     </properties>
 
     <dependencies>

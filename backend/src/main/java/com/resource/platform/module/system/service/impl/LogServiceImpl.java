@@ -39,6 +39,8 @@ import java.util.List;
 @Service
 public class LogServiceImpl implements LogService {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     @Autowired
     private SystemLogMapper systemLogMapper;
 

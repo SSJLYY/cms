@@ -2,7 +2,9 @@ package com.resource.platform.module.category.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.resource.platform.annotation.OperationLog;
+import com.resource.platform.common.BizErrorCode;
 import com.resource.platform.common.Result;
+import com.resource.platform.exception.BusinessException;
 import com.resource.platform.module.category.dto.CategoryQueryDTO;
 import com.resource.platform.module.category.entity.Category;
 import com.resource.platform.module.category.service.CategoryService;
@@ -34,6 +36,7 @@ public class CategoryController {
 
     @GetMapping("/statistics")
     @Operation(summary = "获取分类统计信息")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<CategoryStatisticsVO> getStatistics() {
         CategoryStatisticsVO statistics = categoryService.getStatistics();
         return Result.success(statistics);
@@ -48,6 +51,7 @@ public class CategoryController {
 
     @PostMapping("/query")
     @Operation(summary = "查询分类列表")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Page<Category>> queryCategories(@RequestBody CategoryQueryDTO queryDTO) {
         Page<Category> page = categoryService.queryCategories(queryDTO);
         return Result.success(page);
@@ -55,6 +59,7 @@ public class CategoryController {
 
     @GetMapping("/{id}")
     @Operation(summary = "获取分类详情")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Category> getCategoryById(@PathVariable Long id) {
         Category category = categoryService.getCategoryById(id);
         return Result.success(category);

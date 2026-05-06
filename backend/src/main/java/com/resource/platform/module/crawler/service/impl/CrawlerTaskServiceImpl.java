@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.resource.platform.common.PageResult;
 import com.resource.platform.common.BizErrorCode;
 import com.resource.platform.exception.BusinessException;
-import com.resource.platform.module.crawler.dto.CategoryMappingItem;
+import com.resource.platform.module.category.dto.CategoryMappingItem;
 import com.resource.platform.module.crawler.dto.CrawlerTaskDTO;
 import com.resource.platform.module.crawler.dto.CrawlerTaskQueryDTO;
 import com.resource.platform.module.crawler.dto.CustomRules;

@@ -48,6 +48,8 @@ import java.util.Map;
 @Slf4j
 @Service
 public class RevenueServiceImpl implements RevenueService {
+
+    private static final int MAX_PAGE_SIZE = 100;
     
     @Autowired
     private RevenueMapper revenueMapper;

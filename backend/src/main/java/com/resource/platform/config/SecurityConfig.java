@@ -78,7 +78,7 @@ public class SecurityConfig {
                 // Referrer 策略
                 .referrerPolicy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN).and()
                 // 权限策略
-                .permissionsPolicy(policy -> policy.policy("geolocation=(), microphone=(), camera=()"))
+                .permissionsPolicy(policy -> policy.policy("geolocation=(), microphone=(), camera=()")).and()
             .and()
 
             // ========== 接口访问控制 ==========
@@ -89,6 +89,7 @@ public class SecurityConfig {
                 // ✅ 移除：/api/debug/** 不再在此白名单（@Profile("dev") 已限制）
                 // --- 客户端公开接口 - 资源 ---
                 .antMatchers(HttpMethod.GET, "/api/resources/public/**").permitAll()
+                .antMatchers(HttpMethod.POST, "/api/resources/public/**").permitAll()
                 // --- 客户端公开接口 - 分类 ---
                 .antMatchers(HttpMethod.GET, "/api/categories/list").permitAll()
                 .antMatchers(HttpMethod.GET, "/api/categories/tree").permitAll()

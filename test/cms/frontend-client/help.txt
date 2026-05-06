@@ -1,0 +1,679 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <title>帮助中心 - shaun・个人备份库</title>
+    <meta name="description" content="帮助中心 - 季春二九(shaun)・个人备份库（https://dw.jichun29.cn）是一个专注实用资源分享的个人站点，持续更新热门游戏中文版及配套修改器、存档，覆盖 Windows 系统工具补丁、手机与电脑壁纸原图，另有各类常用软件整理，满足用户资源备份、日常使用及多样化获取需求。">
+    <meta name="keywords" content="季春二九・个人备份库,季春二九资源站,shaun个人资源备份站,个人资源存储库,热门游戏中文版下载,游戏修改器存档,系统工具补丁,手机电脑壁纸原图,实用软件分享,常用工具下载,资源备份站点,个人资源分享站">
+    <!-- 预加载关键资源 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 关键CSS内联 -->
+    <style>
+        /* 关键样式内联，避免阻塞渲染 */
+        body{font-family:'Microsoft YaHei',Arial,sans-serif;background-color:#f5f5f5;color:#333;line-height:1.6;margin:0;padding:0}
+        .container{max-width:1200px;margin:0 auto;padding:0 20px}
+    </style>
+    
+    <!-- 非关键CSS异步加载 -->
+    <link rel="stylesheet" href="/assets/css/style.css?v=1764908312">
+    
+    <!-- AI助手样式 -->
+        <link rel="stylesheet" href="/assets/css/ai-assistant.css?v=1764908312">
+        
+    <!-- 异步加载外部CSS -->
+    <noscript>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    </noscript>
+<style type="text/css">@font-face { font-family: TencentSans; src: url("chrome-extension://lkjkfecdnfjopaeaibboihfkmhdjmanm/static/fonts/TencentSans.woff2"); }</style><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" async=""></script></head>
+<body>
+    <div class="container">
+        <!-- 返回首页链接 -->
+        <div style="margin: 20px 0; text-align: left;">
+            <a href="/index.php" style="display: inline-flex; align-items: center; gap: 8px; color: #3b82f6; text-decoration: none; font-weight: 500; transition: color 0.3s ease;">
+                <i class="fas fa-arrow-left"></i>
+                返回首页
+            </a>
+        </div>
+
+<style>
+/* 现代化帮助中心样式 - 与主页UI风格保持一致 */
+.help-header {
+    position: relative;
+    padding: 60px 0 40px;
+    margin: 0 0 30px;
+    text-align: center;
+    overflow: hidden;
+}
+
+.help-content {
+    position: relative;
+    z-index: 2;
+}
+
+.help-title {
+    margin: 0 0 16px;
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.help-title i {
+    font-size: 0.8em;
+    color: #3b82f6;
+}
+
+.help-description {
+    font-size: 1.2rem;
+    color: #64748b;
+    font-weight: 400;
+    margin: 0;
+    opacity: 0.9;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* 装饰性元素 */
+.help-decoration {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.help-decoration-circle {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.1;
+    animation: float 6s ease-in-out infinite;
+}
+
+.help-circle-1 {
+    width: 120px;
+    height: 120px;
+    background: #3b82f6;
+    top: 20%;
+    right: 10%;
+    animation-delay: 0s;
+}
+
+.help-circle-2 {
+    width: 80px;
+    height: 80px;
+    background: #8b5cf6;
+    top: 60%;
+    left: 15%;
+    animation-delay: 2s;
+}
+
+.help-circle-3 {
+    width: 60px;
+    height: 60px;
+    background: #06b6d4;
+    top: 30%;
+    left: 70%;
+    animation-delay: 4s;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
+}
+
+/* 帮助卡片容器 */
+.help-container {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    margin-bottom: 40px;
+}
+
+/* 手风琴样式 */
+.help-accordion {
+    border: none;
+}
+
+.help-accordion-item {
+    border: none;
+    border-bottom: 1px solid #f1f5f9;
+    margin: 0;
+    background: #fff;
+}
+
+.help-accordion-item:last-child {
+    border-bottom: none;
+}
+
+.help-accordion-button {
+    padding: 24px 32px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e293b;
+    background: #fff;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.help-accordion-button:hover {
+    background: #f8fafc;
+    color: #3b82f6;
+}
+
+.help-accordion-button:not(.collapsed) {
+    color: #3b82f6;
+    background: #f8fafc;
+    box-shadow: none;
+}
+
+.help-accordion-button:focus {
+    box-shadow: none;
+    border-color: transparent;
+}
+
+.help-accordion-button::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 0.3s ease;
+    margin-left: auto;
+}
+
+.help-accordion-button:not(.collapsed)::after {
+    transform: rotate(-135deg);
+}
+
+.help-category-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    border-radius: 12px;
+    color: #3b82f6;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.help-accordion-button:hover .help-category-icon {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+.help-accordion-button:not(.collapsed) .help-category-icon {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+.help-accordion-body {
+    padding: 16px 32px 32px;
+    background: #fff;
+    border-top: 1px solid #f1f5f9;
+}
+
+.help-question {
+    margin-bottom: 24px;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 12px;
+}
+
+.help-question:last-child {
+    margin-bottom: 0;
+}
+
+.help-question-title {
+    color: #1e293b;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.help-question-title i {
+    color: #3b82f6;
+    font-size: 1rem;
+}
+
+.help-answer-content {
+    color: #475569;
+    line-height: 1.7;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.help-answer-content strong {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+    .help-header {
+        padding: 30px 0 20px;
+    }
+    
+    .help-title {
+        font-size: clamp(1.6rem, 7vw, 2.2rem);
+        margin-bottom: 12px;
+    }
+    
+    .help-description {
+        font-size: 0.95rem;
+        opacity: 0.8;
+    }
+    
+    .help-decoration-circle {
+        display: none;
+    }
+    
+    .help-container {
+        border-radius: 12px;
+        margin-bottom: 30px;
+    }
+    
+    .help-accordion-button {
+        padding: 20px 20px;
+        font-size: 1rem;
+    }
+    
+    .help-category-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .help-accordion-body {
+        padding: 0 20px 20px;
+    }
+    
+    .help-question {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+    
+    .help-question-title {
+        font-size: 1rem;
+    }
+    
+    .help-answer-content {
+        font-size: 0.95rem;
+    }
+}
+
+/* 超小屏幕优化 */
+@media (max-width: 480px) {
+    .help-header {
+        padding: 25px 0 15px;
+    }
+    
+    .help-title {
+        font-size: clamp(1.4rem, 6vw, 1.8rem);
+        margin-bottom: 10px;
+    }
+    
+    .help-description {
+        font-size: 0.9rem;
+    }
+    
+    .help-container {
+        border-radius: 10px;
+        margin-bottom: 25px;
+    }
+    
+    .help-accordion-button {
+        padding: 16px 16px;
+        font-size: 0.95rem;
+    }
+    
+    .help-category-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+    }
+    
+    .help-accordion-body {
+        padding: 0 16px 16px;
+    }
+    
+    .help-question {
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .help-question-title {
+        font-size: 0.95rem;
+    }
+    
+    .help-answer-content {
+        font-size: 0.9rem;
+    }
+}
+</style>
+
+<div class="help-header">
+    <div class="help-content">
+        <h1 class="help-title">
+            <i class="fas fa-life-ring"></i>
+            帮助中心
+        </h1>
+        <p class="help-description">在这里可以找到常见问题的解答</p>
+        
+        <!-- 装饰性元素 -->
+        <div class="help-decoration">
+            <div class="help-decoration-circle help-circle-1"></div>
+            <div class="help-decoration-circle help-circle-2"></div>
+            <div class="help-decoration-circle help-circle-3"></div>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="help-container">
+        <div class="help-accordion" id="helpAccordion">
+            <!-- 游戏相关 -->
+            <div class="help-accordion-item">
+                <h2 class="help-accordion-header">
+                    <button class="help-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#game-help" aria-expanded="false">
+                        <div class="help-category-icon">
+                            <i class="fas fa-gamepad"></i>
+                        </div>
+                        游戏相关问题
+                    </button>
+                </h2>
+                <div id="game-help" class="accordion-collapse collapse" data-bs-parent="#helpAccordion" style="">
+                    <div class="help-accordion-body">
+                        <div class="help-question">
+                            <h5 class="help-question-title">
+                                <i class="fas fa-shield-alt"></i>
+                                如何彻底关闭Windows防火墙？【必看！不看任何游戏都无法运行！】
+                            </h5>
+                            <div class="help-answer-content">
+                                1. 按Win+R打开运行，输入control打开控制面板<br>
+                                2. 点击"系统和安全"<br>
+                                3. 点击"Windows Defender防火墙"<br>
+                                4. 点击左侧"启用或关闭Windows Defender防火墙"<br>
+                                5. 在专用网络和公用网络位置下都选择"关闭Windows Defender防火墙"<br>
+                                6. 点击确定保存设置<br><br>
+                                注意：部分游戏必须关闭防火墙才能正常运行，这是正常现象。
+                            </div>
+                        </div>
+                        
+                        <div class="help-question">
+                            <h5 class="help-question-title">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                游戏运行没反应？游戏打开缺少DLL或报错？
+                            </h5>
+                            <div class="help-answer-content">
+                                <strong>可能的原因和解决方案：</strong><br><br>
+                                1. <strong>缺少运行库</strong>：下载安装 <a href="https://dw.jichun29.cn/index.php?resource_id=31" target="_blank" style="color: #3b82f6; text-decoration: underline;">游戏常用运行库+DirectX修复增强版</a><br>
+                                2. <strong>缺少 DirectX 或 DLL 文件</strong>：下载安装 <a href="https://dw.jichun29.cn/index.php?resource_id=95" target="_blank" style="color: #3b82f6; text-decoration: underline;">DirectX修复工具v4.4（包含：标准版+增强版+在线修复版）</a><br>
+                                3. <strong>缺少 .NET Framework</strong>：安装 .NET Framework 4.5 或更高版本<br>
+                                4. <strong>Windows 防火墙拦截</strong>：彻底关闭 Windows 防火墙<br>
+                                5. <strong>杀毒软件删除文件</strong>：将游戏目录添加到杀毒软件白名单<br>
+                                6. <strong>路径问题</strong>：游戏路径不要包含中文，使用英文路径<br>
+                                7. <strong>管理员权限</strong>：右键游戏主程序选择"以管理员身份运行"<br><br>
+                                如果以上都解决不了，建议重装纯净的 Windows 系统。
+                            </div>
+                        </div>
+                        
+                        <div class="help-question">
+                            <h5 class="help-question-title">
+                                <i class="fas fa-question-circle"></i>
+                                GOG游戏怎么安装？Steam版和GOG版怎么选？
+                            </h5>
+                            <div class="help-answer-content">
+                                <strong>① GOG游戏怎么安装？</strong><br>
+                                解压完GOG游戏后，先安装游戏本体，再依次安装DLC（部分带Bonus，包含壁纸、原生音乐、小说艺术集等）。本体未安装时DLC无法安装，全部安装完成后即可运行。<br><br>
+                                <strong>② Steam版和GOG版怎么选？</strong><br>
+                                <strong>Steam版特点：</strong>解压即玩，无需安装。但使用了学习补丁，可能会被杀毒软件报毒。<br><br>
+                                <strong>GOG版特点：</strong>Steam采用加密防盗版，GOG无加密，玩家可自由拷贝游戏。GOG资源无加密，无需学习补丁即可运行。<br><br>
+                                <strong>建议：</strong>优先GOG（干净无加密），需要快速体验可选Steam（解压即玩）。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 解压相关 -->
+            <div class="help-accordion-item">
+                <h2 class="help-accordion-header">
+                    <button class="help-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#unzip-help" aria-expanded="false">
+                        <div class="help-category-icon">
+                            <i class="fas fa-file-archive"></i>
+                        </div>
+                        解压相关问题
+                    </button>
+                </h2>
+                <div id="unzip-help" class="accordion-collapse collapse" data-bs-parent="#helpAccordion" style="">
+                    <div class="help-accordion-body">
+                        <div class="help-question">
+                            <h5 class="help-question-title">
+                                <i class="fas fa-key"></i>
+                                解压密码是多少？
+                            </h5>
+                            <div class="help-answer-content">
+                                游戏资源的解压密码默认为：<strong>XDGAME</strong><br>
+                                （纯大写字母，复制时注意不要多复制空格）
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 下载相关 -->
+            <div class="help-accordion-item">
+                <h2 class="help-accordion-header">
+                    <button class="help-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#download-help" aria-expanded="false">
+                        <div class="help-category-icon">
+                            <i class="fas fa-cloud-download-alt"></i>
+                        </div>
+                        资源下载相关问题
+                    </button>
+                </h2>
+                <div id="download-help" class="accordion-collapse collapse" data-bs-parent="#helpAccordion" style="">
+                    <div class="help-accordion-body">
+                        <div class="help-question">
+                            <h5 class="help-question-title">
+                                <i class="fas fa-download"></i>
+                                如何下载资源？
+                            </h5>
+                            <div class="help-answer-content">
+                                点击资源卡片或资源标题进入详情页，在详情页可以看到下载按钮，选择任意网盘链接即可下载。
+                            </div>
+                        </div>
+                        <div class="help-question">
+                            <h5 class="help-question-title">
+                                <i class="fas fa-exclamation-circle"></i>
+                                为什么我无法下载？
+                            </h5>
+                            <div class="help-answer-content">
+                                可能的原因：<br>
+                                1. 达到每日下载上限<br>
+                                2. IP被限制（请勿频繁下载）
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 浏览器相关 -->
+            <div class="help-accordion-item">
+                <h2 class="help-accordion-header">
+                    <button class="help-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#browser-help" aria-expanded="false">
+                        <div class="help-category-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        浏览器兼容性问题
+                    </button>
+                </h2>
+                <div id="browser-help" class="accordion-collapse collapse" data-bs-parent="#helpAccordion" style="">
+                    <div class="help-accordion-body">
+                        <div class="help-question">
+                            <h5 class="help-question-title">
+                                <i class="fab fa-chrome"></i>
+                                支持哪些浏览器？
+                            </h5>
+                            <div class="help-answer-content">
+                                建议使用以下浏览器访问：<br>
+                                1. Chrome 最新版<br>
+                                2. Edge 最新版<br>
+                                3. Firefox 最新版
+                            </div>
+                        </div>
+                        <div class="help-question">
+                            <h5 class="help-question-title">
+                                <i class="fas fa-mobile-alt"></i>
+                                移动端访问注意事项
+                            </h5>
+                            <div class="help-answer-content">
+                                移动端推荐使用系统自带浏览器或Chrome浏览器访问，部分第三方浏览器可能存在兼容性问题。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 账号相关 -->
+            <div class="help-accordion-item">
+                <h2 class="help-accordion-header">
+                    <button class="help-accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#account-help" aria-expanded="true">
+                        <div class="help-category-icon">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        账号相关问题
+                    </button>
+                </h2>
+                <div id="account-help" class="accordion-collapse collapse show" data-bs-parent="#helpAccordion" style="">
+                    <div class="help-accordion-body">
+                        <div class="help-question">
+                            <h5 class="help-question-title">
+                                <i class="fas fa-clock"></i>
+                                下载次数说明
+                            </h5>
+                            <div class="help-answer-content">
+                                每个账号每天有固定的下载次数限制，次日凌晨会自动重置下载次数。
+                            </div>
+                        </div>
+                        <div class="help-question">
+                            <h5 class="help-question-title">
+                                <i class="fas fa-network-wired"></i>
+                                IP限制说明
+                            </h5>
+                            <div class="help-answer-content">
+                                为了防止滥用，同一IP地址短时间内的下载次数也会受到限制，请合理下载使用。
+                            </div>
+                        </div>
+                        <div class="help-question">
+                            <h5 class="help-question-title">
+                                <i class="fas fa-shield-alt"></i>
+                                关于VPN网络访问
+                            </h5>
+                            <div class="help-answer-content">
+                                <strong>请不要使用VPN网络访问本站</strong><br><br>
+                                使用VPN可能导致无法正常访问站点，出现异常情况或连接错误。建议使用正常网络环境访问，以确保最佳的访问体验和功能正常使用。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <!-- 底部 -->
+        <footer>
+            <div class="copyright">
+                © 2025 shaun・个人备份库 | <a href="disclaimer.php" target="_blank">免责声明</a><br>
+                                <br>
+                仅供个人备份学习，请勿用于商业用途
+            </div>
+        </footer>
+    </div>
+
+    <!-- AI助手脚本 -->
+        <script src="/assets/js/ai-assistant.js?v=1764908312"></script>
+        
+    <!-- 异步加载Bootstrap JS -->
+    <script>
+        window.addEventListener('load', function() {
+            const bootstrapScript = document.createElement('script');
+            bootstrapScript.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
+            bootstrapScript.async = true;
+            document.head.appendChild(bootstrapScript);
+        });
+    </script>
+
+<div id="ai-chat-window" class="ai-chat-window">
+                <div class="ai-chat-header">
+                    <div class="ai-chat-header-left">
+                        <div class="ai-chat-avatar">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </div>
+                        <div class="ai-chat-title">
+                            <div class="ai-chat-name">shaun小助手</div>
+                            <div class="ai-chat-status">在线</div>
+                        </div>
+                    </div>
+                    <div class="ai-chat-header-right">
+                        <button class="ai-chat-clear-btn" title="清空对话">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 6H21M8 6V4C8 3.44772 8.44772 3 9 3H15C15.5523 3 16 3.44772 16 4V6M19 6V20C19 20.5523 18.5523 21 18 21H6C5.44772 21 5 20.5523 5 20V6H19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </button>
+                        <button class="ai-chat-close-btn" title="关闭">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="ai-chat-messages" id="ai-chat-messages">
+                    <div class="ai-welcome-message">
+                        <div class="ai-welcome-icon">👋</div>
+                        <div class="ai-welcome-text">你好！有什么可以帮助你的吗？</div>
+                        <div class="ai-quick-questions">
+                            <button class="ai-quick-btn" data-question="游戏运行没反应怎么办？">游戏运行问题</button>
+                            <button class="ai-quick-btn" data-question="如何下载资源？">如何下载资源</button>
+                            <button class="ai-quick-btn" data-question="解压密码是多少？">解压密码</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="ai-chat-input-wrapper">
+                    <textarea class="ai-chat-input" id="ai-chat-input" placeholder="输入你的问题..." rows="1"></textarea>
+                    <button class="ai-chat-send-btn" id="ai-chat-send-btn">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 8L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div></body><div id="transmart-crx-shadow-root" style="all: initial;"></div></html>

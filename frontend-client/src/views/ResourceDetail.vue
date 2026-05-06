@@ -239,10 +239,10 @@
             <a 
               v-for="link in filteredDownloadLinks" 
               :key="link.id"
-              :href="remainingDownloads > 0 ? getFullUrl(link.linkUrl) : '#'"
-              :class="['download-btn-green', { 'disabled': remainingDownloads === 0 }]"
-              :target="remainingDownloads > 0 ? '_blank' : ''"
-              :rel="remainingDownloads > 0 ? 'noopener noreferrer' : ''"
+              :href="canAccessDownloadLinks ? getFullUrl(link.linkUrl) : '#'"
+              :class="['download-btn-green', { 'disabled': !canAccessDownloadLinks }]"
+              :target="canAccessDownloadLinks ? '_blank' : ''"
+              :rel="canAccessDownloadLinks ? 'noopener noreferrer' : ''"
               @click="handleDownload(link.linkType, $event)"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -350,6 +350,8 @@ const isShaking = ref(false)
 const warningNotice = ref(null)
 const advertisements = ref([])
 
+const canAccessDownloadLinks = computed(() => hasDownloaded.value || (remainingDownloads.value ?? 0) > 0)
+
 const filteredDownloadLinks = computed(() => {
   if (!resource.value || !resource.value.downloadLinks) {
     return []
@@ -417,14 +419,14 @@ const triggerShake = () => {
 }
 
 const handleDownload = async (linkType, event) => {
-  if (!remainingDownloads.value || remainingDownloads.value === 0) {
+  if (!hasDownloaded.value && (!remainingDownloads.value || remainingDownloads.value === 0)) {
     event.preventDefault()
     triggerShake()
     return
   }
   
   try {
-    await recordDownload(resource.value.id)
+    await recordDownload(resource.value.id, { skipBusinessErrorMessage: true })
     await loadRemainingDownloads()
     await checkIfDownloaded()
   } catch (error) {
@@ -517,7 +519,7 @@ const formatDate = (dateStr) => {
 
 const loadRemainingDownloads = async () => {
   try {
-    const res = await getRemainingDownloads()
+    const res = await getRemainingDownloads({ skipBusinessErrorMessage: true })
     if (res.code === 200) {
       remainingDownloads.value = res.data
     }
@@ -529,7 +531,7 @@ const loadRemainingDownloads = async () => {
 const checkIfDownloaded = async () => {
   try {
     const resourceId = route.params.id
-    const res = await checkDownloaded(resourceId)
+    const res = await checkDownloaded(resourceId, { skipBusinessErrorMessage: true })
     if (res.code === 200) {
       hasDownloaded.value = res.data
     }

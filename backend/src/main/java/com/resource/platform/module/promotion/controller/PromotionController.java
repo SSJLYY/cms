@@ -36,6 +36,7 @@ public class PromotionController {
 
     @Operation(summary = "获取广告列表")
     @GetMapping("/list")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<PageResult<Advertisement>> getAdvertisementList(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "20") Integer pageSize,
@@ -53,6 +54,7 @@ public class PromotionController {
 
     @Operation(summary = "获取广告详情")
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Advertisement> getAdvertisementById(@PathVariable Long id) {
         if (id == null || id <= 0) {
             log.warn("广告ID无效: id={}", id);
@@ -172,6 +174,7 @@ public class PromotionController {
 
     @Operation(summary = "获取广告位置选项")
     @GetMapping("/positions")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<List<Map<String, String>>> getPositionOptions() {
         List<Map<String, String>> options = promotionService.getPositionOptions();
         return Result.success(options);

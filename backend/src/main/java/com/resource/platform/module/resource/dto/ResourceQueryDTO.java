@@ -21,6 +21,9 @@ public class ResourceQueryDTO {
     /** 资源状态：0-已下架，1-已发布 */
     private Integer status;
 
+    @Pattern(regexp = "^(crawler|manual)$", message = "鏉ユ簮鍙兘涓?crawler 鎴?manual")
+    private String source;
+
     /** 排序字段（安全列名） */
     @Pattern(regexp = "^[a-zA-Z0-9_.]+$", message = "排序字段不合法")
     private String sortField;

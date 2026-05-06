@@ -50,7 +50,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     private FeedbackMapper feedbackMapper;
     
     @Autowired
-    private com.resource.platform.service.EmailService emailService;
+    private com.resource.platform.module.system.service.EmailService emailService;
     
     // 日期时间格式化器
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

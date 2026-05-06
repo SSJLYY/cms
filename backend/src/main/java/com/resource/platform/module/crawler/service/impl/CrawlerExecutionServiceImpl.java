@@ -11,10 +11,13 @@ import com.resource.platform.module.resource.entity.Resource;
 import com.resource.platform.exception.BusinessException;
 import com.resource.platform.module.crawler.mapper.CrawlerLogMapper;
 import com.resource.platform.module.crawler.mapper.CrawlerTaskMapper;
+import com.resource.platform.module.category.mapper.CategoryMapper;
 import com.resource.platform.module.resource.mapper.ResourceMapper;
 import com.resource.platform.module.crawler.service.CrawlerExecutionService;
 import com.resource.platform.module.crawler.service.IntelligentParserService;
+import com.resource.platform.module.image.service.ImageDownloadService;
 import com.resource.platform.module.resource.service.ResourceService;
+import com.resource.platform.module.crawler.support.CrawlerErrorHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -27,6 +30,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
@@ -59,7 +63,7 @@ public class CrawlerExecutionServiceImpl implements CrawlerExecutionService {
     private CrawlerLogMapper crawlerLogMapper;
 
     @Autowired
-    private com.resource.platform.mapper.CategoryMapper categoryMapper;
+    private CategoryMapper categoryMapper;
 
     @Autowired
     private ResourceMapper resourceMapper;
@@ -74,10 +78,10 @@ public class CrawlerExecutionServiceImpl implements CrawlerExecutionService {
     private RobotsTxtParser robotsTxtParser;
 
     @Autowired
-    private com.resource.platform.service.ImageDownloadService imageDownloadService;
+    private ImageDownloadService imageDownloadService;
 
     @Autowired
-    private com.resource.platform.crawler.CrawlerErrorHandler errorHandler;
+    private CrawlerErrorHandler errorHandler;
 
     // ✅ 注入独立的爬虫线程池（与业务线程池隔离，防止爬虫任务影响API响应）
     @Autowired
@@ -540,10 +544,10 @@ public class CrawlerExecutionServiceImpl implements CrawlerExecutionService {
      */
     private Long getDefaultCategoryId() {
         // 查询第一个可用的分类作为默认分类
-        LambdaQueryWrapper<com.resource.platform.entity.Category> wrapper = new LambdaQueryWrapper<>();
-        wrapper.orderByAsc(com.resource.platform.entity.Category::getId);
+        LambdaQueryWrapper<com.resource.platform.module.category.entity.Category> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByAsc(com.resource.platform.module.category.entity.Category::getId);
         wrapper.last("LIMIT 1");
-        com.resource.platform.entity.Category category = categoryMapper.selectOne(wrapper);
+        com.resource.platform.module.category.entity.Category category = categoryMapper.selectOne(wrapper);
         return category != null ? category.getId() : 1L;
     }
     

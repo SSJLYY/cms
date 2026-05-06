@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -51,6 +52,7 @@ public class ConfigController {
 
     @GetMapping("/all")
     @Operation(summary = "获取所有配置")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Map<String, List<SystemConfig>>> getAllConfigs() {
         Map<String, List<SystemConfig>> configs = configService.getAllConfigs();
         return Result.success(configs);
@@ -58,6 +60,7 @@ public class ConfigController {
 
     @GetMapping("/categories")
     @Operation(summary = "获取配置分类列表")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<List<String>> getConfigCategories() {
         List<String> categories = configService.getConfigCategories();
         return Result.success(categories);
@@ -65,6 +68,7 @@ public class ConfigController {
 
     @GetMapping("/category/{category}")
     @Operation(summary = "根据类别获取配置")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<List<SystemConfig>> getConfigsByCategory(@PathVariable String category) {
         List<SystemConfig> configs = configService.getConfigsByCategory(category);
         return Result.success(configs);
@@ -72,6 +76,7 @@ public class ConfigController {
 
     @GetMapping("/{key}")
     @Operation(summary = "根据键获取配置")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<SystemConfig> getConfigByKey(@PathVariable String key) {
         SystemConfig config = configService.getConfigByKey(key);
         return Result.success(config);
@@ -79,6 +84,7 @@ public class ConfigController {
 
     @PostMapping("/batch")
     @Operation(summary = "批量获取配置")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Map<String, String>> getConfigsByKeys(@RequestBody List<String> keys) {
         Map<String, String> configs = configService.getConfigsByKeys(keys);
         return Result.success(configs);
@@ -87,6 +93,7 @@ public class ConfigController {
     @PutMapping("/{key}")
     @Operation(summary = "更新配置")
     @OperationLog(module = "系统配置", type = "更新", description = "更新系统配置", audit = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> updateConfig(@PathVariable String key, @RequestBody Map<String, String> body) {
         String value = body.get("value");
 
@@ -102,6 +109,7 @@ public class ConfigController {
     @PutMapping("/batch")
     @Operation(summary = "批量更新配置")
     @OperationLog(module = "系统配置", type = "批量更新", description = "批量更新系统配置", audit = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> updateConfigs(@RequestBody Map<String, String> configs) {
         if (configs == null || configs.isEmpty()) {
             log.warn("批量更新配置参数为空");
@@ -115,6 +123,7 @@ public class ConfigController {
     @PostMapping("/{key}/reset")
     @Operation(summary = "重置配置")
     @OperationLog(module = "系统配置", type = "重置", description = "重置系统配置", audit = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> resetConfig(@PathVariable String key) {
         configService.resetConfig(key);
         return Result.success();
@@ -122,6 +131,7 @@ public class ConfigController {
 
     @PostMapping("/test/email")
     @Operation(summary = "测试邮件配置")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Boolean> testEmailConfig(@RequestBody Map<String, String> emailConfig) {
         if (emailConfig == null || emailConfig.isEmpty()) {
             log.warn("邮件配置参数为空");
@@ -138,6 +148,7 @@ public class ConfigController {
 
     @PostMapping("/test/storage")
     @Operation(summary = "测试存储配置")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Boolean> testStorageConfig(@RequestBody Map<String, String> storageConfig) {
         if (storageConfig == null || storageConfig.isEmpty()) {
             log.warn("存储配置参数为空");

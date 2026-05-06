@@ -1,0 +1,45 @@
+# ==========================================
+# 生产环境配置 (application-prod.yml)
+# 仅在 SPRING_PROFILES_ACTIVE=prod 时生效
+# ==========================================
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      minimum-idle: 10
+      maximum-pool-size: 50
+
+  quartz:
+    jdbc:
+      initialize-schema: never  # 生产不自动建表
+
+# 生产环境关闭Swagger文档
+knife4j:
+  production: true
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# 生产环境Actuator受限
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# 生产环境开启HTTPS相关设置（配合Nginx反代）
+server:
+  tomcat:
+    threads:
+      min-spare: 20
+      max: 500
+    accept-count: 200

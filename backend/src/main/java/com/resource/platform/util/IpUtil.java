@@ -63,6 +63,6 @@ public final class IpUtil {
      * 校验 IP 字符串是否有效（非空、非 unknown）
      */
     private static boolean isValidIp(String ip) {
-        return ip != null && !ip.isEmpty() && !ip.isBlank() && !UNKNOWN.equalsIgnoreCase(ip);
+        return ip != null && !ip.trim().isEmpty() && !UNKNOWN.equalsIgnoreCase(ip);
     }
 }

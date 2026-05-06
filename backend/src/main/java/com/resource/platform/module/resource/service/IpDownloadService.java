@@ -4,6 +4,12 @@ package com.resource.platform.module.resource.service;
  * IP下载限制服务接口
  */
 public interface IpDownloadService {
+
+    enum DownloadDecision {
+        RECORDED,
+        ALREADY_DOWNLOADED,
+        LIMIT_REACHED
+    }
     
     /**
      * 检查IP今日是否还能下载
@@ -17,7 +23,7 @@ public interface IpDownloadService {
      * @param ipAddress IP地址
      * @param resourceId 资源ID
      */
-    void recordDownload(String ipAddress, Long resourceId);
+    DownloadDecision recordDownload(String ipAddress, Long resourceId);
     
     /**
      * 获取IP今日剩余下载次数

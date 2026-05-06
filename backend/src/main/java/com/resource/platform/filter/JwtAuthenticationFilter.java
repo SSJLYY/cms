@@ -39,7 +39,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         
         String token = getTokenFromRequest(request);
         
-        if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) {
+        if (StringUtils.hasText(token)
+                && SecurityContextHolder.getContext().getAuthentication() == null
+                && jwtUtil.validateToken(token)) {
             String username = jwtUtil.getUsernameFromToken(token);
             
             // 从数据库查询用户实际角色
@@ -49,10 +51,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     .eq(User::getStatus, 1)  // 只查询启用状态的用户
             );
             
+            if (user == null) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             List<SimpleGrantedAuthority> authorities = Collections.emptyList();
-            if (user != null && StringUtils.hasText(user.getRole())) {
+            if (StringUtils.hasText(user.getRole())) {
                 // 支持多角色，逗号分隔
-                authorities = List.of(user.getRole().split(",")).stream()
+                authorities = java.util.Arrays.asList(user.getRole().split(",")).stream()
                     .map(role -> role.trim().toUpperCase())
                     .filter(role -> !role.isEmpty())
                     .map(role -> role.startsWith(ROLE_PREFIX) ? role : ROLE_PREFIX + role)

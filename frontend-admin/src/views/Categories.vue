@@ -78,7 +78,9 @@
           <div class="tree-node">
             <div class="node-info">
               <div class="node-icon" :style="{ background: getNodeColor(node.level) }">
-                <el-icon v-if="data.icon"><component :is="data.icon" /></el-icon>
+                <el-icon v-if="resolveIconComponent(data.icon)">
+                  <component :is="resolveIconComponent(data.icon)" />
+                </el-icon>
                 <span v-else>{{ getNodeEmoji(node.level) }}</span>
               </div>
               <div class="node-details">
@@ -146,7 +148,7 @@
                 </template>
                 <div class="icon-picker">
                   <el-icon v-for="icon in commonIcons" :key="icon" :class="{ active: form.icon === icon }" @click="form.icon = icon">
-                    <component :is="icon" />
+                    <component :is="resolveIconComponent(icon)" />
                   </el-icon>
                 </div>
               </el-popover>
@@ -185,8 +187,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Folder, Grid, Menu, CircleCheck, Plus, Download, Refresh,
   Collection, Document, Edit, Delete, InfoFilled,
-  Files, Picture, Video, Music, FolderOpened, DocumentCopy,
-  Setting, Tool, Brush, Camera, Film, Notebook, Star
+  Files, Picture, VideoPlay, Headset, FolderOpened, DocumentCopy,
+  Setting, Tools, Brush, Camera, Film, Notebook, Star
 } from '@element-plus/icons-vue'
 import {
   getCategoryStatistics,
@@ -224,10 +226,31 @@ const rules = {
   name: [{ required: true, message: '请输入分类名称', trigger: 'blur' }]
 }
 
+const iconComponents = {
+  Files: markRaw(Files),
+  Picture: markRaw(Picture),
+  Video: markRaw(VideoPlay),
+  VideoPlay: markRaw(VideoPlay),
+  Music: markRaw(Headset),
+  Headset: markRaw(Headset),
+  FolderOpened: markRaw(FolderOpened),
+  DocumentCopy: markRaw(DocumentCopy),
+  Setting: markRaw(Setting),
+  Tool: markRaw(Tools),
+  Tools: markRaw(Tools),
+  Brush: markRaw(Brush),
+  Camera: markRaw(Camera),
+  Film: markRaw(Film),
+  Notebook: markRaw(Notebook),
+  Star: markRaw(Star)
+}
+
 const commonIcons = [
   'Files', 'Picture', 'Video', 'Music', 'FolderOpened', 'DocumentCopy',
   'Setting', 'Tool', 'Brush', 'Camera', 'Film', 'Notebook', 'Star'
 ]
+
+const resolveIconComponent = (iconName) => iconComponents[iconName] || null
 
 const getStatistics = async () => {
   try {

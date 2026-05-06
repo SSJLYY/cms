@@ -27,6 +27,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/images")
 @Tag(name = "图片管理", description = "图片上传、查询、删除等接口")
+@PreAuthorize("hasRole('ADMIN')")
 public class ImageController {
 
     @Autowired

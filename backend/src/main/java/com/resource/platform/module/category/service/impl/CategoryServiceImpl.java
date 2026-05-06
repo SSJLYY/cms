@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.resource.platform.module.category.dto.CategoryQueryDTO;
 import com.resource.platform.module.category.entity.Category;
+import com.resource.platform.exception.BusinessException;
 import com.resource.platform.exception.ResourceNotFoundException;
 import com.resource.platform.exception.ValidationException;
 import com.resource.platform.module.category.mapper.CategoryMapper;
@@ -43,11 +44,13 @@ import java.util.stream.Collectors;
 @Service
 public class CategoryServiceImpl implements CategoryService {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     @Autowired
     private CategoryMapper categoryMapper;
     
     @Autowired
-    private com.resource.platform.mapper.ResourceMapper resourceMapper;
+    private com.resource.platform.module.resource.mapper.ResourceMapper resourceMapper;
 
     /**
      * 获取分类统计信息
@@ -185,8 +188,8 @@ public class CategoryServiceImpl implements CategoryService {
                 // 步骤4：查询该分类下的资源数量
                 // 统计有多少资源属于这个分类
                 Long resourceCount = resourceMapper.selectCount(
-                    new LambdaQueryWrapper<com.resource.platform.entity.Resource>()
-                        .eq(com.resource.platform.entity.Resource::getCategoryId, category.getId())
+                    new LambdaQueryWrapper<com.resource.platform.module.resource.entity.Resource>()
+                        .eq(com.resource.platform.module.resource.entity.Resource::getCategoryId, category.getId())
                 );
                 node.setResourceCount(resourceCount);
                 
@@ -507,8 +510,8 @@ public class CategoryServiceImpl implements CategoryService {
         
         // 步骤3：检查是否有资源使用该分类（防止脏删）
         Long resourceCount = resourceMapper.selectCount(
-            new LambdaQueryWrapper<com.resource.platform.entity.Resource>()
-                .eq(com.resource.platform.entity.Resource::getCategoryId, id)
+            new LambdaQueryWrapper<com.resource.platform.module.resource.entity.Resource>()
+                .eq(com.resource.platform.module.resource.entity.Resource::getCategoryId, id)
         );
         if (resourceCount > 0) {
             log.warn("分类下有关联资源，无法删除: categoryId={}, resourceCount={}", id, resourceCount);

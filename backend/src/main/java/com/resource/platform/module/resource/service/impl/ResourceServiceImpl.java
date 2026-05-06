@@ -52,6 +52,8 @@ import java.util.stream.Collectors;
 @Service
 public class ResourceServiceImpl implements ResourceService {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     @Autowired
     private ResourceMapper resourceMapper;
 
@@ -90,6 +92,7 @@ public class ResourceServiceImpl implements ResourceService {
         // 只查询状态为1（已发布）的资源
         LambdaQueryWrapper<Resource> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Resource::getStatus, 1);
+        wrapper.eq(Resource::getDeleted, 0);
         
         // 步骤2：按创建时间倒序排列
         // 最新创建的资源排在前面
@@ -106,6 +109,15 @@ public class ResourceServiceImpl implements ResourceService {
         log.info("查询已发布资源列表成功: count={}", result.size());
         
         return result;
+    }
+
+    @Override
+    public ResourceVO getPublishedResourceDetail(Long id) {
+        Resource resource = resourceMapper.selectById(id);
+        if (resource == null || resource.getDeleted() == 1 || resource.getStatus() == null || resource.getStatus() != 1) {
+            throw new BusinessException(BizErrorCode.RESOURCE_NOT_FOUND);
+        }
+        return convertToVO(resource);
     }
 
     /**
@@ -131,6 +143,7 @@ public class ResourceServiceImpl implements ResourceService {
         
         // 构建查询条件
         LambdaQueryWrapper<Resource> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Resource::getDeleted, 0);
         
         // 步骤1：关键词搜索
         // 在标题或描述中模糊匹配关键词
@@ -152,6 +165,15 @@ public class ResourceServiceImpl implements ResourceService {
         if (query.getStatus() != null) {
             log.debug("添加状态筛选条件: status={}", query.getStatus());
             wrapper.eq(Resource::getStatus, query.getStatus());
+        }
+
+        if (StringUtils.hasText(query.getSource())) {
+            log.debug("filter resource source: {}", query.getSource());
+            if ("crawler".equalsIgnoreCase(query.getSource())) {
+                wrapper.isNotNull(Resource::getCrawlerTaskId);
+            } else if ("manual".equalsIgnoreCase(query.getSource())) {
+                wrapper.isNull(Resource::getCrawlerTaskId);
+            }
         }
         
         // 步骤4：排序设置
@@ -217,6 +239,8 @@ public class ResourceServiceImpl implements ResourceService {
         // 将DTO中的数据复制到实体对象
         Resource resource = new Resource();
         BeanUtils.copyProperties(dto, resource);
+        Long resolvedCoverImageId = resolveCoverImageId(dto.getImageIds(), dto.getCoverImageId());
+        resource.setCoverImageId(resolvedCoverImageId);
         
         // 步骤2：设置默认值
         // 如果未指定状态，默认为1（上架）
@@ -263,7 +287,7 @@ public class ResourceServiceImpl implements ResourceService {
         if (dto.getImageIds() != null && !dto.getImageIds().isEmpty()) {
             log.debug("开始保存资源图片关联: resourceId={}, imageCount={}", 
                 resource.getId(), dto.getImageIds().size());
-            saveResourceImages(resource.getId(), dto.getImageIds(), dto.getCoverImageId());
+            saveResourceImages(resource.getId(), dto.getImageIds(), resolvedCoverImageId);
         }
 
         // 步骤6：转换为VO对象
@@ -295,6 +319,8 @@ public class ResourceServiceImpl implements ResourceService {
         // 2. 更新资源基本信息
         BeanUtils.copyProperties(dto, resource);
         resource.setId(id);
+        Long resolvedCoverImageId = resolveCoverImageId(dto.getImageIds(), dto.getCoverImageId());
+        resource.setCoverImageId(resolvedCoverImageId);
         resourceMapper.updateById(resource);
 
         // 3. 删除旧的下载链接
@@ -321,7 +347,7 @@ public class ResourceServiceImpl implements ResourceService {
         // 6. 保存新的资源图片关联（最多5张）
         Set<Long> newImageIds = dto.getImageIds() != null ? 
             new HashSet<>(dto.getImageIds()) : new HashSet<>();
-        saveResourceImages(id, dto.getImageIds(), dto.getCoverImageId());
+        saveResourceImages(id, dto.getImageIds(), resolvedCoverImageId);
 
         // 7. 找出被移除的图片，更新它们的状态
         Set<Long> removedImageIds = new HashSet<>(oldImageIds);
@@ -440,6 +466,8 @@ public class ResourceServiceImpl implements ResourceService {
         // 设置爬虫相关字段
         resource.setCrawlerTaskId(crawlerTaskId);
         resource.setSourceUrl(sourceUrl);
+        Long resolvedCoverImageId = resolveCoverImageId(imageIds, dto.getCoverImageId());
+        resource.setCoverImageId(resolvedCoverImageId);
         
         // 设置资源状态为"已下架"（0）
         resource.setStatus(0);
@@ -479,11 +507,9 @@ public class ResourceServiceImpl implements ResourceService {
         // 保存资源图片关联
         if (imageIds != null && !imageIds.isEmpty()) {
             // 如果没有指定封面图，使用第一张图片作为封面
-            Long coverImageId = dto.getCoverImageId() != null ? dto.getCoverImageId() : imageIds.get(0);
-            resource.setCoverImageId(coverImageId);
             resourceMapper.updateById(resource);
-            
-            saveResourceImages(resource.getId(), imageIds, coverImageId);
+
+            saveResourceImages(resource.getId(), imageIds, resolvedCoverImageId);
         }
 
         return convertToVO(resource);
@@ -514,6 +540,16 @@ public class ResourceServiceImpl implements ResourceService {
         
         // 批量更新图片使用状态
         imageService.batchUpdateImageUsageStatus(limitedImageIds);
+    }
+
+    private Long resolveCoverImageId(List<Long> imageIds, Long coverImageId) {
+        if (imageIds == null || imageIds.isEmpty()) {
+            return null;
+        }
+        if (coverImageId != null && imageIds.contains(coverImageId)) {
+            return coverImageId;
+        }
+        return imageIds.get(0);
     }
 
     /**

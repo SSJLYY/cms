@@ -60,7 +60,7 @@ public class TraceIdFilter extends OncePerRequestFilter {
      */
     private String generateTraceId(HttpServletRequest request) {
         return Optional.ofNullable(request.getHeader(TRACE_ID_HEADER))
-            .filter(id -> !id.isBlank())
+            .filter(id -> id != null && !id.trim().isEmpty())
             .orElseGet(() -> UUID.randomUUID().toString().replace("-", "").substring(0, 16));
     }
 }

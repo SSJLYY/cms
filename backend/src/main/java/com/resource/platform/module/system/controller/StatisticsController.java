@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.Map;
 @Tag(name = "统计管理")
 @RestController
 @RequestMapping("/api/statistics")
+@PreAuthorize("hasRole('ADMIN')")
 public class StatisticsController {
     
     @Autowired

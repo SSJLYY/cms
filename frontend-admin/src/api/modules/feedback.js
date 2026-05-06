@@ -108,7 +108,7 @@ export function deleteFeedbacks(ids) {
  */
 export function submitFeedback(data) {
   return request({
-    url: '/api/feedback/submit',
+    url: '/api/feedback/public/submit',
     method: 'post',
     data
   })

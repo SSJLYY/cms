@@ -1,6 +1,8 @@
 package com.resource.platform.module.user.controller;
 
+import com.resource.platform.common.BizErrorCode;
 import com.resource.platform.common.Result;
+import com.resource.platform.exception.BusinessException;
 import com.resource.platform.module.user.dto.LoginDTO;
 import com.resource.platform.module.user.service.UserService;
 import com.resource.platform.util.JwtUtil;
@@ -60,6 +62,10 @@ public class UserController {
     @GetMapping("/current")
     public Result<UserVO> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+            throw new BusinessException(BizErrorCode.UNAUTHORIZED);
+        }
         String username = authentication.getName();
         log.debug("从安全上下文获取用户名: username={}", username);
 

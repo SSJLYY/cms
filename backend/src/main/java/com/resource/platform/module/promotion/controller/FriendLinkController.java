@@ -36,6 +36,7 @@ public class FriendLinkController {
 
     @GetMapping("/page")
     @Operation(summary = "分页查询友情链接")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<PageResult<FriendLinkVO>> queryPage(FriendLinkQueryDTO queryDTO) {
         if (queryDTO.getPage() == null || queryDTO.getPage() < 1) {
             queryDTO.setPage(1);
@@ -57,6 +58,7 @@ public class FriendLinkController {
 
     @GetMapping("/{id}")
     @Operation(summary = "根据ID获取友情链接")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<FriendLinkVO> getById(@PathVariable Long id) {
         if (id == null || id <= 0) {
             log.warn("友情链接ID无效: id={}", id);

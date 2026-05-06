@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -29,6 +30,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/dashboard")
 @Tag(name = "控制面板", description = "控制面板数据统计接口")
+@PreAuthorize("hasRole('ADMIN')")
 public class DashboardController {
 
     @Autowired

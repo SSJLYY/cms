@@ -558,17 +558,17 @@ const handleKeydown = (e) => {
   scrollbar-color: #3498db #f5f5f5;
 }
 
-:::-webkit-scrollbar {
+::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-:::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: #f5f5f5;
   border-radius: 4px;
 }
 
-:::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 4px;
 }

@@ -44,10 +44,11 @@ export function getResourceDetail(id) {
  * @param {number} id - 资源ID
  * @returns {Promise} 返回下载记录结果，用于统计分析
  */
-export function recordDownload(id) {
+export function recordDownload(id, config = {}) {
   return request({
     url: `/api/resources/public/download/${id}`,
-    method: 'post'
+    method: 'post',
+    ...config
   })
 }
 
@@ -89,10 +90,11 @@ export function getLinkTypes() {
  * 获取剩余下载次数
  * @returns {Promise} 返回当前用户的剩余下载次数
  */
-export function getRemainingDownloads() {
+export function getRemainingDownloads(config = {}) {
   return request({
     url: '/api/resources/public/remaining-downloads',
-    method: 'get'
+    method: 'get',
+    ...config
   })
 }
 
@@ -101,9 +103,10 @@ export function getRemainingDownloads() {
  * @param {number} id - 资源ID
  * @returns {Promise} 返回资源下载状态
  */
-export function checkDownloaded(id) {
+export function checkDownloaded(id, config = {}) {
   return request({
     url: `/api/resources/public/check-downloaded/${id}`,
-    method: 'get'
+    method: 'get',
+    ...config
   })
 }

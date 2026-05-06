@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * SEO服务实现类
@@ -48,6 +49,8 @@ import java.util.List;
 @Slf4j
 @Service
 public class SEOServiceImpl implements SEOService {
+
+    private static final int MAX_PAGE_SIZE = 100;
     
     @Autowired
     private SEOSubmissionMapper seoSubmissionMapper;

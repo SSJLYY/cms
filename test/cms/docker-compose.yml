@@ -1,0 +1,185 @@
+version: '3.8'
+
+# ============================================================
+# 资源下载平台 Docker Compose 编排文件 v2.0
+# 新增：Prometheus 指标采集 + Grafana 可视化监控
+# 敏感配置通过 .env 文件注入（不提交到 Git）
+# ============================================================
+
+services:
+
+  # ==================== 数据层 ====================
+
+  mysql:
+    image: mysql:8.0
+    container_name: resource-platform-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-resource_platform_2026}
+      MYSQL_DATABASE: resource_platform
+      TZ: Asia/Shanghai
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./backend/src/main/resources/init-database.sql:/docker-entrypoint-initdb.d/1-init.sql
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --slow-query-log=1
+      --slow-query-log-file=/var/log/mysql/slow.log
+      --long-query-time=2
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-resource_platform_2026}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: resource-platform-redis
+    restart: always
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==================== 应用层 ====================
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: resource-platform-backend
+    restart: always
+    ports:
+      - "${BACKEND_PORT:-9090}:9090"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Spring Profile
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      # 数据库（敏感配置通过环境变量注入）
+      DB_URL: jdbc:mysql://mysql:3306/resource_platform?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+      DB_USERNAME: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-resource_platform_2026}
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      # JWT（生产环境必须设置强密钥，至少32位）
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      # 存储
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+      STORAGE_LOCAL_PATH: /data/uploads
+      # 其他环境变量
+      TZ: Asia/Shanghai
+      SERVER_PORT: 9090
+    volumes:
+      - ./backend/logs:/app/logs
+      - uploads-data:/data/uploads
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9090/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  frontend-client:
+    build:
+      context: ./frontend-client
+      dockerfile: Dockerfile
+    container_name: resource-platform-client
+    restart: always
+    ports:
+      - "${CLIENT_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  frontend-admin:
+    build:
+      context: ./frontend-admin
+      dockerfile: Dockerfile
+    container_name: resource-platform-admin
+    restart: always
+    ports:
+      - "${ADMIN_PORT:-8081}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # ==================== 可观测性 ====================
+
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    container_name: resource-platform-prometheus
+    restart: always
+    ports:
+      - "${PROMETHEUS_PORT:-9091}:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    depends_on:
+      - backend
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: resource-platform-grafana
+    restart: always
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin123}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mysql-data:
+  redis-data:
+  uploads-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  default:
+    name: resource-platform-network
+    driver: bridge

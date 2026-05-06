@@ -56,12 +56,12 @@ public class PageQuery {
     /** 转换为 MyBatis Plus Page 并设置排序（需调用方传入实际列名，防 SQL 注入）*/
     public <T> Page<T> toMpPage(String defaultSortField) {
         Page<T> mpPage = new Page<>(page, size);
-        String field = (sortField != null && !sortField.isBlank()) ? sortField : defaultSortField;
-        if (field != null && !field.isBlank()) {
+        String field = (sortField != null && !sortField.trim().isEmpty()) ? sortField : defaultSortField;
+        if (field != null && !field.trim().isEmpty()) {
             // 安全校验：排序字段只允许字母、数字、下划线和点号，防止SQL注入
             if (!SORT_FIELD_PATTERN.matcher(field).matches()) {
                 field = defaultSortField;
-                if (field == null || !field.isBlank()) {
+                if (field == null || field.trim().isEmpty()) {
                     // defaultSortField 也不合法则跳过排序
                     return mpPage;
                 }

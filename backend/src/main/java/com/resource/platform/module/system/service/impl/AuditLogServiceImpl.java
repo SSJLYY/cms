@@ -23,6 +23,8 @@ import java.time.LocalTime;
 @Service
 public class AuditLogServiceImpl implements AuditLogService {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     @Autowired
     private AuditLogMapper auditLogMapper;
 

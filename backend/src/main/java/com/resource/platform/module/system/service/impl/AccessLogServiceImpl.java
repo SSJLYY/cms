@@ -3,6 +3,7 @@ package com.resource.platform.module.system.service.impl;
 import com.resource.platform.module.system.entity.AccessLog;
 import com.resource.platform.module.system.mapper.AccessLogMapper;
 import com.resource.platform.module.system.service.AccessLogService;
+import com.resource.platform.util.IpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -54,36 +55,16 @@ public class AccessLogServiceImpl implements AccessLogService {
         accessLog.setReferer(request.getHeader("Referer"));
         accessLog.setUserAgent(request.getHeader("User-Agent"));
         accessLog.setBrowser(parseBrowser(request.getHeader("User-Agent")));
-        accessLog.setIpAddress(getClientIp(request));
+        accessLog.setIpAddress(IpUtil.getClientIp(request));
         accessLog.setCreateTime(LocalDateTime.now());
         return accessLog;
     }
-    
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_CLIENT_IP");
-        }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
-        }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        return ip;
-    }
-    
+
     private String parseBrowser(String userAgent) {
         if (userAgent == null) {
             return "Unknown";
         }
-        if (userAgent.contains("Edge")) {
+        if (userAgent.contains("Edg/") || userAgent.contains("Edge")) {
             return "Edge";
         } else if (userAgent.contains("Chrome")) {
             return "Chrome";

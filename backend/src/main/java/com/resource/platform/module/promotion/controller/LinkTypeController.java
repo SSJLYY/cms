@@ -40,6 +40,7 @@ public class LinkTypeController {
 
     @GetMapping("/list")
     @Operation(summary = "获取所有链接类型")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<List<LinkType>> listAll() {
         List<LinkType> list = linkTypeService.listAll();
         return Result.success(list);
@@ -48,6 +49,7 @@ public class LinkTypeController {
     @PostMapping
     @Operation(summary = "添加链接类型")
     @OperationLog(module = "链接类型管理", type = "创建", description = "创建链接类型")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> add(@Validated @RequestBody LinkType linkType) {
         if (linkType.getName() == null || linkType.getName().trim().isEmpty()) {
             log.warn("链接类型名称为空");
@@ -61,6 +63,7 @@ public class LinkTypeController {
     @PutMapping("/{id}")
     @Operation(summary = "更新链接类型")
     @OperationLog(module = "链接类型管理", type = "更新", description = "更新链接类型")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> update(@PathVariable Long id, @Validated @RequestBody LinkType linkType) {
         if (id == null || id <= 0) {
             log.warn("链接类型ID无效: id={}", id);
@@ -80,6 +83,7 @@ public class LinkTypeController {
     @DeleteMapping("/{id}")
     @Operation(summary = "删除链接类型")
     @OperationLog(module = "链接类型管理", type = "删除", description = "删除链接类型")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> delete(@PathVariable Long id) {
         if (id == null || id <= 0) {
             log.warn("链接类型ID无效: id={}", id);

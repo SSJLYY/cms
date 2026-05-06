@@ -437,6 +437,7 @@ const queryParams = reactive({
   keyword: '',
   categoryId: null,
   status: null,
+  source: null,
   pageNum: 1,
   pageSize: 10
 })
@@ -528,6 +529,7 @@ const handleReset = () => {
   queryParams.keyword = ''
   queryParams.categoryId = null
   queryParams.status = null
+  queryParams.source = null
   queryParams.pageNum = 1
   loadResources()
 }
@@ -553,6 +555,10 @@ const selectCoverImage = (img) => {
     }
     form.images.push(img)
     form.imageIds.push(img.id)
+    if (!form.coverImageId) {
+      form.coverImageId = img.id
+      form.coverImageUrl = img.fileUrl
+    }
   }
   showImageSelector.value = false
 }
@@ -580,8 +586,9 @@ const removeImage = (index) => {
   form.imageIds.splice(index, 1)
   
   if (removedImage.id === form.coverImageId) {
-    form.coverImageId = null
-    form.coverImageUrl = ''
+    const nextCover = form.images[0]
+    form.coverImageId = nextCover ? nextCover.id : null
+    form.coverImageUrl = nextCover ? nextCover.fileUrl : ''
   }
 }
 

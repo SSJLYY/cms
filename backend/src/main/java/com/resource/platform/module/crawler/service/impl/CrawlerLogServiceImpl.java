@@ -20,6 +20,8 @@ import java.util.stream.Collectors;
 @Service
 public class CrawlerLogServiceImpl implements CrawlerLogService {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     @Autowired
     private CrawlerLogMapper crawlerLogMapper;
 
