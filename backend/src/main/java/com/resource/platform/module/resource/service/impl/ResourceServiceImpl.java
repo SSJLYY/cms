@@ -591,14 +591,14 @@ public class ResourceServiceImpl implements ResourceService {
         Map<Long, Category> categoryMap = Collections.emptyMap();
         if (!categoryIds.isEmpty()) {
             categoryMap = categoryMapper.selectBatchIds(categoryIds).stream()
-                    .collect(Collectors.toMap(Category::getId, Function.identity()));
+                    .collect(Collectors.toMap(Category::getId, Function.identity(), (a, b) -> a));
         }
 
         // 3. 批量查询封面图 → Map<id, Image>
         Map<Long, Image> coverImageMap = Collections.emptyMap();
         if (!coverImageIds.isEmpty()) {
             coverImageMap = imageMapper.selectBatchIds(coverImageIds).stream()
-                    .collect(Collectors.toMap(Image::getId, Function.identity()));
+                    .collect(Collectors.toMap(Image::getId, Function.identity(), (a, b) -> a));
         }
 
         // 4. 批量查询资源图片关联 → Map<resourceId, List<ResourceImage>>
@@ -620,7 +620,7 @@ public class ResourceServiceImpl implements ResourceService {
         Map<Long, Image> imageMap = Collections.emptyMap();
         if (!allImageIds.isEmpty()) {
             imageMap = imageMapper.selectBatchIds(allImageIds).stream()
-                    .collect(Collectors.toMap(Image::getId, Function.identity()));
+                    .collect(Collectors.toMap(Image::getId, Function.identity(), (a, b) -> a));
         }
 
         // 6. 批量查询下载链接 → Map<resourceId, List<DownloadLink>>

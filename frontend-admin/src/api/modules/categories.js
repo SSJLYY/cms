@@ -2,7 +2,7 @@
  * 分类管理模块API接口
  * 提供分类的完整管理功能，包括统计、查询、增删改查、排序等
  */
-import request from '../index'
+import request from '../request'
 
 /**
  * 获取分类统计信息
@@ -64,11 +64,12 @@ export function getCategoryById(id) {
  * @param {number} data.sortOrder - 排序顺序
  * @returns {Promise} 返回创建结果
  */
-export function createCategory(data) {
+export function createCategory(data, config = {}) {
   return request({
     url: '/api/categories',
     method: 'post',
-    data
+    data,
+    ...config
   })
 }
 
@@ -78,11 +79,12 @@ export function createCategory(data) {
  * @param {Object} data - 更新的分类数据
  * @returns {Promise} 返回更新结果
  */
-export function updateCategory(id, data) {
+export function updateCategory(id, data, config = {}) {
   return request({
     url: `/api/categories/${id}`,
     method: 'put',
-    data
+    data,
+    ...config
   })
 }
 
@@ -91,10 +93,11 @@ export function updateCategory(id, data) {
  * @param {number} id - 分类ID
  * @returns {Promise} 返回删除结果
  */
-export function deleteCategory(id) {
+export function deleteCategory(id, config = {}) {
   return request({
     url: `/api/categories/${id}`,
-    method: 'delete'
+    method: 'delete',
+    ...config
   })
 }
 
@@ -117,11 +120,12 @@ export function deleteCategories(ids) {
  * @param {number} sortOrder - 新的排序顺序
  * @returns {Promise} 返回排序调整结果
  */
-export function updateCategorySortOrder(id, sortOrder) {
+export function updateCategorySortOrder(id, sortOrder, config = {}) {
   return request({
     url: `/api/categories/${id}/sort`,
     method: 'put',
-    params: { sortOrder }
+    params: { sortOrder },
+    ...config
   })
 }
 

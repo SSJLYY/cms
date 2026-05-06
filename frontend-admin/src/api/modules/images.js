@@ -2,7 +2,7 @@
  * 图片管理模块API接口
  * 提供图片的统计、查询、删除和使用情况检查功能
  */
-import request from '../index'
+import request from '../request'
 
 /**
  * 获取图片统计信息
@@ -49,10 +49,11 @@ export function getImageById(id) {
  * @param {number} id - 图片ID
  * @returns {Promise} 返回删除结果
  */
-export function deleteImage(id) {
+export function deleteImage(id, config = {}) {
   return request({
     url: `/api/images/${id}`,
-    method: 'delete'
+    method: 'delete',
+    ...config
   })
 }
 
@@ -61,11 +62,12 @@ export function deleteImage(id) {
  * @param {Array<number>} ids - 图片ID数组
  * @returns {Promise} 返回批量删除结果
  */
-export function deleteImages(ids) {
+export function deleteImages(ids, config = {}) {
   return request({
     url: '/api/images/batch',
     method: 'delete',
-    data: ids
+    data: ids,
+    ...config
   })
 }
 

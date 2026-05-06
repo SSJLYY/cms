@@ -45,7 +45,7 @@ request.interceptors.response.use(
       window.location.href = '/login'
     }
 
-    ElMessage.error(error.message || '请求失败')
+    ElMessage.error(error.response?.data?.message || error.message || '请求失败')
     return Promise.reject(error)
   }
 )

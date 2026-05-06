@@ -119,6 +119,6 @@ public class IpDownloadServiceImpl implements IpDownloadService {
                 .eq(IpDownloadRecord::getDownloadDate, today);
 
         IpDownloadRecord record = ipDownloadRecordMapper.selectOne(wrapper);
-        return record == null ? 0 : record.getDownloadCount();
+        return record == null || record.getDownloadCount() == null ? 0 : record.getDownloadCount();
     }
 }

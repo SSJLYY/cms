@@ -210,7 +210,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import request from '@/api/index'
+import request from '@/api/request'
 
 const activeTab = ref('basic')
 const basicConfig = reactive({})
@@ -231,7 +231,8 @@ const loadConfigs = async (category) => {
   try {
     const { data } = await request({
       url: `/api/config/category/${category}`,
-      method: 'get'
+      method: 'get',
+      skipBusinessErrorMessage: true
     })
     const configs = data
     const configObj = configMap[category]
@@ -256,7 +257,8 @@ const handleSave = async (category) => {
     await request({
       url: '/api/config/batch',
       method: 'put',
-      data: configs
+      data: configs,
+      skipBusinessErrorMessage: true
     })
     ElMessage.success('保存成功')
   } catch (error) {
@@ -270,7 +272,8 @@ const handleReset = async (category) => {
     for (const key of Object.keys(configs)) {
       await request({
         url: `/api/config/${key}/reset`,
-        method: 'post'
+        method: 'post',
+        skipBusinessErrorMessage: true
       })
     }
     ElMessage.success('重置成功')
@@ -287,7 +290,8 @@ const handleTest = async (type) => {
     const { data } = await request({
       url: endpoint,
       method: 'post',
-      data: configs
+      data: configs,
+      skipBusinessErrorMessage: true
     })
     
     if (data) {

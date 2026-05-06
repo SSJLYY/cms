@@ -2,7 +2,7 @@
  * 反馈管理模块API接口
  * 提供用户反馈的完整管理功能，包括查询、回复、状态管理等
  */
-import request from '../index'
+import request from '../request'
 
 /**
  * 获取反馈统计信息

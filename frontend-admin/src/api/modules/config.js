@@ -2,7 +2,7 @@
  * 系统配置模块API接口
  * 提供系统配置的完整管理功能，包括获取、更新、测试等
  */
-import request from '../index'
+import request from '../request'
 
 /**
  * 获取所有系统配置

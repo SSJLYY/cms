@@ -381,7 +381,7 @@ const handleDelete = (row) => {
     type: 'warning'
   }).then(async () => {
     try {
-      await deleteImage(row.id)
+      await deleteImage(row.id, { skipBusinessErrorMessage: true })
       ElMessage.success('删除成功')
       handleQuery()
       getStatistics()
@@ -398,7 +398,7 @@ const handleBatchDelete = () => {
     type: 'warning'
   }).then(async () => {
     try {
-      await deleteImages(selectedIds.value)
+      await deleteImages(selectedIds.value, { skipBusinessErrorMessage: true })
       ElMessage.success('批量删除成功')
       selectedIds.value = []
       handleQuery()

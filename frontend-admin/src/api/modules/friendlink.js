@@ -2,7 +2,7 @@
  * 友情链接管理模块API接口
  * 提供友情链接的完整管理功能，包括增删改查、状态管理等
  */
-import request from '../index'
+import request from '../request'
 
 /**
  * 分页查询友情链接

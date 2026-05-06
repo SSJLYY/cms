@@ -2,7 +2,7 @@
  * 图片管理相关API接口
  * 提供图片的查询、删除、统计等功能
  */
-import request from './index'
+import request from './request'
 
 /**
  * 获取图片统计信息

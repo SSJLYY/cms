@@ -1,8 +1,6 @@
 package com.resource.platform.module.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.resource.platform.common.PageResult;
 import com.resource.platform.module.system.dto.VisitQueryDTO;
 import com.resource.platform.module.system.entity.AccessLog;
@@ -149,16 +147,16 @@ public class StatisticsServiceImpl implements StatisticsService {
     public PageResult<Map<String, Object>> getVisitDetails(VisitQueryDTO query) {
         long safePageNum = query.getPageNum() == null || query.getPageNum() < 1 ? 1L : query.getPageNum();
         int safePageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 10 : Math.min(query.getPageSize(), MAX_PAGE_SIZE);
-        Page<AccessLog> page = new Page<>(safePageNum, safePageSize);
-        
+
         LambdaQueryWrapper<AccessLog> wrapper = new LambdaQueryWrapper<>();
         wrapper.ge(AccessLog::getCreateTime, getStartTime(query.getPeriod()));
+        wrapper.eq(AccessLog::getActionType, "visit");
         wrapper.orderByDesc(AccessLog::getCreateTime);
-        
-        IPage<AccessLog> pageResult = accessLogMapper.selectPage(page, wrapper);
-        
-        // 统计每个资源的访问次数
-        Map<Long, Long> visitCountMap = pageResult.getRecords().stream()
+
+        List<AccessLog> logs = accessLogMapper.selectList(wrapper);
+
+        // 先对全部访问日志聚合，再分页，避免“页内分组”导致统计失真
+        Map<Long, Long> visitCountMap = logs.stream()
                 .filter(log -> log.getResourceId() != null)
                 .collect(Collectors.groupingBy(AccessLog::getResourceId, Collectors.counting()));
         
@@ -174,7 +172,11 @@ public class StatisticsServiceImpl implements StatisticsService {
                 : categoryMapper.selectBatchIds(catIds).stream()
                     .collect(Collectors.toMap(com.resource.platform.module.category.entity.Category::getId, c -> c, (a, b) -> a));
 
-        List<Map<String, Object>> voList = visitCountMap.entrySet().stream()
+        Map<Long, AccessLog> latestLogMap = logs.stream()
+                .filter(log -> log.getResourceId() != null)
+                .collect(Collectors.toMap(AccessLog::getResourceId, log -> log, (a, b) -> a));
+
+        List<Map<String, Object>> allVisitDetails = visitCountMap.entrySet().stream()
                 .map(entry -> {
                     Long resourceId = entry.getKey();
                     Long visits = entry.getValue();
@@ -200,10 +202,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                     }
                     
                     // 获取该资源的最新访问记录
-                    AccessLog latestLog = pageResult.getRecords().stream()
-                            .filter(log -> resourceId.equals(log.getResourceId()))
-                            .findFirst()
-                            .orElse(null);
+                    AccessLog latestLog = latestLogMap.get(resourceId);
                     
                     if (latestLog != null) {
                         map.put("referer", latestLog.getReferer() != null ? latestLog.getReferer() : "直接访问");
@@ -213,13 +212,23 @@ public class StatisticsServiceImpl implements StatisticsService {
                         map.put("browser", "未知浏览器");
                     }
                     
-                    map.put("visits", visits.intValue());
+                    map.put("visits", visits);
                     return map;
                 })
-                .sorted((a, b) -> Integer.compare((Integer) b.get("visits"), (Integer) a.get("visits")))
+                .sorted((a, b) -> Long.compare((Long) b.get("visits"), (Long) a.get("visits")))
                 .collect(Collectors.toList());
-        
-        return new PageResult<>(pageResult.getTotal(), voList);
+
+        int fromIndex = (int) Math.min((safePageNum - 1) * safePageSize, allVisitDetails.size());
+        int toIndex = (int) Math.min(fromIndex + safePageSize, allVisitDetails.size());
+        List<Map<String, Object>> pageRecords = allVisitDetails.subList(fromIndex, toIndex);
+
+        PageResult<Map<String, Object>> result = new PageResult<>();
+        result.setTotal((long) allVisitDetails.size());
+        result.setRecords(pageRecords);
+        result.setCurrent(safePageNum);
+        result.setSize((long) safePageSize);
+        result.setPages((long) Math.ceil((double) allVisitDetails.size() / safePageSize));
+        return result;
     }
     
     @Override

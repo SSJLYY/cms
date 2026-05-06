@@ -1,4 +1,4 @@
-import request from '../index'
+import request from '../request'
 
 // 获取统计概览
 export function getStatisticsOverview(period = 'today') {

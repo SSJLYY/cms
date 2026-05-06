@@ -13,8 +13,8 @@ import request from '../request'
  * @param {Object} data.config - 爬虫配置
  * @returns {Promise} 返回创建结果
  */
-export const createTask = (data) => {
-  return request.post('/api/crawler/tasks', data)
+export const createTask = (data, config = {}) => {
+  return request.post('/api/crawler/tasks', data, config)
 }
 
 /**
@@ -33,9 +33,10 @@ export const updateTask = (id, data) => {
  * @param {boolean} deleteResources - 是否同时删除相关资源
  * @returns {Promise} 返回删除结果
  */
-export const deleteTask = (id, deleteResources = false) => {
+export const deleteTask = (id, deleteResources = false, config = {}) => {
   return request.delete(`/api/crawler/tasks/${id}`, {
-    params: { deleteResources }
+    params: { deleteResources },
+    ...config
   })
 }
 
@@ -44,8 +45,8 @@ export const deleteTask = (id, deleteResources = false) => {
  * @param {number} id - 任务ID
  * @returns {Promise} 返回状态切换结果
  */
-export const toggleTaskStatus = (id) => {
-  return request.put(`/api/crawler/tasks/${id}/toggle`)
+export const toggleTaskStatus = (id, config = {}) => {
+  return request.put(`/api/crawler/tasks/${id}/toggle`, null, config)
 }
 
 /**
@@ -75,8 +76,8 @@ export const getTaskDetail = (id) => {
  * @param {number} id - 任务ID
  * @returns {Promise} 返回触发结果
  */
-export const triggerTask = (id) => {
-  return request.post(`/api/crawler/tasks/${id}/trigger`)
+export const triggerTask = (id, config = {}) => {
+  return request.post(`/api/crawler/tasks/${id}/trigger`, null, config)
 }
 
 /**

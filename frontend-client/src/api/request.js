@@ -18,8 +18,9 @@ request.interceptors.response.use(
       if (!response.config?.skipBusinessErrorMessage) {
         ElMessage.error(res.message || '请求失败')
       }
-      const businessError = new Error(res.message || 'Error')
+      const businessError = new Error(res.message || '请求失败')
       businessError.response = response
+      businessError.response.data = res
       businessError.businessCode = res.code
       businessError.businessData = res
       return Promise.reject(businessError)
@@ -28,7 +29,7 @@ request.interceptors.response.use(
   },
   error => {
     if (!error.config?.skipBusinessErrorMessage) {
-      ElMessage.error('网络错误，请检查网络连接')
+      ElMessage.error(error.response?.data?.message || error.message || '网络错误，请检查网络连接')
     }
     return Promise.reject(error)
   }

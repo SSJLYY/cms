@@ -2,7 +2,7 @@
  * 控制面板模块API接口
  * 提供管理后台首页的各种统计数据和概览信息
  */
-import request from '../index'
+import request from '../request'
 
 /**
  * 获取核心指标数据

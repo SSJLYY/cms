@@ -2,7 +2,7 @@
  * 推广管理模块API接口
  * 提供广告推广的完整管理功能，包括增删改查、状态管理、点击统计等
  */
-import request from '../index'
+import request from '../request'
 
 /**
  * 获取广告列表

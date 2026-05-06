@@ -128,7 +128,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Delete, InfoFilled } from '@element-plus/icons-vue'
-import request from '@/api/index'
+import request from '@/api/request'
 
 const statistics = ref({})
 const historyList = ref([])
@@ -162,7 +162,7 @@ const statsConfig = computed(() => [
 
 const getStatistics = async () => {
   try {
-    const { data } = await request({ url: '/api/seo/statistics', method: 'get' })
+    const { data } = await request({ url: '/api/seo/statistics', method: 'get', skipBusinessErrorMessage: true })
     statistics.value = data
   } catch (error) {
     ElMessage.error('获取统计信息失败')
@@ -172,10 +172,11 @@ const getStatistics = async () => {
 const loadHistory = async () => {
   loading.value = true
   try {
-    const { data } = await request({
-      url: '/api/seo/history', method: 'get',
-      params: { page: page.value, pageSize: pageSize.value }
-    })
+      const { data } = await request({
+        url: '/api/seo/history', method: 'get',
+        params: { page: page.value, pageSize: pageSize.value },
+        skipBusinessErrorMessage: true
+      })
     historyList.value = data.records
     total.value = data.total
   } catch (error) {
@@ -187,7 +188,7 @@ const loadHistory = async () => {
 
 const handleGenerateSitemap = async () => {
   try {
-    const { data } = await request({ url: '/api/seo/sitemap/generate', method: 'post' })
+    const { data } = await request({ url: '/api/seo/sitemap/generate', method: 'post', skipBusinessErrorMessage: true })
     ElMessage.success('网站地图生成成功: ' + data)
   } catch (error) {
     ElMessage.error('生成网站地图失败')
@@ -196,7 +197,7 @@ const handleGenerateSitemap = async () => {
 
 const handleSubmitBaidu = async () => {
   try {
-    await request({ url: '/api/seo/submit/baidu', method: 'post' })
+    await request({ url: '/api/seo/submit/baidu', method: 'post', skipBusinessErrorMessage: true })
     ElMessage.success('提交到百度成功')
     loadHistory(); getStatistics()
   } catch (error) {
@@ -206,7 +207,7 @@ const handleSubmitBaidu = async () => {
 
 const handleSubmitBing = async () => {
   try {
-    await request({ url: '/api/seo/submit/bing', method: 'post' })
+    await request({ url: '/api/seo/submit/bing', method: 'post', skipBusinessErrorMessage: true })
     ElMessage.success('提交到必应成功')
     loadHistory(); getStatistics()
   } catch (error) {
@@ -219,7 +220,7 @@ const handleBatchSubmit = async () => {
     confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
   }).then(async () => {
     try {
-      await request({ url: '/api/seo/submit/batch', method: 'post' })
+      await request({ url: '/api/seo/submit/batch', method: 'post', skipBusinessErrorMessage: true })
       ElMessage.success('批量提交成功')
       loadHistory(); getStatistics()
     } catch (error) {
@@ -230,7 +231,7 @@ const handleBatchSubmit = async () => {
 
 const handleResubmit = async (row) => {
   try {
-    await request({ url: `/api/seo/resubmit/${row.id}`, method: 'post' })
+    await request({ url: `/api/seo/resubmit/${row.id}`, method: 'post', skipBusinessErrorMessage: true })
     ElMessage.success('重新提交成功')
     loadHistory()
   } catch (error) {
@@ -243,7 +244,7 @@ const handleDelete = (row) => {
     confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
   }).then(async () => {
     try {
-      await request({ url: `/api/seo/history/${row.id}`, method: 'delete' })
+      await request({ url: `/api/seo/history/${row.id}`, method: 'delete', skipBusinessErrorMessage: true })
       ElMessage.success('删除成功')
       loadHistory(); getStatistics()
     } catch (error) {

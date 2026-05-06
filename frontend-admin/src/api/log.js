@@ -2,7 +2,7 @@
  * 日志管理相关API接口
  * 提供系统日志和审计日志的查询、统计、清理等功能
  */
-import request from './index'
+import request from './request'
 
 /**
  * 获取日志统计信息

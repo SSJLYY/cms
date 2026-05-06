@@ -131,7 +131,7 @@ public class RevenueServiceImpl implements RevenueService {
         wrapper.ge(Revenue::getCreateTime, 
             LocalDateTime.parse(startTime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         Long count = revenueMapper.selectCount(wrapper);
-        overview.setRevenueItemCount(count.intValue());
+        overview.setRevenueItemCount(count == null ? 0 : count.intValue());
         log.info("收益项数量统计完成: itemCount={}", overview.getRevenueItemCount());
         
         // 记录业务完成
@@ -204,10 +204,11 @@ public class RevenueServiceImpl implements RevenueService {
                 if (entry.getKey().equals(data.get("revenue_type"))) {
                     // 找到对应数据，更新统计值
                     BigDecimal totalAmount = (BigDecimal) data.get("total_amount");
-                    Integer downloadCount = ((Number) data.get("total_downloads")).intValue();
+                    Number downloadCountValue = (Number) data.get("total_downloads");
+                    Integer downloadCount = downloadCountValue == null ? 0 : downloadCountValue.intValue();
                     
                     vo.setTotalAmount(totalAmount != null ? totalAmount : BigDecimal.ZERO);
-                    vo.setDownloadCount(downloadCount != null ? downloadCount : 0);
+                    vo.setDownloadCount(downloadCount);
                     vo.setAccumulatedRevenue(totalAmount != null ? totalAmount : BigDecimal.ZERO);
                     
                     log.debug("找到收益类型数据: type={}, totalAmount={}, downloadCount={}", 

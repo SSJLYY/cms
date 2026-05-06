@@ -1,4 +1,4 @@
-import request from '../index'
+import request from '../request'
 
 /**
  * 获取收益概览

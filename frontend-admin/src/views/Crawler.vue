@@ -468,7 +468,7 @@ const handleSubmit = async () => {
       await updateTask(editId.value, taskForm)
       ElMessage.success('更新成功')
     } else {
-      await createTask(taskForm)
+      await createTask(taskForm, { skipBusinessErrorMessage: true })
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
@@ -482,7 +482,7 @@ const handleSubmit = async () => {
 
 const handleToggleStatus = async (row) => {
   try {
-    await toggleTaskStatus(row.id)
+    await toggleTaskStatus(row.id, { skipBusinessErrorMessage: true })
     ElMessage.success('状态切换成功')
     loadTasks()
   } catch (error) {
@@ -492,7 +492,7 @@ const handleToggleStatus = async (row) => {
 
 const handleTrigger = async (row) => {
   try {
-    await triggerTask(row.id)
+    await triggerTask(row.id, { skipBusinessErrorMessage: true })
     ElMessage.success('任务已触发，正在执行中...')
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '触发失败')
@@ -506,7 +506,7 @@ const handleDelete = (row) => {
     type: 'warning'
   }).then(async () => {
     try {
-      await deleteTask(row.id, false)
+      await deleteTask(row.id, false, { skipBusinessErrorMessage: true })
       ElMessage.success('删除成功')
       loadTasks()
     } catch (error) {

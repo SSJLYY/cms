@@ -304,7 +304,7 @@ const handleDelete = (data) => {
     type: 'warning'
   }).then(async () => {
     try {
-      await deleteCategory(data.id)
+      await deleteCategory(data.id, { skipBusinessErrorMessage: true })
       ElMessage.success('删除成功')
       loadCategoryTree()
       getStatistics()
@@ -318,10 +318,10 @@ const handleSubmit = async () => {
   await formRef.value.validate()
   try {
     if (form.id) {
-      await updateCategory(form.id, form)
+      await updateCategory(form.id, form, { skipBusinessErrorMessage: true })
       ElMessage.success('更新成功')
     } else {
-      await createCategory(form)
+      await createCategory(form, { skipBusinessErrorMessage: true })
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
@@ -335,7 +335,7 @@ const handleSubmit = async () => {
 const handleDrop = async (draggingNode, dropNode, dropType) => {
   try {
     const newSortOrder = dropNode.data.sortOrder
-    await updateCategorySortOrder(draggingNode.data.id, newSortOrder)
+    await updateCategorySortOrder(draggingNode.data.id, newSortOrder, { skipBusinessErrorMessage: true })
     ElMessage.success('排序更新成功')
   } catch (error) {
     ElMessage.error('排序更新失败')
