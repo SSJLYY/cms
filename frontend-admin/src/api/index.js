@@ -10,7 +10,7 @@ service.interceptors.request.use(
   config => {
     const token = localStorage.getItem('token')
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`
+      config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
@@ -25,10 +25,13 @@ service.interceptors.response.use(
     const res = response.data
 
     if (res.code !== 200) {
-      ElMessage.error(res.message || '请求失败')
+      if (!response.config?.skipBusinessErrorMessage) {
+        ElMessage.error(res.message || '请求失败')
+      }
 
       const businessError = new Error(res.message || '请求失败')
       businessError.response = response
+      businessError.response.data = res
       businessError.businessCode = res.code
       businessError.businessData = res
 
@@ -50,23 +53,33 @@ service.interceptors.response.use(
 
       switch (status) {
         case 401:
-          ElMessage.error('未授权，请重新登录')
+          if (!error.config?.skipBusinessErrorMessage) {
+            ElMessage.error('未授权，请重新登录')
+          }
           localStorage.removeItem('token')
           window.location.href = '/login'
           break
         case 403:
-          ElMessage.error('拒绝访问')
+          if (!error.config?.skipBusinessErrorMessage) {
+            ElMessage.error('拒绝访问')
+          }
           break
         case 404:
-          ElMessage.error('请求的资源不存在')
+          if (!error.config?.skipBusinessErrorMessage) {
+            ElMessage.error('请求的资源不存在')
+          }
           break
         case 500:
-          ElMessage.error('服务器错误')
+          if (!error.config?.skipBusinessErrorMessage) {
+            ElMessage.error('服务器错误')
+          }
           break
         default:
-          ElMessage.error(data.message || '请求失败')
+          if (!error.config?.skipBusinessErrorMessage) {
+            ElMessage.error(data.message || '请求失败')
+          }
       }
-    } else {
+    } else if (!error.config?.skipBusinessErrorMessage) {
       ElMessage.error('网络错误，请检查网络连接')
     }
 

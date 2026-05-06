@@ -65,17 +65,14 @@ public class DashboardServiceImpl implements DashboardService {
     public DashboardMetricsVO getMetrics() {
         DashboardMetricsVO metrics = new DashboardMetricsVO();
         
-        // 获取今天的开始时间
         LocalDateTime todayStart = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
         
-        // 总资源数（未删除的）
         Long totalResources = resourceMapper.selectCount(
             new LambdaQueryWrapper<Resource>()
                 .eq(Resource::getDeleted, 0)
         );
         metrics.setTotalResources(totalResources);
         
-        // 今日新增资源
         Long todayResources = resourceMapper.selectCount(
             new LambdaQueryWrapper<Resource>()
                 .ge(Resource::getCreateTime, todayStart)
@@ -83,7 +80,6 @@ public class DashboardServiceImpl implements DashboardService {
         );
         metrics.setTodayResources(todayResources);
         
-        // 总下载量（从资源表的 download_count 字段累加）
         List<Resource> allResources = resourceMapper.selectList(
             new LambdaQueryWrapper<Resource>()
                 .eq(Resource::getDeleted, 0)
@@ -94,7 +90,6 @@ public class DashboardServiceImpl implements DashboardService {
             .sum();
         metrics.setTotalDownloads(totalDownloads);
         
-        // 今日下载量（从访问日志表统计）
         Long todayDownloads = accessLogMapper.selectCount(
             new LambdaQueryWrapper<AccessLog>()
                 .eq(AccessLog::getActionType, "download")
@@ -102,14 +97,12 @@ public class DashboardServiceImpl implements DashboardService {
         );
         metrics.setTodayDownloads(todayDownloads);
         
-        // 总用户数
         Long totalUsers = userMapper.selectCount(
             new LambdaQueryWrapper<User>()
                 .eq(User::getDeleted, 0)
         );
         metrics.setTotalUsers(totalUsers);
         
-        // 今日新增用户
         Long todayUsers = userMapper.selectCount(
             new LambdaQueryWrapper<User>()
                 .ge(User::getCreateTime, todayStart)
@@ -117,14 +110,12 @@ public class DashboardServiceImpl implements DashboardService {
         );
         metrics.setTodayUsers(todayUsers);
         
-        // 总分类数
         Long totalCategories = categoryMapper.selectCount(
             new LambdaQueryWrapper<Category>()
                 .eq(Category::getDeleted, 0)
         );
         metrics.setTotalCategories(totalCategories);
         
-        // 待审核资源数
         Long pendingResources = resourceMapper.selectCount(
             new LambdaQueryWrapper<Resource>()
                 .eq(Resource::getAuditStatus, "pending")
@@ -151,16 +142,13 @@ public class DashboardServiceImpl implements DashboardService {
         
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd");
         
-        // 生成最近N天的数据
         for (int i = days - 1; i >= 0; i--) {
             LocalDate date = LocalDate.now().minusDays(i);
             dates.add(date.format(formatter));
             
-            // 当天的开始和结束时间
             LocalDateTime dayStart = LocalDateTime.of(date, LocalTime.MIN);
             LocalDateTime dayEnd = LocalDateTime.of(date, LocalTime.MAX);
             
-            // 统计当天新增资源数
             Long dayResourceCount = resourceMapper.selectCount(
                 new LambdaQueryWrapper<Resource>()
                     .ge(Resource::getCreateTime, dayStart)
@@ -169,7 +157,6 @@ public class DashboardServiceImpl implements DashboardService {
             );
             resourceData.add(dayResourceCount);
             
-            // 统计当天下载量
             Long dayDownloadCount = accessLogMapper.selectCount(
                 new LambdaQueryWrapper<AccessLog>()
                     .eq(AccessLog::getActionType, "download")
@@ -178,7 +165,6 @@ public class DashboardServiceImpl implements DashboardService {
             );
             downloadData.add(dayDownloadCount);
             
-            // 统计当天新增用户数
             Long dayUserCount = userMapper.selectCount(
                 new LambdaQueryWrapper<User>()
                     .ge(User::getCreateTime, dayStart)
@@ -204,10 +190,9 @@ public class DashboardServiceImpl implements DashboardService {
             limit = MAX_LIMIT;
         }
         
-        // 查询热门资源（按下载量排序）
         List<Resource> hotResources = resourceMapper.selectList(
             new LambdaQueryWrapper<Resource>()
-                .eq(Resource::getStatus, 1)  // 已发布
+                .eq(Resource::getStatus, 1)
                 .eq(Resource::getDeleted, 0)
                 .orderByDesc(Resource::getDownloadCount)
                 .last("LIMIT " + limit)
@@ -224,10 +209,9 @@ public class DashboardServiceImpl implements DashboardService {
             limit = MAX_LIMIT;
         }
         
-        // 查询最新资源（按创建时间排序）
         List<Resource> latestResources = resourceMapper.selectList(
             new LambdaQueryWrapper<Resource>()
-                .eq(Resource::getStatus, 1)  // 已发布
+                .eq(Resource::getStatus, 1)
                 .eq(Resource::getDeleted, 0)
                 .orderByDesc(Resource::getCreateTime)
                 .last("LIMIT " + limit)
@@ -240,7 +224,6 @@ public class DashboardServiceImpl implements DashboardService {
     public Map<String, Long> getPendingTasks() {
         Map<String, Long> tasks = new HashMap<>();
         
-        // 待审核资源
         Long pendingResources = resourceMapper.selectCount(
             new LambdaQueryWrapper<Resource>()
                 .eq(Resource::getAuditStatus, "pending")
@@ -248,7 +231,6 @@ public class DashboardServiceImpl implements DashboardService {
         );
         tasks.put("pendingResources", pendingResources);
         
-        // 待处理反馈（状态为 unread 或 processing）
         Long pendingFeedback = feedbackMapper.selectCount(
             new LambdaQueryWrapper<Feedback>()
                 .in(Feedback::getStatus, "unread", "processing")
@@ -256,7 +238,6 @@ public class DashboardServiceImpl implements DashboardService {
         );
         tasks.put("pendingFeedback", pendingFeedback);
         
-        // 待回复反馈（reply 为空）
         Long unrepliedFeedback = feedbackMapper.selectCount(
             new LambdaQueryWrapper<Feedback>()
                 .and(wrapper -> wrapper.isNull(Feedback::getReply).or().eq(Feedback::getReply, ""))
@@ -272,33 +253,28 @@ public class DashboardServiceImpl implements DashboardService {
         Map<String, Object> status = new HashMap<>();
         
         try {
-            // 获取操作系统的 MXBean
             com.sun.management.OperatingSystemMXBean osBean = 
                 (com.sun.management.OperatingSystemMXBean) java.lang.management.ManagementFactory.getOperatingSystemMXBean();
             
-            // CPU使用率（系统级别）
             double cpuUsage = osBean.getSystemCpuLoad() * 100;
-            // 如果获取失败，使用进程CPU使用率
             if (cpuUsage < 0) {
                 cpuUsage = osBean.getProcessCpuLoad() * 100;
             }
-            status.put("cpuUsage", Math.round(cpuUsage * 100.0) / 100.0);
+            status.put("cpuUsage", clampPercentage(cpuUsage));
             
         } catch (Exception e) {
             log.warn("获取CPU使用率失败", e);
             status.put("cpuUsage", 0.0);
         }
         
-        // 内存使用率（JVM）
         Runtime runtime = Runtime.getRuntime();
         long maxMemory = runtime.maxMemory();
         long totalMemory = runtime.totalMemory();
         long freeMemory = runtime.freeMemory();
         long usedMemory = totalMemory - freeMemory;
         double memoryUsage = (double) usedMemory / maxMemory * 100;
-        status.put("memoryUsage", Math.round(memoryUsage * 100.0) / 100.0);
+        status.put("memoryUsage", clampPercentage(memoryUsage));
         
-        // 磁盘使用率
         try {
             java.io.File root = new java.io.File(System.getProperty("user.dir")).getAbsoluteFile();
             while (root.getParentFile() != null) {
@@ -311,12 +287,20 @@ public class DashboardServiceImpl implements DashboardService {
             }
             long usedSpace = totalSpace - freeSpace;
             double diskUsage = (double) usedSpace / totalSpace * 100;
-            status.put("diskUsage", Math.round(diskUsage * 100.0) / 100.0);
+            status.put("diskUsage", clampPercentage(diskUsage));
         } catch (Exception e) {
             log.warn("获取磁盘使用率失败", e);
             status.put("diskUsage", 0.0);
         }
         
         return status;
+    }
+
+    private double clampPercentage(double value) {
+        if (Double.isNaN(value) || Double.isInfinite(value)) {
+            return 0.0;
+        }
+        double normalized = Math.max(0.0, Math.min(100.0, value));
+        return Math.round(normalized * 100.0) / 100.0;
     }
 }

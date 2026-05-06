@@ -214,15 +214,15 @@ public class ConfigServiceImpl implements ConfigService {
      */
     @Override
     public Map<String, String> getConfigsByKeys(List<String> keys) {
-        // 记录业务开始
-        log.info("执行批量获取配置业务逻辑: keys={}, count={}", keys, keys.size());
-        
         // 步骤1：验证参数
         // 检查配置键列表是否为空
         if (keys == null || keys.isEmpty()) {
             log.warn("配置键列表为空");
             return new HashMap<>(); // 返回空映射而不是抛出异常
         }
+
+        // 记录业务开始
+        log.info("执行批量获取配置业务逻辑: keys={}, count={}", keys, keys.size());
         
         // 过滤掉空的配置键
         List<String> validKeys = keys.stream()
@@ -248,7 +248,8 @@ public class ConfigServiceImpl implements ConfigService {
         Map<String, String> configMap = configs.stream()
             .collect(Collectors.toMap(
                 SystemConfig::getConfigKey,    // 键：配置键
-                SystemConfig::getConfigValue   // 值：配置值
+                SystemConfig::getConfigValue,  // 值：配置值
+                (first, second) -> first
             ));
         
         // 记录处理结果
@@ -344,15 +345,15 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateConfigs(Map<String, String> configs) {
-        // 记录业务开始
-        log.info("执行批量更新配置业务逻辑: count={}", configs.size());
-        
         // 步骤1：验证参数
         // 检查配置映射是否为空
         if (configs == null || configs.isEmpty()) {
             log.warn("批量更新配置参数为空");
             throw new BusinessException(BizErrorCode.PARAM_ERROR, "配置数据不能为空");
         }
+
+        // 记录业务开始
+        log.info("执行批量更新配置业务逻辑: count={}", configs.size());
         
         // 初始化统计变量
         int successCount = 0;

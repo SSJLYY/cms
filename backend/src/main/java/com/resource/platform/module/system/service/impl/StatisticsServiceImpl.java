@@ -64,18 +64,15 @@ public class StatisticsServiceImpl implements StatisticsService {
      */
     @Override
     public StatisticsOverviewVO getOverview(String period) {
-        // 记录统计开始
+        period = normalizePeriod(period);
         log.info("开始获取统计概览: period={}", period);
-        
-        // 创建概览对象
+
         StatisticsOverviewVO overview = new StatisticsOverviewVO();
         overview.setPeriod(period);
-        
-        // 步骤1：计算统计起始时间
+
         LocalDateTime startTime = getStartTime(period);
         log.debug("统计时间范围: {} 至 现在", startTime);
-        
-        // 步骤2：统计总下载量
+
         log.debug("统计下载量");
         LambdaQueryWrapper<AccessLog> wrapper = new LambdaQueryWrapper<>();
         wrapper.ge(AccessLog::getCreateTime, startTime);
@@ -83,8 +80,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         Long totalDownloads = accessLogMapper.selectCount(wrapper);
         overview.setTotalDownloads(totalDownloads == null ? 0 : totalDownloads.intValue());
         log.debug("总下载量: {}", overview.getTotalDownloads());
-        
-        // 步骤3：统计总访问量
+
         log.debug("统计访问量");
         wrapper = new LambdaQueryWrapper<>();
         wrapper.ge(AccessLog::getCreateTime, startTime);
@@ -92,23 +88,20 @@ public class StatisticsServiceImpl implements StatisticsService {
         Long totalVisits = accessLogMapper.selectCount(wrapper);
         overview.setTotalVisits(totalVisits == null ? 0 : totalVisits.intValue());
         log.debug("总访问量: {}", overview.getTotalVisits());
-        
-        // 步骤4：计算新增访问量
-        // 今日的访问量即为新增访问量，其他周期暂设为0
+
         int newVisits = "today".equals(period) ? overview.getTotalVisits() : 0;
         overview.setNewVisits(newVisits);
         log.debug("新增访问量: {}", newVisits);
-        
-        // 记录统计成功
-        log.info("获取统计概览成功: period={}, downloads={}, visits={}, newVisits={}", 
+
+        log.info("获取统计概览成功: period={}, downloads={}, visits={}, newVisits={}",
             period, overview.getTotalDownloads(), overview.getTotalVisits(), newVisits);
-        
+
         return overview;
     }
     
     @Override
     public List<Map<String, Object>> getDownloadDistribution(String period) {
-        LocalDateTime startTime = getStartTime(period);
+        LocalDateTime startTime = getStartTime(normalizePeriod(period));
         
         LambdaQueryWrapper<AccessLog> wrapper = new LambdaQueryWrapper<>();
         wrapper.ge(AccessLog::getCreateTime, startTime);
@@ -120,7 +113,6 @@ public class StatisticsServiceImpl implements StatisticsService {
         Map<Long, Long> countMap = logs.stream()
                 .collect(Collectors.groupingBy(AccessLog::getResourceId, Collectors.counting()));
         
-        // 批量查询资源，避免 N+1 查询
         List<Long> resourceIds = new ArrayList<>(countMap.keySet());
         Map<Long, Resource> resourceMap = resourceIds.isEmpty() ? Collections.emptyMap()
                 : resourceMapper.selectBatchIds(resourceIds).stream()
@@ -145,23 +137,22 @@ public class StatisticsServiceImpl implements StatisticsService {
     
     @Override
     public PageResult<Map<String, Object>> getVisitDetails(VisitQueryDTO query) {
-        long safePageNum = query.getPageNum() == null || query.getPageNum() < 1 ? 1L : query.getPageNum();
-        int safePageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 10 : Math.min(query.getPageSize(), MAX_PAGE_SIZE);
+        VisitQueryDTO safeQuery = query == null ? new VisitQueryDTO() : query;
+        String period = normalizePeriod(safeQuery.getPeriod());
+        long safePageNum = safeQuery.getPageNum() == null || safeQuery.getPageNum() < 1 ? 1L : safeQuery.getPageNum();
+        int safePageSize = safeQuery.getPageSize() == null || safeQuery.getPageSize() < 1 ? 10 : Math.min(safeQuery.getPageSize(), MAX_PAGE_SIZE);
 
         LambdaQueryWrapper<AccessLog> wrapper = new LambdaQueryWrapper<>();
-        wrapper.ge(AccessLog::getCreateTime, getStartTime(query.getPeriod()));
+        wrapper.ge(AccessLog::getCreateTime, getStartTime(period));
         wrapper.eq(AccessLog::getActionType, "visit");
         wrapper.orderByDesc(AccessLog::getCreateTime);
 
         List<AccessLog> logs = accessLogMapper.selectList(wrapper);
 
-        // 先对全部访问日志聚合，再分页，避免“页内分组”导致统计失真
         Map<Long, Long> visitCountMap = logs.stream()
                 .filter(log -> log.getResourceId() != null)
                 .collect(Collectors.groupingBy(AccessLog::getResourceId, Collectors.counting()));
         
-        // 获取唯一的资源并构建结果
-        // 批量查询资源和分类，避免 N+1 查询
         List<Long> resIds = new ArrayList<>(visitCountMap.keySet());
         Map<Long, Resource> resMap = resIds.isEmpty() ? Collections.emptyMap()
                 : resourceMapper.selectBatchIds(resIds).stream()
@@ -180,15 +171,12 @@ public class StatisticsServiceImpl implements StatisticsService {
                 .map(entry -> {
                     Long resourceId = entry.getKey();
                     Long visits = entry.getValue();
-                    
                     Resource resource = resMap.get(resourceId);
-                    
+
                     Map<String, Object> map = new HashMap<>();
                     if (resource != null) {
                         map.put("resource", resource.getTitle());
                         map.put("resourceId", resourceId);
-                        
-                        // 获取分类信息
                         if (resource.getCategoryId() != null) {
                             com.resource.platform.module.category.entity.Category category = catMap.get(resource.getCategoryId());
                             map.put("category", category != null ? category.getName() : "未分类");
@@ -200,10 +188,8 @@ public class StatisticsServiceImpl implements StatisticsService {
                         map.put("resourceId", resourceId);
                         map.put("category", "未知");
                     }
-                    
-                    // 获取该资源的最新访问记录
+
                     AccessLog latestLog = latestLogMap.get(resourceId);
-                    
                     if (latestLog != null) {
                         map.put("referer", latestLog.getReferer() != null ? latestLog.getReferer() : "直接访问");
                         map.put("browser", latestLog.getBrowser() != null ? latestLog.getBrowser() : "未知浏览器");
@@ -211,7 +197,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                         map.put("referer", "直接访问");
                         map.put("browser", "未知浏览器");
                     }
-                    
+
                     map.put("visits", visits);
                     return map;
                 })
@@ -240,7 +226,6 @@ public class StatisticsServiceImpl implements StatisticsService {
         
         List<AccessLog> logs = accessLogMapper.selectList(wrapper);
         
-        // 批量查询资源，避免 N+1 查询
         List<Long> activityResIds = logs.stream()
                 .map(AccessLog::getResourceId).filter(Objects::nonNull)
                 .distinct().collect(Collectors.toList());
@@ -254,7 +239,6 @@ public class StatisticsServiceImpl implements StatisticsService {
                     activity.put("type", log.getActionType());
                     activity.put("title", getActivityTitle(log.getActionType()));
                     
-                    // 获取资源信息
                     String resourceInfo = "未知资源";
                     if (log.getResourceId() != null) {
                         Resource resource = activityResMap.get(log.getResourceId());
@@ -286,6 +270,10 @@ public class StatisticsServiceImpl implements StatisticsService {
             default:
                 return now.withHour(0).withMinute(0).withSecond(0);
         }
+    }
+
+    private String normalizePeriod(String period) {
+        return period == null || period.trim().isEmpty() ? "today" : period;
     }
     
     private String getActivityTitle(String actionType) {

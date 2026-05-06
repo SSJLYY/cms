@@ -1,6 +1,5 @@
 <template>
   <div class="resource-detail">
-    <!-- 现代化返回头部 -->
     <div class="modern-header">
       <div class="header-content">
         <router-link to="/" class="back-btn-modern">
@@ -19,7 +18,6 @@
       </div>
     </div>
 
-    <!-- 下载确认页头部 -->
     <div class="dl-header-modern">
       <div class="dl-content">
         <h1 class="dl-title">
@@ -56,17 +54,13 @@
       </div>
     </div>
 
-    <!-- 加载状态 -->
     <div v-if="loading" class="loading-modern">
       <div class="loading-spinner"></div>
       <p>加载中...</p>
     </div>
 
-    <!-- 资源详情 -->
     <div v-else-if="resource" class="page-container-modern">
-      <!-- 页面内容 -->
       <div class="page-content">
-        <!-- 资源信息卡片 -->
         <div class="resource-info-card">
           <div class="resource-header">
             <h4 class="resource-name">{{ resource.title }}</h4>
@@ -100,7 +94,6 @@
           </div>
         </div>
 
-        <!-- 资源图片轮播 -->
         <div v-if="displayImages.length > 0" class="resource-images-section">
           <h3 class="section-title">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -112,9 +105,9 @@
             <span class="image-count">({{ displayImages.length }} 张)</span>
           </h3>
           <div class="carousel-wrapper">
-            <button 
+            <button
               v-if="displayImages.length > 1"
-              class="carousel-btn carousel-btn-prev" 
+              class="carousel-btn carousel-btn-prev"
               @click="prevImage"
               :disabled="currentImageIndex === 0"
             >
@@ -124,9 +117,9 @@
             </button>
 
             <div class="carousel-container" @click="openImageModal(currentImageIndex)">
-              <img 
-                :src="displayImages[currentImageIndex]" 
-                :alt="resource.title" 
+              <img
+                :src="displayImages[currentImageIndex]"
+                :alt="resource.title"
                 class="resource-image"
                 loading="lazy"
               />
@@ -141,9 +134,9 @@
               </div>
             </div>
 
-            <button 
+            <button
               v-if="displayImages.length > 1"
-              class="carousel-btn carousel-btn-next" 
+              class="carousel-btn carousel-btn-next"
               @click="nextImage"
               :disabled="currentImageIndex === displayImages.length - 1"
             >
@@ -153,10 +146,9 @@
             </button>
           </div>
 
-          <!-- 图片指示器 -->
           <div v-if="displayImages.length > 1" class="carousel-indicators">
-            <span 
-              v-for="(img, index) in displayImages" 
+            <span
+              v-for="(img, index) in displayImages"
               :key="index"
               class="indicator-dot"
               :class="{ active: index === currentImageIndex }"
@@ -165,17 +157,16 @@
           </div>
         </div>
 
-        <!-- 广告位 -->
         <div v-if="advertisements.length > 0" class="advertisement-section">
-          <div 
-            v-for="ad in advertisements" 
+          <div
+            v-for="ad in advertisements"
             :key="ad.id"
             class="advertisement-card"
             @click="handleAdClick(ad)"
           >
-            <img 
-              v-if="ad.imageUrl" 
-              :src="ad.imageUrl" 
+            <img
+              v-if="ad.imageUrl"
+              :src="ad.imageUrl"
               :alt="ad.name"
               class="ad-image"
               loading="lazy"
@@ -191,34 +182,30 @@
           </div>
         </div>
 
-        <!-- 下载区域 -->
         <div class="download-section">
-          <!-- 已下载过此资源提示 -->
           <div v-if="hasDownloaded" class="download-notice download-notice-info">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
               <line x1="12" y1="16" x2="12" y2="12"/>
               <line x1="12" y1="8" x2="12.01" y2="8"/>
             </svg>
-            您今日已下载过此资源，重复下载不会计数
+            您今日已下载过此资源，重复下载不会重复计数
           </div>
 
-          <!-- 下载次数已满提示 -->
-          <div 
-            v-else-if="remainingDownloads === 0" 
+          <div
+            v-else-if="remainingDownloads === 0"
             ref="warningNotice"
             class="download-notice download-notice-warning"
-            :class="{ 'shake': isShaking }"
+            :class="{ shake: isShaking }"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
               <line x1="12" y1="9" x2="12" y2="13"/>
               <line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
-            您今日下载次数已满，无法下载，请明日再下载
+            您今日下载次数已满，无法下载，请明日再试
           </div>
 
-          <!-- 剩余下载次数 -->
           <div class="remaining-downloads">
             <div class="remaining-card">
               <div class="remaining-icon">
@@ -229,18 +216,17 @@
               </div>
               <div class="remaining-info">
                 <span class="remaining-label">今日剩余下载次数</span>
-                <span class="remaining-value" :class="{ 'low': remainingDownloads !== null && remainingDownloads <= 1 }">{{ remainingDownloads ?? '-' }}</span>
+                <span class="remaining-value" :class="{ low: remainingDownloads !== null && remainingDownloads <= 1 }">{{ remainingDownloads ?? '-' }}</span>
               </div>
             </div>
           </div>
 
-          <!-- 下载按钮 -->
           <div class="download-buttons-container">
-            <a 
-              v-for="link in filteredDownloadLinks" 
+            <a
+              v-for="link in filteredDownloadLinks"
               :key="link.id"
               :href="canAccessDownloadLinks ? getFullUrl(link.linkUrl) : '#'"
-              :class="['download-btn-green', { 'disabled': !canAccessDownloadLinks }]"
+              :class="['download-btn-green', { disabled: !canAccessDownloadLinks }]"
               :target="canAccessDownloadLinks ? '_blank' : ''"
               :rel="canAccessDownloadLinks ? 'noopener noreferrer' : ''"
               @click="handleDownload(link.linkType, $event)"
@@ -253,10 +239,7 @@
                 <span class="btn-sub">{{ getLinkTypeName(link.linkType) }}</span>
               </div>
             </a>
-            <button 
-              class="download-btn-outline"
-              @click="reportInvalidLink"
-            >
+            <button class="download-btn-outline" @click="reportInvalidLink">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
                 <line x1="12" y1="9" x2="12" y2="13"/>
@@ -269,7 +252,6 @@
       </div>
     </div>
 
-    <!-- 无资源提示 -->
     <div v-else class="no-resource-modern">
       <div class="no-resource-icon">
         <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
@@ -284,7 +266,6 @@
       <router-link to="/" class="back-home-btn">返回首页</router-link>
     </div>
 
-    <!-- 图片查看器模态框 -->
     <div v-if="showImageModal" class="image-modal" @click="closeImageModal">
       <button class="modal-close-btn" @click="closeImageModal">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -293,9 +274,9 @@
         </svg>
       </button>
 
-      <button 
+      <button
         v-if="displayImages.length > 1"
-        class="modal-nav-btn modal-nav-prev" 
+        class="modal-nav-btn modal-nav-prev"
         @click.stop="prevModalImage"
         :disabled="modalImageIndex === 0"
       >
@@ -311,9 +292,9 @@
         </div>
       </div>
 
-      <button 
+      <button
         v-if="displayImages.length > 1"
-        class="modal-nav-btn modal-nav-next" 
+        class="modal-nav-btn modal-nav-next"
         @click.stop="nextModalImage"
         :disabled="modalImageIndex === displayImages.length - 1"
       >
@@ -323,16 +304,15 @@
       </button>
     </div>
 
-    <!-- 右下角操作按钮 -->
     <ActionButtons />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getResourceDetail, recordDownload, getLinkTypes, getRemainingDownloads, checkDownloaded } from '../api/resource'
+import { checkDownloaded, getLinkTypes, getRemainingDownloads, getResourceDetail, recordDownload } from '../api/resource'
 import { getActiveAdvertisements, recordClick } from '../api/promotion'
 import ActionButtons from '../components/ActionButtons.vue'
 
@@ -356,25 +336,20 @@ const filteredDownloadLinks = computed(() => {
   if (!resource.value || !resource.value.downloadLinks) {
     return []
   }
-  
+
   const linkType = route.query.type
-  
   if (!linkType) {
     return resource.value.downloadLinks
   }
-  
-  const filtered = resource.value.downloadLinks.filter(
-    link => link.linkType === linkType
-  )
-  
+
+  const filtered = resource.value.downloadLinks.filter(link => link.linkType === linkType)
   return filtered.length > 0 ? filtered : resource.value.downloadLinks
 })
 
 const displayImages = computed(() => {
   if (!resource.value) return []
-  
+
   const images = []
-  
   if (resource.value.images && resource.value.images.length > 0) {
     resource.value.images.slice(0, 5).forEach(img => {
       if (img.fileUrl) {
@@ -382,11 +357,11 @@ const displayImages = computed(() => {
       }
     })
   }
-  
+
   if (images.length === 0 && resource.value.coverImageUrl) {
     images.push(resource.value.coverImageUrl)
   }
-  
+
   return images
 })
 
@@ -412,19 +387,19 @@ const triggerShake = () => {
   setTimeout(() => {
     isShaking.value = false
   }, 500)
-  
+
   if (warningNotice.value) {
     warningNotice.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 }
 
-const handleDownload = async (linkType, event) => {
+const handleDownload = async (_linkType, event) => {
   if (!hasDownloaded.value && (!remainingDownloads.value || remainingDownloads.value === 0)) {
     event.preventDefault()
     triggerShake()
     return
   }
-  
+
   try {
     await recordDownload(resource.value.id, { skipBusinessErrorMessage: true })
     await loadRemainingDownloads()
@@ -444,7 +419,7 @@ const handleDownload = async (linkType, event) => {
 }
 
 const reportInvalidLink = () => {
-  ElMessage.success('感谢反馈!我们会尽快处理失效链接。')
+  ElMessage.success('感谢反馈！我们会尽快处理失效链接。')
 }
 
 const prevImage = () => {
@@ -459,11 +434,11 @@ const nextImage = () => {
   }
 }
 
-const goToImage = (index) => {
+const goToImage = index => {
   currentImageIndex.value = index
 }
 
-const openImageModal = (index) => {
+const openImageModal = index => {
   modalImageIndex.value = index
   showImageModal.value = true
   document.body.style.overflow = 'hidden'
@@ -486,7 +461,7 @@ const nextModalImage = () => {
   }
 }
 
-const normalizeExternalUrl = (url) => {
+const normalizeExternalUrl = url => {
   const value = typeof url === 'string' ? url.trim() : ''
   if (!value) return ''
 
@@ -502,13 +477,9 @@ const normalizeExternalUrl = (url) => {
   return `https://${value}`
 }
 
-const getFullUrl = (url) => {
-  return normalizeExternalUrl(url) || '#'
-}
+const getFullUrl = url => normalizeExternalUrl(url) || '#'
 
-const getLinkTypeName = (type) => {
-  return linkTypeMap.value[type] || type
-}
+const getLinkTypeName = type => linkTypeMap.value[type] || type
 
 const loadLinkTypes = async () => {
   try {
@@ -523,7 +494,7 @@ const loadLinkTypes = async () => {
   }
 }
 
-const formatDate = (dateStr) => {
+const formatDate = dateStr => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
@@ -563,19 +534,25 @@ const loadAdvertisements = async () => {
   }
 }
 
-const handleAdClick = async (ad) => {
+const handleAdClick = async ad => {
   try {
     await recordClick(ad.id)
     if (ad.linkUrl) {
       const url = normalizeExternalUrl(ad.linkUrl)
       if (!url) {
-        ElMessage.error('閾炬帴鍦板潃鏃犳晥')
+        ElMessage.error('链接地址无效')
         return
       }
       window.open(url, '_blank', 'noopener,noreferrer')
     }
   } catch (error) {
     ElMessage.error('记录广告点击失败')
+  }
+}
+
+const handleKeydown = event => {
+  if (event.key === 'Escape' && showImageModal.value) {
+    closeImageModal()
   }
 }
 
@@ -593,12 +570,6 @@ onMounted(async () => {
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
 })
-
-const handleKeydown = (e) => {
-  if (e.key === 'Escape' && showImageModal.value) {
-    closeImageModal()
-  }
-}
 </script>
 
 <style scoped>
@@ -609,7 +580,7 @@ const handleKeydown = (e) => {
   padding-bottom: 60px;
 }
 
-/* 现代化头部 */
+/* 鐜颁唬鍖栧ご閮?*/
 .modern-header {
   background: white;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
@@ -696,7 +667,7 @@ const handleKeydown = (e) => {
   50% { transform: translateY(-10px); }
 }
 
-/* 下载页头部 */
+/* 涓嬭浇椤靛ご閮?*/
 .dl-header-modern {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 60px 24px;
@@ -766,7 +737,7 @@ const handleKeydown = (e) => {
   backdrop-filter: blur(10px);
 }
 
-/* 加载状态 */
+/* 鍔犺浇鐘舵€?*/
 .loading-modern {
   text-align: center;
   padding: 100px 20px;
@@ -786,7 +757,7 @@ const handleKeydown = (e) => {
   to { transform: rotate(360deg); }
 }
 
-/* 页面容器 */
+/* 椤甸潰瀹瑰櫒 */
 .page-container-modern {
   max-width: 900px;
   margin: -30px auto 0;
@@ -802,7 +773,7 @@ const handleKeydown = (e) => {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
-/* 资源信息卡片 */
+/* 璧勬簮淇℃伅鍗＄墖 */
 .resource-info-card {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-radius: 16px;
@@ -863,7 +834,7 @@ const handleKeydown = (e) => {
   color: #94a3b8;
 }
 
-/* 图片区域 */
+/* 鍥剧墖鍖哄煙 */
 .resource-images-section {
   margin: 32px 0;
 }
@@ -986,7 +957,7 @@ const handleKeydown = (e) => {
   border-radius: 5px;
 }
 
-/* 广告区域 */
+/* 骞垮憡鍖哄煙 */
 .advertisement-section {
   margin: 32px 0;
 }
@@ -1023,7 +994,7 @@ const handleKeydown = (e) => {
   min-height: 140px;
 }
 
-/* 下载区域 */
+/* 涓嬭浇鍖哄煙 */
 .download-section {
   margin-top: 32px;
   padding-top: 32px;
@@ -1063,7 +1034,7 @@ const handleKeydown = (e) => {
   animation: shake 0.5s ease-in-out;
 }
 
-/* 剩余下载次数 */
+/* 鍓╀綑涓嬭浇娆℃暟 */
 .remaining-downloads {
   margin-bottom: 24px;
 }
@@ -1108,7 +1079,7 @@ const handleKeydown = (e) => {
   color: #fde68a;
 }
 
-/* 下载按钮 */
+/* 涓嬭浇鎸夐挳 */
 .download-buttons-container {
   display: flex;
   gap: 16px;
@@ -1185,7 +1156,7 @@ const handleKeydown = (e) => {
   transform: translateY(-2px);
 }
 
-/* 无资源提示 */
+/* 鏃犺祫婧愭彁绀?*/
 .no-resource-modern {
   text-align: center;
   padding: 100px 20px;
@@ -1229,7 +1200,7 @@ const handleKeydown = (e) => {
   color: white;
 }
 
-/* 图片模态框 */
+/* 鍥剧墖妯℃€佹 */
 .image-modal {
   position: fixed;
   top: 0;
@@ -1336,60 +1307,60 @@ const handleKeydown = (e) => {
   border-radius: 50px;
 }
 
-/* 响应式 */
+/* 鍝嶅簲寮?*/
 @media (max-width: 768px) {
   .dl-header-modern {
     padding: 40px 20px;
   }
-  
+
   .dl-features {
     gap: 12px;
   }
-  
+
   .feature-badge {
     padding: 6px 12px;
     font-size: 13px;
   }
-  
+
   .page-container-modern {
     margin-top: -20px;
   }
-  
+
   .page-content {
     padding: 20px;
     border-radius: 16px;
   }
-  
+
   .resource-name {
     font-size: 1.3rem;
   }
-  
+
   .carousel-container {
     height: 280px;
   }
-  
+
   .carousel-btn {
     width: 40px;
     height: 40px;
   }
-  
+
   .modal-nav-btn {
     width: 44px;
     height: 44px;
   }
-  
+
   .modal-nav-prev {
     left: 10px;
   }
-  
+
   .modal-nav-next {
     right: 10px;
   }
-  
+
   .download-buttons-container {
     flex-direction: column;
   }
-  
+
   .download-btn-green,
   .download-btn-outline {
     max-width: 100%;

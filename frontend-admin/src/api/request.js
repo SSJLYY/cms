@@ -10,7 +10,7 @@ request.interceptors.request.use(
   config => {
     const token = localStorage.getItem('token')
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`
+      config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
@@ -22,10 +22,13 @@ request.interceptors.response.use(
     const res = response.data
 
     if (res.code !== 200) {
-      ElMessage.error(res.message || '请求失败')
+      if (!response.config?.skipBusinessErrorMessage) {
+        ElMessage.error(res.message || '请求失败')
+      }
 
       const businessError = new Error(res.message || '请求失败')
       businessError.response = response
+      businessError.response.data = res
       businessError.businessCode = res.code
       businessError.businessData = res
 
@@ -45,7 +48,10 @@ request.interceptors.response.use(
       window.location.href = '/login'
     }
 
-    ElMessage.error(error.response?.data?.message || error.message || '请求失败')
+    if (!error.config?.skipBusinessErrorMessage) {
+      ElMessage.error(error.response?.data?.message || error.message || '请求失败')
+    }
+
     return Promise.reject(error)
   }
 )
