@@ -487,14 +487,14 @@ public class PromotionServiceImpl implements PromotionService {
         
         // 记录状态变更前的信息
         Integer oldStatus = advertisement.getStatus();
-        String oldStatusText = oldStatus == 1 ? "启用" : "禁用";
-        String newStatusText = status == 1 ? "启用" : "禁用";
+        String oldStatusText = Integer.valueOf(1).equals(oldStatus) ? "启用" : "禁用";
+        String newStatusText = Integer.valueOf(1).equals(status) ? "启用" : "禁用";
         
         log.info("广告状态变更: id={}, title={}, oldStatus={}({}), newStatus={}({})", 
             id, advertisement.getTitle(), oldStatus, oldStatusText, status, newStatusText);
         
         // 检查状态是否需要变更
-        if (oldStatus.equals(status)) {
+        if (java.util.Objects.equals(oldStatus, status)) {
             log.info("广告状态无需变更: id={}, status={}({})", 
                 id, status, newStatusText);
             return;
@@ -637,7 +637,7 @@ public class PromotionServiceImpl implements PromotionService {
         }
         
         // 检查广告是否启用
-        if (advertisement.getStatus() != 1) {
+        if (!Integer.valueOf(1).equals(advertisement.getStatus())) {
             log.warn("广告未启用，无法记录点击: id={}, status={}", id, advertisement.getStatus());
             throw new BusinessException("广告未启用");
         }

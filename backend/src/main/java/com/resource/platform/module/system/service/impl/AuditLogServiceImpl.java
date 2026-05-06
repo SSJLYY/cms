@@ -64,8 +64,9 @@ public class AuditLogServiceImpl implements AuditLogService {
 
     @Override
     public Page<AuditLog> queryAuditLogs(AuditLogQueryDTO queryDTO) {
+        long safePageNum = queryDTO.getPage() == null || queryDTO.getPage() < 1 ? 1L : queryDTO.getPage();
         int safePageSize = queryDTO.getPageSize() == null || queryDTO.getPageSize() < 1 ? 10 : Math.min(queryDTO.getPageSize(), MAX_PAGE_SIZE);
-        Page<AuditLog> page = new Page<>(queryDTO.getPage(), safePageSize);
+        Page<AuditLog> page = new Page<>(safePageNum, safePageSize);
         
         LambdaQueryWrapper<AuditLog> wrapper = new LambdaQueryWrapper<>();
         

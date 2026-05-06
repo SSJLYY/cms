@@ -631,9 +631,21 @@ const removeLink = (index) => {
   form.downloadLinks.splice(index, 1)
 }
 
+const hasUnsafeExternalUrl = (url) => {
+  const value = typeof url === 'string' ? url.trim().toLowerCase() : ''
+  return value.startsWith('javascript:') || value.startsWith('data:')
+}
+
 const handleSave = async () => {
   try {
     await formRef.value.validate()
+    const hasUnsafeLink = form.downloadLinks.some(link =>
+      hasUnsafeExternalUrl(link.linkUrl) || hasUnsafeExternalUrl(link.downloadUrl)
+    )
+    if (hasUnsafeLink) {
+      ElMessage.error('下载链接不能使用 javascript: 或 data: 协议')
+      return
+    }
     saveLoading.value = true
     
     const submitData = {

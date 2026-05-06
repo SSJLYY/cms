@@ -118,9 +118,10 @@ public class CrawlerTaskServiceImpl implements CrawlerTaskService {
         if (task == null) {
             throw new BusinessException(BizErrorCode.CRAWLER_TASK_NOT_FOUND);
         }
+        Integer previousCrawlInterval = task.getCrawlInterval();
         
         // 验证URL（如果URL有变化）
-        if (!task.getTargetUrl().equals(dto.getTargetUrl())) {
+        if (!java.util.Objects.equals(task.getTargetUrl(), dto.getTargetUrl())) {
             if (!validateTargetUrl(dto.getTargetUrl())) {
                 throw new BusinessException(BizErrorCode.CRAWLER_URL_INVALID);
             }
@@ -162,7 +163,7 @@ public class CrawlerTaskServiceImpl implements CrawlerTaskService {
         }
         
         // 更新下次执行时间（如果间隔有变化且任务已启用）
-        if (dto.getStatus() && !dto.getCrawlInterval().equals(task.getCrawlInterval())) {
+        if (dto.getStatus() && !java.util.Objects.equals(dto.getCrawlInterval(), previousCrawlInterval)) {
             task.setNextExecuteTime(LocalDateTime.now().plusHours(dto.getCrawlInterval()));
         }
         
@@ -200,11 +201,11 @@ public class CrawlerTaskServiceImpl implements CrawlerTaskService {
         }
         
         // 切换状态
-        Integer newStatus = task.getStatus() == 1 ? 0 : 1;
+        Integer newStatus = Integer.valueOf(1).equals(task.getStatus()) ? 0 : 1;
         task.setStatus(newStatus);
         
         // 如果启用任务，设置下次执行时间
-        if (newStatus == 1) {
+        if (Integer.valueOf(1).equals(newStatus)) {
             task.setNextExecuteTime(LocalDateTime.now().plusHours(task.getCrawlInterval()));
         } else {
             task.setNextExecuteTime(null);
@@ -217,8 +218,9 @@ public class CrawlerTaskServiceImpl implements CrawlerTaskService {
     
     @Override
     public PageResult<CrawlerTaskVO> queryTasks(CrawlerTaskQueryDTO query) {
+        long safePageNum = query.getPage() == null || query.getPage() < 1 ? 1L : query.getPage();
         int safePageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 10 : Math.min(query.getPageSize(), MAX_PAGE_SIZE);
-        Page<CrawlerTask> page = new Page<>(query.getPage(), safePageSize);
+        Page<CrawlerTask> page = new Page<>(safePageNum, safePageSize);
         
         LambdaQueryWrapper<CrawlerTask> wrapper = new LambdaQueryWrapper<>();
         
@@ -298,10 +300,10 @@ public class CrawlerTaskServiceImpl implements CrawlerTaskService {
         BeanUtils.copyProperties(task, vo);
         
         // 转换智能模式：整数转布尔值
-        vo.setIntelligentMode(task.getIntelligentMode() != null && task.getIntelligentMode() == 1);
+        vo.setIntelligentMode(Integer.valueOf(1).equals(task.getIntelligentMode()));
         
         // 转换状态：整数转布尔值
-        vo.setStatus(task.getStatus() != null && task.getStatus() == 1);
+        vo.setStatus(Integer.valueOf(1).equals(task.getStatus()));
         
         // 转换分类映射
         if (StringUtils.hasText(task.getCategoryMapping())) {

@@ -61,7 +61,8 @@ public class CrawlerLogServiceImpl implements CrawlerLogService {
         // 按创建时间倒序
         wrapper.orderByDesc(CrawlerLog::getCreateTime);
         
-        Page<CrawlerLog> page = new Page<>(query.getPage(),
+        long safePageNum = query.getPage() == null || query.getPage() < 1 ? 1L : query.getPage();
+        Page<CrawlerLog> page = new Page<>(safePageNum,
             query.getPageSize() == null || query.getPageSize() < 1 ? 10 : Math.min(query.getPageSize(), MAX_PAGE_SIZE));
         Page<CrawlerLog> resultPage = crawlerLogMapper.selectPage(page, wrapper);
         
@@ -90,7 +91,7 @@ public class CrawlerLogServiceImpl implements CrawlerLogService {
         
         // 设置执行类型文本
         if (log.getExecuteType() != null) {
-            vo.setExecuteTypeText(log.getExecuteType() == 1 ? "定时" : "手动");
+            vo.setExecuteTypeText(Integer.valueOf(1).equals(log.getExecuteType()) ? "定时" : "手动");
         }
         
         // 设置状态文本

@@ -234,6 +234,9 @@ public class CrawlerExecutionServiceImpl implements CrawlerExecutionService {
 
             log.info("开始执行爬虫任务: taskId={}, taskName={}, executeType={}", 
                     taskId, task.getName(), executeType);
+            int safeMaxDepth = task.getMaxDepth() == null || task.getMaxDepth() < 1 ? 1 : task.getMaxDepth();
+            Integer safeCrawlInterval = task.getCrawlInterval() != null && task.getCrawlInterval() > 0
+                    ? task.getCrawlInterval() : null;
 
             // 步骤1: 分析网站结构
             log.info("步骤1: 分析网站结构 - {}", task.getTargetUrl());
@@ -257,7 +260,7 @@ public class CrawlerExecutionServiceImpl implements CrawlerExecutionService {
             int failedCount = 0;
 
             // 步骤3: 爬取资源列表页和详情页
-            log.info("步骤3: 开始爬取流程，最大深度={}", task.getMaxDepth());
+            log.info("步骤3: 开始爬取流程，最大深度={}", safeMaxDepth);
             while (!urlQueue.isEmpty()) {
                 // 检查停止标记
                 if (stopFlags.get(taskId) != null && stopFlags.get(taskId).get()) {
@@ -272,7 +275,7 @@ public class CrawlerExecutionServiceImpl implements CrawlerExecutionService {
                 int depth = current.depth;
                 
                 // 深度限制控制
-                if (depth >= task.getMaxDepth()) {
+                if (depth >= safeMaxDepth) {
                     log.debug("达到最大深度限制，跳过: url={}, depth={}", url, depth);
                     continue;
                 }
@@ -364,7 +367,7 @@ public class CrawlerExecutionServiceImpl implements CrawlerExecutionService {
                     }
 
                     // 步骤3.6: 提取分页链接（只在当前深度未达到最大深度时）
-                    if (depth + 1 < task.getMaxDepth()) {
+                    if (depth + 1 < safeMaxDepth) {
                         List<String> paginationLinks = extractPaginationLinks(doc, structure);
                         log.debug("从 {} 提取到 {} 个分页链接", url, paginationLinks.size());
                         
@@ -385,14 +388,17 @@ public class CrawlerExecutionServiceImpl implements CrawlerExecutionService {
             }
 
             // 更新任务统计
-            task.setTotalCrawled(task.getTotalCrawled() + crawledCount);
-            task.setTotalSuccess(task.getTotalSuccess() + successCount);
-            task.setTotalFailed(task.getTotalFailed() + failedCount);
+            int currentTotalCrawled = task.getTotalCrawled() == null ? 0 : task.getTotalCrawled();
+            int currentTotalSuccess = task.getTotalSuccess() == null ? 0 : task.getTotalSuccess();
+            int currentTotalFailed = task.getTotalFailed() == null ? 0 : task.getTotalFailed();
+            task.setTotalCrawled(currentTotalCrawled + crawledCount);
+            task.setTotalSuccess(currentTotalSuccess + successCount);
+            task.setTotalFailed(currentTotalFailed + failedCount);
             task.setLastExecuteTime(startTime);
             
             // 计算下次执行时间
-            if (task.getStatus() == 1 && task.getCrawlInterval() != null && task.getCrawlInterval() > 0) {
-                task.setNextExecuteTime(LocalDateTime.now().plusHours(task.getCrawlInterval()));
+            if (Integer.valueOf(1).equals(task.getStatus()) && safeCrawlInterval != null) {
+                task.setNextExecuteTime(LocalDateTime.now().plusHours(safeCrawlInterval));
             }
             
             crawlerTaskMapper.updateById(task);

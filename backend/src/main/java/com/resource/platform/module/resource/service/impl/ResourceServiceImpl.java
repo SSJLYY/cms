@@ -114,7 +114,9 @@ public class ResourceServiceImpl implements ResourceService {
     @Override
     public ResourceVO getPublishedResourceDetail(Long id) {
         Resource resource = resourceMapper.selectById(id);
-        if (resource == null || resource.getDeleted() == 1 || resource.getStatus() == null || resource.getStatus() != 1) {
+        if (resource == null
+                || Integer.valueOf(1).equals(resource.getDeleted())
+                || !Integer.valueOf(1).equals(resource.getStatus())) {
             throw new BusinessException(BizErrorCode.RESOURCE_NOT_FOUND);
         }
         return convertToVO(resource);
@@ -201,9 +203,10 @@ public class ResourceServiceImpl implements ResourceService {
         }
         
         // 步骤5：执行分页查询
+        long safePageNum = query.getPageNum() == null || query.getPageNum() < 1 ? 1L : query.getPageNum();
         int safePageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 10 : Math.min(query.getPageSize(), MAX_PAGE_SIZE);
-        Page<Resource> page = new Page<>(query.getPageNum(), safePageSize);
-        log.debug("执行分页查询: page={}, pageSize={}", query.getPageNum(), safePageSize);
+        Page<Resource> page = new Page<>(safePageNum, safePageSize);
+        log.debug("执行分页查询: page={}, pageSize={}", safePageNum, safePageSize);
         Page<Resource> resultPage = resourceMapper.selectPage(page, wrapper);
         
         // 步骤6：批量转换为VO对象列表（避免N+1查询）
@@ -411,11 +414,11 @@ public class ResourceServiceImpl implements ResourceService {
         }
         
         // 记录当前状态
-        int oldStatus = resource.getStatus();
+        int oldStatus = Integer.valueOf(1).equals(resource.getStatus()) ? 1 : 0;
         
         // 步骤2：切换状态
         // 1表示上架，0表示下架
-        int newStatus = resource.getStatus() == 1 ? 0 : 1;
+        int newStatus = Integer.valueOf(1).equals(resource.getStatus()) ? 0 : 1;
         resource.setStatus(newStatus);
         
         // 步骤3：更新数据库

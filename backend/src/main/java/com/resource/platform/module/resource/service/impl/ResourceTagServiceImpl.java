@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -23,6 +25,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class ResourceTagServiceImpl implements ResourceTagService {
+    private static final int DEFAULT_HOT_TAG_LIMIT = 10;
+    private static final int MAX_HOT_TAG_LIMIT = 100;
 
     @Autowired
     private ResourceTagMapper resourceTagMapper;
@@ -73,7 +77,9 @@ public class ResourceTagServiceImpl implements ResourceTagService {
     @Override
     public List<ResourceTag> getHotTags(Integer limit) {
         if (limit == null || limit <= 0) {
-            limit = 10;
+            limit = DEFAULT_HOT_TAG_LIMIT;
+        } else if (limit > MAX_HOT_TAG_LIMIT) {
+            limit = MAX_HOT_TAG_LIMIT;
         }
         
         return resourceTagMapper.selectList(
@@ -86,28 +92,58 @@ public class ResourceTagServiceImpl implements ResourceTagService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void associateResourceWithTags(Long resourceId, List<Long> tagIds) {
+        List<ResourceTagRelation> existingRelations = resourceTagRelationMapper.selectList(
+            new LambdaQueryWrapper<ResourceTagRelation>()
+                .eq(ResourceTagRelation::getResourceId, resourceId)
+        );
+        Set<Long> existingTagIds = existingRelations.stream()
+            .map(ResourceTagRelation::getTagId)
+            .collect(Collectors.toSet());
+        Set<Long> uniqueTagIds = tagIds == null ? new LinkedHashSet<>() : tagIds.stream()
+            .filter(java.util.Objects::nonNull)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+
         // 删除现有关联
         resourceTagRelationMapper.delete(
             new LambdaQueryWrapper<ResourceTagRelation>()
                 .eq(ResourceTagRelation::getResourceId, resourceId)
         );
+
+        for (Long existingTagId : existingTagIds) {
+            if (!uniqueTagIds.contains(existingTagId)) {
+                ResourceTag tag = resourceTagMapper.selectById(existingTagId);
+                if (tag != null) {
+                    int currentUseCount = tag.getUseCount() == null ? 0 : tag.getUseCount();
+                    tag.setUseCount(Math.max(0, currentUseCount - 1));
+                    resourceTagMapper.updateById(tag);
+                }
+            }
+        }
+
+        if (uniqueTagIds.isEmpty()) {
+            log.info("资源 {} 清空标签关联", resourceId);
+            return;
+        }
         
         // 创建新关联
-        for (Long tagId : tagIds) {
+        for (Long tagId : uniqueTagIds) {
             ResourceTagRelation relation = new ResourceTagRelation();
             relation.setResourceId(resourceId);
             relation.setTagId(tagId);
             resourceTagRelationMapper.insert(relation);
             
             // 更新标签使用次数
-            ResourceTag tag = resourceTagMapper.selectById(tagId);
-            if (tag != null) {
-                tag.setUseCount(tag.getUseCount() + 1);
-                resourceTagMapper.updateById(tag);
+            if (!existingTagIds.contains(tagId)) {
+                ResourceTag tag = resourceTagMapper.selectById(tagId);
+                if (tag != null) {
+                    int currentUseCount = tag.getUseCount() == null ? 0 : tag.getUseCount();
+                    tag.setUseCount(currentUseCount + 1);
+                    resourceTagMapper.updateById(tag);
+                }
             }
         }
         
-        log.info("关联资源 {} 和标签 {}", resourceId, tagIds);
+        log.info("关联资源 {} 和标签 {}", resourceId, uniqueTagIds);
     }
 
     @Override

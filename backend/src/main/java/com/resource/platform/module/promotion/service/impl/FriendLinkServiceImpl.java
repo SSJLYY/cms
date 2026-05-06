@@ -87,6 +87,8 @@ public class FriendLinkServiceImpl implements FriendLinkService {
             queryDTO.setPageSize(MAX_PAGE_SIZE);
             log.debug("页大小超过上限，修正为: pageSize={}", MAX_PAGE_SIZE);
         }
+        long safePageNum = queryDTO.getPage();
+        int safePageSize = queryDTO.getPageSize();
         
         // 步骤2：构建查询条件
         // 创建Lambda查询条件，支持动态查询
@@ -111,8 +113,8 @@ public class FriendLinkServiceImpl implements FriendLinkService {
         
         // 步骤3：执行分页查询
         // 创建分页对象并执行查询
-        log.debug("执行分页查询: page={}, pageSize={}", queryDTO.getPage(), queryDTO.getPageSize());
-        Page<FriendLink> page = new Page<>(queryDTO.getPage(), queryDTO.getPageSize());
+        log.debug("执行分页查询: page={}, pageSize={}", safePageNum, safePageSize);
+        Page<FriendLink> page = new Page<>(safePageNum, safePageSize);
         IPage<FriendLink> result = friendLinkMapper.selectPage(page, wrapper);
         
         log.info("分页查询完成: total={}, records={}", result.getTotal(), result.getRecords().size());
@@ -621,8 +623,8 @@ public class FriendLinkServiceImpl implements FriendLinkService {
         
         // 记录状态变更前的信息
         Integer oldStatus = friendLink.getStatus();
-        String oldStatusText = oldStatus == 1 ? "启用" : "禁用";
-        String newStatusText = status == 1 ? "启用" : "禁用";
+        String oldStatusText = Integer.valueOf(1).equals(oldStatus) ? "启用" : "禁用";
+        String newStatusText = Integer.valueOf(1).equals(status) ? "启用" : "禁用";
         
         log.info("友情链接状态变更: id={}, name={}, oldStatus={}({}), newStatus={}({})", 
             id, friendLink.getName(), oldStatus, oldStatusText, status, newStatusText);

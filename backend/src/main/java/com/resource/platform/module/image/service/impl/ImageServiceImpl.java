@@ -351,9 +351,10 @@ public class ImageServiceImpl implements ImageService {
             queryDTO.getFileType(), queryDTO.getIsUsed(), queryDTO.getUploaderId());
         
         // 创建分页对象
+        long safePageNum = queryDTO.getPage() == null || queryDTO.getPage() < 1 ? 1L : queryDTO.getPage();
         int safePageSize = queryDTO.getPageSize() == null || queryDTO.getPageSize() < 1 ? 20
             : Math.min(queryDTO.getPageSize(), MAX_PAGE_SIZE);
-        Page<Image> page = new Page<>(queryDTO.getPage(), safePageSize);
+        Page<Image> page = new Page<>(safePageNum, safePageSize);
         
         // 构建查询条件
         LambdaQueryWrapper<Image> wrapper = new LambdaQueryWrapper<>();
@@ -454,7 +455,7 @@ public class ImageServiceImpl implements ImageService {
         }
         
         // 检查是否被使用
-        if (image.getIsUsed() == 1) {
+        if (Integer.valueOf(1).equals(image.getIsUsed())) {
             // 获取使用该图片的资源列表
             List<ResourceVO> usingResources = getImageUsageDetails(id);
             if (!usingResources.isEmpty()) {
@@ -507,7 +508,7 @@ public class ImageServiceImpl implements ImageService {
         // 过滤掉已被资源使用的图片
         List<Image> deletableImages = new ArrayList<>();
         for (Image image : images) {
-            if (image.getIsUsed() == 1) {
+            if (Integer.valueOf(1).equals(image.getIsUsed())) {
                 log.warn("图片 {} 正被使用，跳过删除", image.getId());
             } else {
                 deletableImages.add(image);
@@ -547,7 +548,7 @@ public class ImageServiceImpl implements ImageService {
         if (image == null) {
             throw new ResourceNotFoundException("图片", id);
         }
-        return image.getIsUsed() == 1;
+        return Integer.valueOf(1).equals(image.getIsUsed());
     }
 
     private ImageVO convertToVO(Image image) {

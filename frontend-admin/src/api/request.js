@@ -1,23 +1,11 @@
-/**
- * HTTP请求封装（简化版）
- * 基于axios创建请求实例，提供基础的认证和错误处理
- */
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
-/**
- * 创建axios请求实例
- * 配置基础URL和超时时间
- */
 const request = axios.create({
-  baseURL: '',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
   timeout: 10000
 })
 
-/**
- * 请求拦截器
- * 自动添加认证token到请求头
- */
 request.interceptors.request.use(
   config => {
     const token = localStorage.getItem('token')
@@ -26,33 +14,38 @@ request.interceptors.request.use(
     }
     return config
   },
-  error => {
-    return Promise.reject(error)
-  }
+  error => Promise.reject(error)
 )
 
-/**
- * 响应拦截器
- * 统一处理响应结果和错误
- */
 request.interceptors.response.use(
   response => {
     const res = response.data
-    // 检查业务状态码
+
     if (res.code !== 200) {
-      ElMessage.error(res.message || 'Error')
-      return Promise.reject(new Error(res.message || 'Error'))
+      ElMessage.error(res.message || '请求失败')
+
+      const businessError = new Error(res.message || '请求失败')
+      businessError.response = response
+      businessError.businessCode = res.code
+      businessError.businessData = res
+
+      if (res.code === 401) {
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      }
+
+      return Promise.reject(businessError)
     }
+
     return res
   },
   error => {
-    // 处理401未授权错误：使用router进行SPA内跳转，保留路由状态
-    if (error.response && error.response.status === 401) {
+    if (error.response?.status === 401) {
       localStorage.removeItem('token')
-      // 使用SPA路由跳转而非硬刷新，避免丢失Vue应用状态
       window.location.href = '/login'
     }
-    ElMessage.error(error.message)
+
+    ElMessage.error(error.message || '请求失败')
     return Promise.reject(error)
   }
 )

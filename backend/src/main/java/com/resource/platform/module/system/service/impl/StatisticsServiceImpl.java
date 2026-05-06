@@ -39,6 +39,8 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     /** 分页查询每页最大条数 */
     private static final int MAX_PAGE_SIZE = 100;
+    private static final int DEFAULT_ACTIVITY_LIMIT = 10;
+    private static final int MAX_ACTIVITY_LIMIT = 100;
     
     @Autowired
     private AccessLogMapper accessLogMapper;
@@ -80,28 +82,28 @@ public class StatisticsServiceImpl implements StatisticsService {
         LambdaQueryWrapper<AccessLog> wrapper = new LambdaQueryWrapper<>();
         wrapper.ge(AccessLog::getCreateTime, startTime);
         wrapper.eq(AccessLog::getActionType, "download");
-        int totalDownloads = accessLogMapper.selectCount(wrapper).intValue();
-        overview.setTotalDownloads(totalDownloads);
-        log.debug("总下载量: {}", totalDownloads);
+        Long totalDownloads = accessLogMapper.selectCount(wrapper);
+        overview.setTotalDownloads(totalDownloads == null ? 0 : totalDownloads.intValue());
+        log.debug("总下载量: {}", overview.getTotalDownloads());
         
         // 步骤3：统计总访问量
         log.debug("统计访问量");
         wrapper = new LambdaQueryWrapper<>();
         wrapper.ge(AccessLog::getCreateTime, startTime);
         wrapper.eq(AccessLog::getActionType, "visit");
-        int totalVisits = accessLogMapper.selectCount(wrapper).intValue();
-        overview.setTotalVisits(totalVisits);
-        log.debug("总访问量: {}", totalVisits);
+        Long totalVisits = accessLogMapper.selectCount(wrapper);
+        overview.setTotalVisits(totalVisits == null ? 0 : totalVisits.intValue());
+        log.debug("总访问量: {}", overview.getTotalVisits());
         
         // 步骤4：计算新增访问量
         // 今日的访问量即为新增访问量，其他周期暂设为0
-        int newVisits = "today".equals(period) ? totalVisits : 0;
+        int newVisits = "today".equals(period) ? overview.getTotalVisits() : 0;
         overview.setNewVisits(newVisits);
         log.debug("新增访问量: {}", newVisits);
         
         // 记录统计成功
         log.info("获取统计概览成功: period={}, downloads={}, visits={}, newVisits={}", 
-            period, totalDownloads, totalVisits, newVisits);
+            period, overview.getTotalDownloads(), overview.getTotalVisits(), newVisits);
         
         return overview;
     }
@@ -145,8 +147,9 @@ public class StatisticsServiceImpl implements StatisticsService {
     
     @Override
     public PageResult<Map<String, Object>> getVisitDetails(VisitQueryDTO query) {
+        long safePageNum = query.getPageNum() == null || query.getPageNum() < 1 ? 1L : query.getPageNum();
         int safePageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 10 : Math.min(query.getPageSize(), MAX_PAGE_SIZE);
-        Page<AccessLog> page = new Page<>(query.getPageNum(), safePageSize);
+        Page<AccessLog> page = new Page<>(safePageNum, safePageSize);
         
         LambdaQueryWrapper<AccessLog> wrapper = new LambdaQueryWrapper<>();
         wrapper.ge(AccessLog::getCreateTime, getStartTime(query.getPeriod()));
@@ -221,9 +224,10 @@ public class StatisticsServiceImpl implements StatisticsService {
     
     @Override
     public List<Map<String, Object>> getRealtimeActivities(Integer limit) {
+        int safeLimit = limit == null || limit < 1 ? DEFAULT_ACTIVITY_LIMIT : Math.min(limit, MAX_ACTIVITY_LIMIT);
         LambdaQueryWrapper<AccessLog> wrapper = new LambdaQueryWrapper<>();
         wrapper.orderByDesc(AccessLog::getCreateTime);
-        wrapper.last("LIMIT " + (limit != null ? limit : 10));
+        wrapper.last("LIMIT " + safeLimit);
         
         List<AccessLog> logs = accessLogMapper.selectList(wrapper);
         

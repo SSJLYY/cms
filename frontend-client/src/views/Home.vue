@@ -509,13 +509,30 @@ const loadAdvertisements = async () => {
   }
 }
 
+const normalizeExternalUrl = (url) => {
+  const value = typeof url === 'string' ? url.trim() : ''
+  if (!value) return ''
+
+  const lowerValue = value.toLowerCase()
+  if (lowerValue.startsWith('javascript:') || lowerValue.startsWith('data:')) {
+    return ''
+  }
+
+  if (lowerValue.startsWith('http://') || lowerValue.startsWith('https://')) {
+    return value
+  }
+
+  return `https://${value}`
+}
+
 const handleAdClick = async (ad) => {
   try {
     await recordClick(ad.id)
     if (ad.linkUrl) {
-      let url = ad.linkUrl
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'https://' + url
+      const url = normalizeExternalUrl(ad.linkUrl)
+      if (!url) {
+        ElMessage.error('链接地址无效')
+        return
       }
       window.open(url, '_blank', 'noopener,noreferrer')
     }

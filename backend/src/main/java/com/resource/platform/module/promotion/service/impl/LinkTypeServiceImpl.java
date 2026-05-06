@@ -112,7 +112,7 @@ public class LinkTypeServiceImpl extends ServiceImpl<LinkTypeMapper, LinkType> i
         
         // 步骤3：记录查询结果
         // 统计启用和禁用的数量
-        long enabledCount = list.stream().filter(linkType -> linkType.getStatus() == 1).count();
+        long enabledCount = list.stream().filter(linkType -> Integer.valueOf(1).equals(linkType.getStatus())).count();
         long disabledCount = list.size() - enabledCount;
         log.info("链接类型统计: total={}, enabled={}, disabled={}", 
             list.size(), enabledCount, disabledCount);

@@ -129,8 +129,9 @@ public class FeedbackServiceImpl implements FeedbackService {
     
     @Override
     public PageResult<FeedbackVO> getFeedbackList(FeedbackQueryDTO query) {
+        long safePageNum = query.getPageNum() == null || query.getPageNum() < 1 ? 1L : query.getPageNum();
         int safePageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 10 : Math.min(query.getPageSize(), MAX_PAGE_SIZE);
-        Page<Feedback> page = new Page<>(query.getPageNum(), safePageSize);
+        Page<Feedback> page = new Page<>(safePageNum, safePageSize);
         
         LambdaQueryWrapper<Feedback> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Feedback::getDeleted, 0);
@@ -162,7 +163,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     @Override
     public FeedbackVO getFeedbackDetail(Long id) {
         Feedback feedback = feedbackMapper.selectById(id);
-        if (feedback == null || feedback.getDeleted() == 1) {
+        if (feedback == null || Integer.valueOf(1).equals(feedback.getDeleted())) {
             throw new BusinessException("反馈不存在");
         }
         return convertToVO(feedback);
@@ -174,7 +175,7 @@ public class FeedbackServiceImpl implements FeedbackService {
         log.info("处理反馈回复: feedbackId={}", dto.getId());
 
         Feedback feedback = feedbackMapper.selectById(dto.getId());
-        if (feedback == null || feedback.getDeleted() == 1) {
+        if (feedback == null || Integer.valueOf(1).equals(feedback.getDeleted())) {
             throw new BusinessException("反馈不存在");
         }
 
@@ -265,7 +266,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     @Transactional(rollbackFor = Exception.class)
     public void updateStatus(FeedbackStatusDTO dto) {
         Feedback feedback = feedbackMapper.selectById(dto.getId());
-        if (feedback == null || feedback.getDeleted() == 1) {
+        if (feedback == null || Integer.valueOf(1).equals(feedback.getDeleted())) {
             throw new BusinessException("反馈不存在");
         }
         

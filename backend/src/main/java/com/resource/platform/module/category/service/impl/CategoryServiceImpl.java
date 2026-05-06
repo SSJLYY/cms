@@ -226,9 +226,10 @@ public class CategoryServiceImpl implements CategoryService {
             queryDTO.getParentId(), queryDTO.getLevel(), queryDTO.getStatus());
         
         // 创建分页对象
+        long safePageNum = queryDTO.getPage() == null || queryDTO.getPage() < 1 ? 1L : queryDTO.getPage();
         int safePageSize = queryDTO.getPageSize() == null || queryDTO.getPageSize() < 1 ? 20
             : Math.min(queryDTO.getPageSize(), MAX_PAGE_SIZE);
-        Page<Category> page = new Page<>(queryDTO.getPage(), safePageSize);
+        Page<Category> page = new Page<>(safePageNum, safePageSize);
         
         // 构建查询条件
         LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
@@ -663,7 +664,7 @@ public class CategoryServiceImpl implements CategoryService {
         try {
             // 生成唯一的文件名，使用时间戳避免冲突
             String fileName = "categories_export_" + System.currentTimeMillis() + ".csv";
-            String filePath = "/tmp/" + fileName;
+            String filePath = System.getProperty("java.io.tmpdir") + File.separator + fileName;
             
             // 创建文件对象
             File file = new File(filePath);

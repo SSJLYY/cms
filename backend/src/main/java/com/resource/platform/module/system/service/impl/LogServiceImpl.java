@@ -129,8 +129,9 @@ public class LogServiceImpl implements LogService {
 
     @Override
     public Page<SystemLog> queryLogs(LogQueryDTO queryDTO) {
+        long safePageNum = queryDTO.getPage() == null || queryDTO.getPage() < 1 ? 1L : queryDTO.getPage();
         int safePageSize = queryDTO.getPageSize() == null || queryDTO.getPageSize() < 1 ? 10 : Math.min(queryDTO.getPageSize(), MAX_PAGE_SIZE);
-        Page<SystemLog> page = new Page<>(queryDTO.getPage(), safePageSize);
+        Page<SystemLog> page = new Page<>(safePageNum, safePageSize);
         
         LambdaQueryWrapper<SystemLog> wrapper = new LambdaQueryWrapper<>();
         
@@ -188,11 +189,11 @@ public class LogServiceImpl implements LogService {
         LambdaQueryWrapper<SystemLog> wrapper = new LambdaQueryWrapper<>();
         wrapper.lt(SystemLog::getCreateTime, beforeTime);
         
-        int count = systemLogMapper.selectCount(wrapper).intValue();
+        Long count = systemLogMapper.selectCount(wrapper);
         systemLogMapper.delete(wrapper);
         
         log.info("清理了 {} 条日志记录（{}之前）", count, beforeTime);
-        return count;
+        return count == null ? 0 : count.intValue();
     }
 
     @Override
@@ -240,7 +241,11 @@ public class LogServiceImpl implements LogService {
         // 保存到临时文件
         try {
             String fileName = "logs_export_" + System.currentTimeMillis() + ".csv";
-            String filePath = "/tmp/" + fileName;
+            File tempDir = new File(System.getProperty("java.io.tmpdir"));
+            if (!tempDir.exists() && !tempDir.mkdirs()) {
+                throw new IOException("无法创建临时目录: " + tempDir.getAbsolutePath());
+            }
+            String filePath = new File(tempDir, fileName).getAbsolutePath();
             File file = new File(filePath);
             FileUtils.writeStringToFile(file, csv.toString(), StandardCharsets.UTF_8);
             

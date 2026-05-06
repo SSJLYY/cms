@@ -486,12 +486,24 @@ const nextModalImage = () => {
   }
 }
 
-const getFullUrl = (url) => {
-  if (!url) return '#'
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url
+const normalizeExternalUrl = (url) => {
+  const value = typeof url === 'string' ? url.trim() : ''
+  if (!value) return ''
+
+  const lowerValue = value.toLowerCase()
+  if (lowerValue.startsWith('javascript:') || lowerValue.startsWith('data:')) {
+    return ''
   }
-  return `https://${url}`
+
+  if (lowerValue.startsWith('http://') || lowerValue.startsWith('https://')) {
+    return value
+  }
+
+  return `https://${value}`
+}
+
+const getFullUrl = (url) => {
+  return normalizeExternalUrl(url) || '#'
 }
 
 const getLinkTypeName = (type) => {
@@ -555,9 +567,10 @@ const handleAdClick = async (ad) => {
   try {
     await recordClick(ad.id)
     if (ad.linkUrl) {
-      let url = ad.linkUrl
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'https://' + url
+      const url = normalizeExternalUrl(ad.linkUrl)
+      if (!url) {
+        ElMessage.error('閾炬帴鍦板潃鏃犳晥')
+        return
       }
       window.open(url, '_blank', 'noopener,noreferrer')
     }

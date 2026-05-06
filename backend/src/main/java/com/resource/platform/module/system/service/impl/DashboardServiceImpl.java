@@ -41,6 +41,10 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class DashboardServiceImpl implements DashboardService {
+    private static final int DEFAULT_LIMIT = 10;
+    private static final int MAX_LIMIT = 100;
+    private static final int DEFAULT_TREND_DAYS = 7;
+    private static final int MAX_TREND_DAYS = 365;
 
     @Autowired
     private CategoryMapper categoryMapper;
@@ -134,7 +138,9 @@ public class DashboardServiceImpl implements DashboardService {
     @Override
     public TrendDataVO getTrendData(Integer days) {
         if (days == null || days <= 0) {
-            days = 7;
+            days = DEFAULT_TREND_DAYS;
+        } else if (days > MAX_TREND_DAYS) {
+            days = MAX_TREND_DAYS;
         }
         
         TrendDataVO trendData = new TrendDataVO();
@@ -193,7 +199,9 @@ public class DashboardServiceImpl implements DashboardService {
     @Override
     public Object getHotResources(Integer limit) {
         if (limit == null || limit <= 0) {
-            limit = 10;
+            limit = DEFAULT_LIMIT;
+        } else if (limit > MAX_LIMIT) {
+            limit = MAX_LIMIT;
         }
         
         // 查询热门资源（按下载量排序）
@@ -211,7 +219,9 @@ public class DashboardServiceImpl implements DashboardService {
     @Override
     public Object getLatestResources(Integer limit) {
         if (limit == null || limit <= 0) {
-            limit = 10;
+            limit = DEFAULT_LIMIT;
+        } else if (limit > MAX_LIMIT) {
+            limit = MAX_LIMIT;
         }
         
         // 查询最新资源（按创建时间排序）
@@ -290,9 +300,15 @@ public class DashboardServiceImpl implements DashboardService {
         
         // 磁盘使用率
         try {
-            java.io.File root = new java.io.File("/");
+            java.io.File root = new java.io.File(System.getProperty("user.dir")).getAbsoluteFile();
+            while (root.getParentFile() != null) {
+                root = root.getParentFile();
+            }
             long totalSpace = root.getTotalSpace();
             long freeSpace = root.getFreeSpace();
+            if (totalSpace <= 0) {
+                throw new IllegalStateException("磁盘总空间无效");
+            }
             long usedSpace = totalSpace - freeSpace;
             double diskUsage = (double) usedSpace / totalSpace * 100;
             status.put("diskUsage", Math.round(diskUsage * 100.0) / 100.0);
