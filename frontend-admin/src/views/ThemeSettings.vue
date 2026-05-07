@@ -216,7 +216,7 @@ const loadSettings = async () => {
       }
     }
   } catch (error) {
-    ElMessage.error('加载主题设置失败')
+    ElMessage.error(error.response?.data?.message || '加载主题设置失败')
   }
 }
 
@@ -227,7 +227,7 @@ const saveSettings = async () => {
     })
     ElMessage.success('主题设置已保存')
   } catch (error) {
-    ElMessage.error('保存主题设置失败')
+    ElMessage.error(error.response?.data?.message || '保存主题设置失败')
   }
 }
 

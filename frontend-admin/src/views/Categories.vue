@@ -255,18 +255,18 @@ const resolveIconComponent = (iconName) => iconComponents[iconName] || null
 const getStatistics = async () => {
   try {
     const { data } = await getCategoryStatistics()
-    statistics.value = data
+    statistics.value = data || {}
   } catch (error) {
-    ElMessage.error('获取统计信息失败')
+    ElMessage.error(error.response?.data?.message || '获取统计信息失败')
   }
 }
 
 const loadCategoryTree = async () => {
   try {
     const { data } = await getCategoryTree()
-    categoryTree.value = data
+    categoryTree.value = Array.isArray(data) ? data : []
   } catch (error) {
-    ElMessage.error('加载分类树失败')
+    ElMessage.error(error.response?.data?.message || '加载分类树失败')
   }
 }
 
@@ -342,7 +342,7 @@ const handleExport = async () => {
     const { data } = await exportCategories()
     ElMessage.success('导出成功: ' + data)
   } catch (error) {
-    ElMessage.error('导出失败')
+    ElMessage.error(error.response?.data?.message || '导出失败')
   }
 }
 

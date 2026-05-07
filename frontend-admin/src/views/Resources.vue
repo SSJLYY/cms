@@ -516,9 +516,9 @@ const loadCategories = async () => {
       })
       return result
     }
-    categories.value = flattenCategories(res.data || [])
+    categories.value = flattenCategories(Array.isArray(res?.data) ? res.data : [])
   } catch (error) {
-    ElMessage.error('加载分类失败')
+    ElMessage.error(error.response?.data?.message || '加载分类失败')
   }
 }
 
@@ -527,7 +527,7 @@ const loadLinkTypes = async () => {
     const res = await getLinkTypes()
     linkTypes.value = res.data || []
   } catch (error) {
-    ElMessage.error('加载网盘类型失败')
+    ElMessage.error(error.response?.data?.message || '加载网盘类型失败')
   }
 }
 

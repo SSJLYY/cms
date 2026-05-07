@@ -363,7 +363,7 @@ const loadOverview = async () => {
       newVisits: 0
     }
   } catch (error) {
-    ElMessage.error('加载统计概览失败')
+    ElMessage.error(error.response?.data?.message || '加载统计概览失败')
   }
 }
 
@@ -381,7 +381,7 @@ const loadDownloadDistribution = async () => {
 
     initDownloadChart(data)
   } catch (error) {
-    ElMessage.error('加载下载分布失败')
+    ElMessage.error(error.response?.data?.message || '加载下载分布失败')
   }
 }
 
@@ -397,7 +397,7 @@ const loadVisitDetails = async () => {
     visitStats.value = Array.isArray(records) ? records : []
     total.value = Number(res?.data?.total || 0)
   } catch (error) {
-    ElMessage.error('加载访问统计失败')
+    ElMessage.error(error.response?.data?.message || '加载访问统计失败')
   } finally {
     tableLoading.value = false
   }
@@ -408,7 +408,7 @@ const loadRealtimeActivities = async () => {
     const res = await getRealtimeActivities(10)
     realtimeActivities.value = Array.isArray(res?.data) ? res.data : []
   } catch (error) {
-    ElMessage.error('加载实时活动失败')
+    ElMessage.error(error.response?.data?.message || '加载实时活动失败')
   }
 }
 

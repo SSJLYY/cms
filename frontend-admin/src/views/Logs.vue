@@ -229,9 +229,9 @@ const queryForm = reactive({
 const getStatistics = async () => {
   try {
     const { data } = await getLogStatistics()
-    statistics.value = data
+    statistics.value = data || {}
   } catch (error) {
-    ElMessage.error('获取统计信息失败')
+    ElMessage.error(error.response?.data?.message || '获取统计信息失败')
   }
 }
 
@@ -239,10 +239,10 @@ const handleQuery = async () => {
   loading.value = true
   try {
     const { data } = await queryLogs(queryForm)
-    logList.value = data.records
-    total.value = data.total
+    logList.value = Array.isArray(data?.records) ? data.records : []
+    total.value = Number(data?.total || 0)
   } catch (error) {
-    ElMessage.error('查询日志失败')
+    ElMessage.error(error.response?.data?.message || '查询日志失败')
   } finally {
     loading.value = false
   }
@@ -289,7 +289,7 @@ const handleClean = () => {
     } catch (error) {
       ElMessage.error(error.response?.data?.message || '清理失败')
     }
-  })
+  }).catch(() => {})
 }
 
 onMounted(() => {

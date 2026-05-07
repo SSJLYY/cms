@@ -259,10 +259,11 @@ const loadAdvertisements = async () => {
       page: page.value, pageSize: pageSize.value,
       position: activePosition.value === 'all' ? null : activePosition.value
     })
-    advertisementList.value = (data.records || []).map(item => normalizeAdvertisementForm(item))
-    total.value = data.total
+    const records = Array.isArray(data?.records) ? data.records : []
+    advertisementList.value = records.map(item => normalizeAdvertisementForm(item))
+    total.value = Number(data?.total || 0)
   } catch (error) {
-    ElMessage.error('加载广告列表失败')
+    ElMessage.error(error.response?.data?.message || '加载广告列表失败')
   } finally {
     loading.value = false
   }
@@ -339,7 +340,7 @@ const handleDelete = (row) => {
     } catch (error) {
       ElMessage.error(error.response?.data?.message || '删除失败')
     }
-  })
+  }).catch(() => {})
 }
 
 const handleRefresh = () => loadAdvertisements()

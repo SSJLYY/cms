@@ -294,7 +294,7 @@ const getMetrics = async () => {
     const res = await fetchMetrics()
     metrics.value = res?.data || {}
   } catch (error) {
-    ElMessage.error('获取核心指标失败')
+    ElMessage.error(error.response?.data?.message || '获取核心指标失败')
   }
 }
 
@@ -304,7 +304,7 @@ const getTrendData = async () => {
     const res = await fetchTrendData(trendDays.value)
     renderChart(res?.data || { dates: [], resourceData: [], downloadData: [], userData: [] })
   } catch (error) {
-    ElMessage.error('获取趋势数据失败')
+    ElMessage.error(error.response?.data?.message || '获取趋势数据失败')
   } finally {
     loading.value = false
   }
@@ -315,7 +315,7 @@ const getPendingTasks = async () => {
     const res = await fetchPendingTasks()
     pendingTasks.value = res?.data || {}
   } catch (error) {
-    ElMessage.error('获取待处理事项失败')
+    ElMessage.error(error.response?.data?.message || '获取待处理事项失败')
   }
 }
 
@@ -329,7 +329,7 @@ const getSystemStatus = async () => {
       { label: '磁盘使用率', value: data.diskUsage || 0, color: getProgressColor(data.diskUsage || 0) }
     ]
   } catch (error) {
-    ElMessage.error('获取系统状态失败')
+    ElMessage.error(error.response?.data?.message || '获取系统状态失败')
   }
 }
 

@@ -21,8 +21,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -298,7 +300,50 @@ public class FeedbackServiceImpl implements FeedbackService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void batchDelete(List<Long> ids) {
-        ids.forEach(this::deleteFeedback);
+        if (ids == null || ids.isEmpty()) {
+            throw new BusinessException("反馈ID列表不能为空");
+        }
+
+        List<Long> invalidIds = ids.stream()
+                .filter(id -> id == null || id <= 0)
+                .collect(Collectors.toList());
+        if (!invalidIds.isEmpty()) {
+            throw new BusinessException("包含无效的反馈ID: " + invalidIds);
+        }
+
+        List<Feedback> feedbackList = feedbackMapper.selectBatchIds(ids);
+        List<Long> existingIds = feedbackList.stream()
+                .map(Feedback::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        List<Long> missingIds = ids.stream()
+                .filter(id -> !existingIds.contains(id))
+                .collect(Collectors.toList());
+        if (!missingIds.isEmpty()) {
+            throw new BusinessException("部分反馈不存在: " + missingIds);
+        }
+
+        List<Long> deletedIds = feedbackList.stream()
+                .filter(feedback -> Integer.valueOf(1).equals(feedback.getDeleted()))
+                .map(Feedback::getId)
+                .collect(Collectors.toList());
+        if (!deletedIds.isEmpty()) {
+            throw new BusinessException("部分反馈已删除: " + deletedIds);
+        }
+
+        List<Long> failedIds = new ArrayList<>();
+        for (Long id : ids) {
+            try {
+                deleteFeedback(id);
+            } catch (RuntimeException ex) {
+                failedIds.add(id);
+                throw ex;
+            }
+        }
+
+        if (!failedIds.isEmpty()) {
+            throw new BusinessException("批量删除反馈存在失败记录: " + failedIds);
+        }
     }
     
     private FeedbackVO convertToVO(Feedback feedback) {

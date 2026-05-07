@@ -163,9 +163,9 @@ const statsConfig = computed(() => [
 const getStatistics = async () => {
   try {
     const { data } = await request({ url: '/api/seo/statistics', method: 'get', skipBusinessErrorMessage: true })
-    statistics.value = data
+    statistics.value = data || {}
   } catch (error) {
-    ElMessage.error('获取统计信息失败')
+    ElMessage.error(error.response?.data?.message || '获取统计信息失败')
   }
 }
 
@@ -177,10 +177,10 @@ const loadHistory = async () => {
         params: { page: page.value, pageSize: pageSize.value },
         skipBusinessErrorMessage: true
       })
-    historyList.value = data.records
-    total.value = data.total
+    historyList.value = Array.isArray(data?.records) ? data.records : []
+    total.value = Number(data?.total || 0)
   } catch (error) {
-    ElMessage.error('加载提交历史失败')
+    ElMessage.error(error.response?.data?.message || '加载提交历史失败')
   } finally {
     loading.value = false
   }
@@ -191,7 +191,7 @@ const handleGenerateSitemap = async () => {
     const { data } = await request({ url: '/api/seo/sitemap/generate', method: 'post', skipBusinessErrorMessage: true })
     ElMessage.success('网站地图生成成功: ' + data)
   } catch (error) {
-    ElMessage.error('生成网站地图失败')
+    ElMessage.error(error.response?.data?.message || '生成网站地图失败')
   }
 }
 
@@ -205,7 +205,7 @@ const handleSubmitBaidu = async () => {
     }
     loadHistory(); getStatistics()
   } catch (error) {
-    ElMessage.error('提交到百度失败')
+    ElMessage.error(error.response?.data?.message || '提交到百度失败')
   }
 }
 
@@ -219,7 +219,7 @@ const handleSubmitBing = async () => {
     }
     loadHistory(); getStatistics()
   } catch (error) {
-    ElMessage.error('提交到必应失败')
+    ElMessage.error(error.response?.data?.message || '提交到必应失败')
   }
 }
 
@@ -236,9 +236,9 @@ const handleBatchSubmit = async () => {
       }
       loadHistory(); getStatistics()
     } catch (error) {
-      ElMessage.error('批量提交失败')
+      ElMessage.error(error.response?.data?.message || '批量提交失败')
     }
-  })
+  }).catch(() => {})
 }
 
 const handleResubmit = async (row) => {
@@ -251,7 +251,7 @@ const handleResubmit = async (row) => {
     }
     loadHistory()
   } catch (error) {
-    ElMessage.error('重新提交失败')
+    ElMessage.error(error.response?.data?.message || '重新提交失败')
   }
 }
 
@@ -264,9 +264,9 @@ const handleDelete = (row) => {
       ElMessage.success('删除成功')
       loadHistory(); getStatistics()
     } catch (error) {
-      ElMessage.error('删除失败')
+      ElMessage.error(error.response?.data?.message || '删除失败')
     }
-  })
+  }).catch(() => {})
 }
 
 onMounted(() => { getStatistics(); loadHistory() })

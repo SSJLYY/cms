@@ -316,7 +316,7 @@ const getStatistics = async () => {
     statistics.value = response.data || {}
   } catch (error) {
     console.error('获取统计信息失败:', error)
-    ElMessage.error('获取统计信息失败')
+    ElMessage.error(error.response?.data?.message || '获取统计信息失败')
   }
 }
 

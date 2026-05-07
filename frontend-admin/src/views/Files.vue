@@ -325,9 +325,9 @@ const getImageUrl = (url) => {
 const getStatistics = async () => {
   try {
     const { data } = await getImageStatistics()
-    statistics.value = data
+    statistics.value = data || {}
   } catch (error) {
-    ElMessage.error('获取统计信息失败')
+    ElMessage.error(error.response?.data?.message || '获取统计信息失败')
   }
 }
 
@@ -335,10 +335,10 @@ const handleQuery = async () => {
   loading.value = true
   try {
     const { data } = await queryImages(queryForm)
-    imageList.value = data.records
-    total.value = data.total
+    imageList.value = Array.isArray(data?.records) ? data.records : []
+    total.value = Number(data?.total || 0)
   } catch (error) {
-    ElMessage.error('查询图片失败')
+    ElMessage.error(error.response?.data?.message || '查询图片失败')
   } finally {
     loading.value = false
   }
@@ -359,8 +359,8 @@ const handleUploadSuccess = (response) => {
   handleQuery()
 }
 
-const handleUploadError = () => {
-  ElMessage.error('上传失败')
+const handleUploadError = (error) => {
+  ElMessage.error(error?.response?.data?.message || '上传失败')
 }
 
 const handleSelectionChange = (selection) => {
@@ -392,7 +392,7 @@ const handleDelete = (row) => {
     } catch (error) {
       ElMessage.error(error.response?.data?.message || '删除失败')
     }
-  })
+  }).catch(() => {})
 }
 
 const handleBatchDelete = () => {
@@ -419,7 +419,7 @@ const handleBatchDelete = () => {
     } catch (error) {
       ElMessage.error(error.response?.data?.message || '批量删除失败')
     }
-  })
+  }).catch(() => {})
 }
 
 onMounted(() => {
