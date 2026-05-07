@@ -255,9 +255,9 @@ const loadConfigs = async (category) => {
     })
     const configs = data
     const configObj = configMap[category]
-    
+
     Object.keys(configObj).forEach(key => delete configObj[key])
-    
+
     configs.forEach(config => {
       configObj[config.configKey] = config.configValue
     })
@@ -288,15 +288,24 @@ const handleSave = async (category) => {
 const handleReset = async (category) => {
   try {
     const configs = configMap[category]
+    const failedKeys = []
     for (const key of Object.keys(configs)) {
-      await request({
-        url: `/api/config/${key}/reset`,
-        method: 'post',
-        skipBusinessErrorMessage: true
-      })
+      try {
+        await request({
+          url: `/api/config/${key}/reset`,
+          method: 'post',
+          skipBusinessErrorMessage: true
+        })
+      } catch (error) {
+        failedKeys.push(key)
+      }
+    }
+    await loadConfigs(category)
+    if (failedKeys.length > 0) {
+      ElMessage.error(`部分重置失败: ${failedKeys.join(', ')}`)
+      return
     }
     ElMessage.success('重置成功')
-    loadConfigs(category)
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '重置失败')
   }
@@ -312,7 +321,7 @@ const handleTest = async (type) => {
       data: configs,
       skipBusinessErrorMessage: true
     })
-    
+
     if (data) {
       ElMessage.success('测试成功')
     } else {
@@ -437,7 +446,7 @@ onMounted(() => {
   .header-content {
     padding: 20px;
   }
-  
+
   .config-form {
     max-width: 100%;
   }

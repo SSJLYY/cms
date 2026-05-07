@@ -324,11 +324,11 @@ const handleQuery = async () => {
   loading.value = true
   try {
     const response = await queryFeedback(queryForm)
-    feedbackList.value = response.data.records || []
-    total.value = response.data.total || 0
+    feedbackList.value = Array.isArray(response?.data?.records) ? response.data.records : []
+    total.value = Number(response?.data?.total || 0)
   } catch (error) {
     console.error('查询反馈失败:', error)
-    ElMessage.error('查询反馈失败')
+    ElMessage.error(error.response?.data?.message || '查询反馈失败')
   } finally {
     loading.value = false
   }

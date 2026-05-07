@@ -119,8 +119,8 @@
         </el-table-column>
         <el-table-column label="成功率" width="120" align="center">
           <template #default="{ row }">
-            <el-progress 
-              :percentage="calculateSuccessRate(row)" 
+            <el-progress
+              :percentage="calculateSuccessRate(row)"
               :color="getProgressColor(row)"
               :stroke-width="8"
               style="width: 80px; display: inline-block;"
@@ -148,9 +148,9 @@
                 </svg>
                 爬取
               </el-button>
-              <el-button 
-                size="small" 
-                :type="row.status === 1 ? 'warning' : 'success'" 
+              <el-button
+                size="small"
+                :type="row.status === 1 ? 'warning' : 'success'"
                 link
                 @click="handleToggleStatus(row)"
               >
@@ -195,7 +195,7 @@
         <el-form-item label="任务名称" prop="name">
           <el-input v-model="taskForm.name" placeholder="请输入任务名称" />
         </el-form-item>
-        
+
         <el-form-item label="目标URL" prop="targetUrl">
           <el-input v-model="taskForm.targetUrl" placeholder="https://example.com">
             <template #append>
@@ -235,8 +235,8 @@
         </el-divider>
 
         <div class="mapping-section">
-          <el-form-item 
-            v-for="(item, index) in taskForm.categoryMapping" 
+          <el-form-item
+            v-for="(item, index) in taskForm.categoryMapping"
             :key="index"
             :label="`映射${index + 1}`"
           >
@@ -370,7 +370,7 @@ const loadTasks = async () => {
     tasks.value = Array.isArray(res?.data?.records) ? res.data.records : []
     total.value = Number(res?.data?.total || 0)
   } catch (error) {
-    ElMessage.error('加载任务列表失败')
+    ElMessage.error(error.response?.data?.message || '加载任务列表失败')
   } finally {
     loading.value = false
   }
@@ -393,7 +393,7 @@ const showEditDialog = (row) => {
   dialogTitle.value = '编辑任务'
   isEdit.value = true
   editId.value = row.id
-  
+
   Object.assign(taskForm, {
     name: row.name,
     targetUrl: row.targetUrl,
@@ -411,7 +411,7 @@ const showEditDialog = (row) => {
       downloadLinkSelector: ''
     }
   })
-  
+
   dialogVisible.value = true
 }
 
@@ -443,17 +443,17 @@ const handleValidateUrl = async () => {
     ElMessage.warning('请先输入URL')
     return
   }
-  
+
   validating.value = true
   try {
     const res = await validateUrl(taskForm.targetUrl, { skipBusinessErrorMessage: true })
-    if (res.data.valid) {
-      ElMessage.success('URL验证成功')
+    if (res?.data?.valid) {
+      ElMessage.success(res?.message || 'URL验证成功')
     } else {
-      ElMessage.error('URL无效或无法访问')
+      ElMessage.error(res?.message || 'URL无效或无法访问')
     }
   } catch (error) {
-    ElMessage.error('URL验证失败')
+    ElMessage.error(error.response?.data?.message || 'URL验证失败')
   } finally {
     validating.value = false
   }
@@ -461,7 +461,7 @@ const handleValidateUrl = async () => {
 
 const handleSubmit = async () => {
   await formRef.value.validate()
-  
+
   submitting.value = true
   try {
     if (isEdit.value) {
@@ -474,7 +474,7 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     loadTasks()
   } catch (error) {
-    ElMessage.error(isEdit.value ? '更新失败' : '创建失败')
+    ElMessage.error(error.response?.data?.message || (isEdit.value ? '更新失败' : '创建失败'))
   } finally {
     submitting.value = false
   }
@@ -486,7 +486,7 @@ const handleToggleStatus = async (row) => {
     ElMessage.success('状态切换成功')
     loadTasks()
   } catch (error) {
-    ElMessage.error('状态切换失败')
+    ElMessage.error(error.response?.data?.message || '状态切换失败')
   }
 }
 
@@ -510,9 +510,9 @@ const handleDelete = (row) => {
       ElMessage.success('删除成功')
       loadTasks()
     } catch (error) {
-      ElMessage.error('删除失败')
+      ElMessage.error(error.response?.data?.message || '删除失败')
     }
-  })
+  }).catch(() => {})
 }
 
 const addCategoryMapping = () => {
@@ -763,7 +763,7 @@ onMounted(() => {
     flex-direction: column;
     gap: 16px;
   }
-  
+
   .filter-row,
   .filter-actions {
     width: 100%;

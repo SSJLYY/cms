@@ -236,16 +236,19 @@ const loadData = async () => {
   try {
     const params = { ...searchForm, page: pagination.page, pageSize: pagination.pageSize }
     const res = await getFriendLinkPage(params)
-    tableData.value = res.data.records
-    pagination.total = res.data.total
+    tableData.value = Array.isArray(res?.data?.records) ? res.data.records : []
+    pagination.total = Number(res?.data?.total || 0)
   } catch (error) {
-    ElMessage.error('加载数据失败')
+    ElMessage.error(error.response?.data?.message || '加载数据失败')
   } finally {
     loading.value = false
   }
 }
 
-const handleSearch = () => { pagination.page = 1; loadData() }
+const handleSearch = () => {
+  pagination.page = 1
+  loadData()
+}
 
 const handleReset = () => {
   searchForm.name = ''
@@ -268,7 +271,7 @@ const handleEdit = (row) => {
 
 const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定要删除友情链接"${row.name}"吗？`, '提示', {
+    await ElMessageBox.confirm(`确定要删除友情链接“${row.name}”吗？`, '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
@@ -277,7 +280,9 @@ const handleDelete = async (row) => {
     ElMessage.success('删除成功')
     loadData()
   } catch (error) {
-    if (error !== 'cancel') ElMessage.error('删除失败')
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '删除失败')
+    }
   }
 }
 
@@ -293,7 +298,9 @@ const handleBatchDelete = async () => {
     selectedIds.value = []
     loadData()
   } catch (error) {
-    if (error !== 'cancel') ElMessage.error('删除失败')
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '删除失败')
+    }
   }
 }
 
@@ -311,7 +318,9 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     loadData()
   } catch (error) {
-    if (error !== false) ElMessage.error(formData.id ? '更新失败' : '创建失败')
+    if (error !== false) {
+      ElMessage.error(error.response?.data?.message || (formData.id ? '更新失败' : '创建失败'))
+    }
   } finally {
     submitLoading.value = false
   }

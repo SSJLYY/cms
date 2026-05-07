@@ -495,10 +495,10 @@ const loadResources = async () => {
   try {
     tableLoading.value = true
     const res = await getResourceList(queryParams)
-    resources.value = res.data.records || []
-    total.value = res.data.total || 0
+    resources.value = Array.isArray(res?.data?.records) ? res.data.records : []
+    total.value = Number(res?.data?.total || 0)
   } catch (error) {
-    ElMessage.error('加载资源失败')
+    ElMessage.error(error.response?.data?.message || '加载资源失败')
   } finally {
     tableLoading.value = false
   }
@@ -547,9 +547,9 @@ const loadImages = async () => {
       pageSize: 100,
       isUsed: null
     })
-    availableImages.value = res.data.records || []
+    availableImages.value = Array.isArray(res?.data?.records) ? res.data.records : []
   } catch (error) {
-    ElMessage.error('加载图片失败')
+    ElMessage.error(error.response?.data?.message || '加载图片失败')
   }
 }
 
