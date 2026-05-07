@@ -3,6 +3,7 @@ package com.resource.platform.module.crawler.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.resource.platform.common.PageResult;
+import com.resource.platform.exception.BusinessException;
 import com.resource.platform.module.crawler.dto.CrawlerLogQueryDTO;
 import com.resource.platform.module.crawler.entity.CrawlerLog;
 import com.resource.platform.module.crawler.mapper.CrawlerLogMapper;
@@ -33,7 +34,10 @@ public class CrawlerLogServiceImpl implements CrawlerLogService {
 
     @Override
     public void updateLog(CrawlerLog log) {
-        crawlerLogMapper.updateById(log);
+        int rows = crawlerLogMapper.updateById(log);
+        if (rows <= 0) {
+            throw new BusinessException("更新爬虫日志失败");
+        }
     }
 
     @Override

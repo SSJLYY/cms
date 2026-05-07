@@ -16,6 +16,7 @@ import com.resource.platform.module.crawler.entity.CrawlerTask;
 import com.resource.platform.module.resource.entity.Resource;
 import com.resource.platform.module.crawler.mapper.CrawlerTaskMapper;
 import com.resource.platform.module.resource.mapper.ResourceMapper;
+import com.resource.platform.module.crawler.service.CrawlerExecutionService;
 import com.resource.platform.module.crawler.service.CrawlerTaskService;
 import com.resource.platform.module.crawler.vo.CrawlerStatistics;
 import com.resource.platform.module.crawler.vo.CrawlerTaskVO;
@@ -53,6 +54,9 @@ public class CrawlerTaskServiceImpl implements CrawlerTaskService {
     
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private CrawlerExecutionService crawlerExecutionService;
     
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -167,7 +171,10 @@ public class CrawlerTaskServiceImpl implements CrawlerTaskService {
             task.setNextExecuteTime(LocalDateTime.now().plusHours(dto.getCrawlInterval()));
         }
         
-        crawlerTaskMapper.updateById(task);
+        int rows = crawlerTaskMapper.updateById(task);
+        if (rows <= 0) {
+            throw new BusinessException(BizErrorCode.CRAWLER_TASK_NOT_FOUND);
+        }
         
         return convertToVO(task);
     }
@@ -189,7 +196,10 @@ public class CrawlerTaskServiceImpl implements CrawlerTaskService {
         }
         
         // 逻辑删除任务
-        crawlerTaskMapper.deleteById(id);
+        int rows = crawlerTaskMapper.deleteById(id);
+        if (rows <= 0) {
+            throw new BusinessException(BizErrorCode.CRAWLER_TASK_NOT_FOUND);
+        }
     }
     
     @Override
@@ -211,7 +221,10 @@ public class CrawlerTaskServiceImpl implements CrawlerTaskService {
             task.setNextExecuteTime(null);
         }
         
-        crawlerTaskMapper.updateById(task);
+        int rows = crawlerTaskMapper.updateById(task);
+        if (rows <= 0) {
+            throw new BusinessException(BizErrorCode.CRAWLER_TASK_NOT_FOUND);
+        }
         
         return convertToVO(task);
     }
@@ -260,7 +273,7 @@ public class CrawlerTaskServiceImpl implements CrawlerTaskService {
         }
         
         // 这里将在后续实现CrawlerExecutionService时调用
-        // crawlerExecutionService.executeCrawlerTask(id, 2);
+        crawlerExecutionService.executeCrawlerTask(id, 2);
         log.info("手动触发爬虫任务: {}", task.getName());
     }
     

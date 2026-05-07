@@ -5,6 +5,7 @@ import com.resource.platform.annotation.OperationLog;
 import com.resource.platform.common.Result;
 import com.resource.platform.module.image.dto.ImageQueryDTO;
 import com.resource.platform.module.image.service.ImageService;
+import com.resource.platform.module.image.vo.ImageBatchDeleteResultVO;
 import com.resource.platform.module.image.vo.ImageStatisticsVO;
 import com.resource.platform.module.image.vo.ImageVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -88,9 +89,8 @@ public class ImageController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "批量删除图片")
     @OperationLog(module = "图片管理", type = "批量删除", description = "批量删除图片", audit = true)
-    public Result<Void> deleteImages(@RequestBody List<Long> ids) {
-        imageService.deleteImages(ids);
-        return Result.success();
+    public Result<ImageBatchDeleteResultVO> deleteImages(@RequestBody List<Long> ids) {
+        return Result.success(imageService.deleteImages(ids));
     }
 
     @GetMapping("/{id}/usage")

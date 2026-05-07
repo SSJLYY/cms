@@ -197,8 +197,12 @@ const handleGenerateSitemap = async () => {
 
 const handleSubmitBaidu = async () => {
   try {
-    await request({ url: '/api/seo/submit/baidu', method: 'post', skipBusinessErrorMessage: true })
-    ElMessage.success('提交到百度成功')
+    const { data } = await request({ url: '/api/seo/submit/baidu', method: 'post', skipBusinessErrorMessage: true })
+    if (data?.success) {
+      ElMessage.success(data.message || '提交到百度成功')
+    } else {
+      ElMessage.warning(data?.message || '提交到百度存在失败记录')
+    }
     loadHistory(); getStatistics()
   } catch (error) {
     ElMessage.error('提交到百度失败')
@@ -207,8 +211,12 @@ const handleSubmitBaidu = async () => {
 
 const handleSubmitBing = async () => {
   try {
-    await request({ url: '/api/seo/submit/bing', method: 'post', skipBusinessErrorMessage: true })
-    ElMessage.success('提交到必应成功')
+    const { data } = await request({ url: '/api/seo/submit/bing', method: 'post', skipBusinessErrorMessage: true })
+    if (data?.success) {
+      ElMessage.success(data.message || '提交到必应成功')
+    } else {
+      ElMessage.warning(data?.message || '提交到必应存在失败记录')
+    }
     loadHistory(); getStatistics()
   } catch (error) {
     ElMessage.error('提交到必应失败')
@@ -220,8 +228,12 @@ const handleBatchSubmit = async () => {
     confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
   }).then(async () => {
     try {
-      await request({ url: '/api/seo/submit/batch', method: 'post', skipBusinessErrorMessage: true })
-      ElMessage.success('批量提交成功')
+      const { data } = await request({ url: '/api/seo/submit/batch', method: 'post', skipBusinessErrorMessage: true })
+      if (data?.success) {
+        ElMessage.success(data.message || '批量提交成功')
+      } else {
+        ElMessage.warning(data?.message || '批量提交存在失败记录')
+      }
       loadHistory(); getStatistics()
     } catch (error) {
       ElMessage.error('批量提交失败')
@@ -231,8 +243,12 @@ const handleBatchSubmit = async () => {
 
 const handleResubmit = async (row) => {
   try {
-    await request({ url: `/api/seo/resubmit/${row.id}`, method: 'post', skipBusinessErrorMessage: true })
-    ElMessage.success('重新提交成功')
+    const { data } = await request({ url: `/api/seo/resubmit/${row.id}`, method: 'post', skipBusinessErrorMessage: true })
+    if (data?.success) {
+      ElMessage.success(data.message || '重新提交成功')
+    } else {
+      ElMessage.warning(data?.message || '重新提交失败')
+    }
     loadHistory()
   } catch (error) {
     ElMessage.error('重新提交失败')

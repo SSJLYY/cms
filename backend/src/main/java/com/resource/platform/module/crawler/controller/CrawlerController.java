@@ -102,7 +102,7 @@ public class CrawlerController {
     @PostMapping("/tasks/{id}/trigger")
     @OperationLog(module = "爬虫管理", type = "执行", description = "触发爬虫任务")
     public Result<Void> triggerTask(@Parameter(description = "任务ID") @PathVariable Long id) {
-        crawlerExecutionService.executeCrawlerTask(id, 1);
+        crawlerTaskService.triggerTask(id);
         return Result.success();
     }
 

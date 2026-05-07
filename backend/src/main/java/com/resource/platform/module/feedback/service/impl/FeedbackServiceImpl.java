@@ -195,7 +195,10 @@ public class FeedbackServiceImpl implements FeedbackService {
             feedback.setReply(dto.getReply());
             feedback.setReplyTime(java.time.LocalDateTime.now());
             feedback.setStatus("COMPLETED");
-            feedbackMapper.updateById(feedback);
+            int rows = feedbackMapper.updateById(feedback);
+            if (rows <= 0) {
+                throw new BusinessException("更新反馈回复状态失败");
+            }
             log.info("反馈回复处理完成: feedbackId={}", dto.getId());
         } else {
             throw new BusinessException("邮件发送失败，请检查邮件配置");
@@ -271,19 +274,25 @@ public class FeedbackServiceImpl implements FeedbackService {
         }
         
         feedback.setStatus(dto.getStatus());
-        feedbackMapper.updateById(feedback);
+        int rows = feedbackMapper.updateById(feedback);
+        if (rows <= 0) {
+            throw new BusinessException("更新反馈状态失败");
+        }
     }
     
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteFeedback(Long id) {
         Feedback feedback = feedbackMapper.selectById(id);
-        if (feedback == null) {
+        if (feedback == null || Integer.valueOf(1).equals(feedback.getDeleted())) {
             throw new BusinessException("反馈不存在");
         }
         
         feedback.setDeleted(1);
-        feedbackMapper.updateById(feedback);
+        int rows = feedbackMapper.updateById(feedback);
+        if (rows <= 0) {
+            throw new BusinessException("删除反馈失败");
+        }
     }
     
     @Override

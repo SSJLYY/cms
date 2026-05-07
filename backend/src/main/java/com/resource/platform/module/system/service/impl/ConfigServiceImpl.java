@@ -396,12 +396,7 @@ public class ConfigServiceImpl implements ConfigService {
         if (failureCount > 0) {
             log.warn("部分配置项更新失败: failedKeys={}, count={}", 
                 failedKeys, failureCount);
-        }
-        
-        // 如果全部失败，抛出异常
-        if (successCount == 0 && failureCount > 0) {
-            log.error("批量更新配置全部失败");
-            throw new BusinessException(BizErrorCode.CONFIG_BATCH_UPDATE_FAILED);
+            throw new BusinessException("部分配置项更新失败: " + String.join(", ", failedKeys));
         }
     }
 

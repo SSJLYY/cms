@@ -50,11 +50,12 @@ export function getLogById(id) {
  * @param {string} beforeTime - 清理时间点
  * @returns {Promise} 返回清理结果
  */
-export function cleanLogs(beforeTime) {
+export function cleanLogs(beforeTime, config = {}) {
   return request({
     url: '/api/logs/clean',
     method: 'delete',
-    params: { beforeTime }
+    params: { beforeTime },
+    ...config
   })
 }
 
@@ -63,11 +64,12 @@ export function cleanLogs(beforeTime) {
  * @param {Object} data - 导出参数
  * @returns {Promise} 返回导出结果
  */
-export function exportLogs(data) {
+export function exportLogs(data, config = {}) {
   return request({
     url: '/api/logs/export',
     method: 'post',
-    data
+    data,
+    ...config
   })
 }
 

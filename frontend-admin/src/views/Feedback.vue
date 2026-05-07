@@ -363,7 +363,7 @@ const handleSubmitReply = async () => {
   }
   
   try {
-    await replyFeedback(replyForm.id, replyForm.reply)
+    await replyFeedback(replyForm.id, replyForm.reply, { skipBusinessErrorMessage: true })
     ElMessage.success('回复成功')
     replyVisible.value = false
     replyForm.reply = ''
@@ -371,7 +371,7 @@ const handleSubmitReply = async () => {
     getStatistics()
   } catch (error) {
     console.error('回复失败:', error)
-    ElMessage.error('回复失败')
+    ElMessage.error(error.response?.data?.message || '回复失败')
   }
 }
 
@@ -388,13 +388,13 @@ const handleSubmitStatus = async () => {
   }
   
   try {
-    await updateFeedbackStatus(statusForm.id, statusForm.status)
+    await updateFeedbackStatus(statusForm.id, statusForm.status, { skipBusinessErrorMessage: true })
     ElMessage.success('状态修改成功')
     statusVisible.value = false
     handleQuery()
     getStatistics()
   } catch (error) {
-    ElMessage.error('状态修改失败')
+    ElMessage.error(error.response?.data?.message || '状态修改失败')
   }
 }
 

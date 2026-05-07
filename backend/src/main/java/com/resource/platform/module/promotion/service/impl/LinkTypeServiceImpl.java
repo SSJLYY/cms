@@ -394,66 +394,52 @@ public class LinkTypeServiceImpl extends ServiceImpl<LinkTypeMapper, LinkType> i
      */
     @Transactional(rollbackFor = Exception.class)
     public boolean batchRemoveByIds(Collection<? extends Serializable> idList) {
-        // 记录业务开始
-        log.info("执行批量删除链接类型业务逻辑: ids={}, count={}", 
+        log.info("执行批量删除链接类型业务逻辑: ids={}, count={}",
             idList, idList != null ? idList.size() : 0);
-        
-        // 步骤1：验证参数
-        // 检查ID列表是否为空
+
         if (idList == null || idList.isEmpty()) {
             log.warn("批量删除链接类型ID列表为空");
             throw new BusinessException("删除ID列表不能为空");
         }
-        
-        // 步骤2：验证每个ID的有效性
-        // 检查ID列表中是否有无效ID
+
         log.debug("验证ID列表中的每个ID");
         for (Serializable id : idList) {
             if (id == null) {
                 log.warn("批量删除包含空ID");
                 throw new BusinessException(BizErrorCode.PARAM_ERROR, "包含无效的链接类型ID: null");
             }
-            
+
             Long linkTypeId = Long.valueOf(id.toString());
             if (linkTypeId <= 0) {
                 log.warn("批量删除包含无效ID: id={}", linkTypeId);
                 throw new BusinessException(BizErrorCode.PARAM_ERROR, "包含无效的链接类型ID: " + linkTypeId);
             }
         }
-        
-        // 步骤3：记录删除前的信息（可选）
-        // 查询要删除的链接类型信息用于日志记录
+
         log.debug("查询要删除的链接类型信息");
         List<LinkType> toDeleteTypes = listByIds(idList);
-        log.info("准备批量删除链接类型: existingCount={}, requestCount={}", 
+        if (toDeleteTypes.size() != idList.size()) {
+            throw new ResourceNotFoundException("部分链接类型不存在或已被删除");
+        }
+        log.info("准备批量删除链接类型: existingCount={}, requestCount={}",
             toDeleteTypes.size(), idList.size());
-        
-        // 记录每个要删除的链接类型
+
         for (LinkType linkType : toDeleteTypes) {
-            log.debug("准备删除链接类型: id={}, name={}, status={}", 
+            log.debug("准备删除链接类型: id={}, name={}, status={}",
                 linkType.getId(), linkType.getName(), linkType.getStatus());
         }
-        
-        // 步骤4：批量删除审计日志
-        // 链接类型删除后，相关资源中的 JSON 下载链接引用将失效，记录审计日志
+
         log.warn("批量删除链接类型: ids={}，请确认相关资源中的链接类型引用已处理", idList);
-        
-        // 步骤5：执行批量删除操作
-        // 调用父类的removeByIds方法
+
         log.debug("执行批量删除操作: count={}", idList.size());
         boolean result = super.removeByIds(idList);
-        
-        // 步骤6：验证删除结果
-        // 检查删除操作是否成功
         if (result) {
             log.info("链接类型批量删除成功: requestCount={}", idList.size());
         } else {
-            log.warn("链接类型批量删除失败: requestCount={}", idList.size());
+            throw new BusinessException("批量删除链接类型失败");
         }
-        
-        // 记录业务完成
+
         log.info("批量删除链接类型业务逻辑执行完成: requestCount={}", idList.size());
-        
-        return result;
+        return true;
     }
 }

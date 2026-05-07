@@ -333,14 +333,8 @@ const handleSubmit = async () => {
 }
 
 const handleDrop = async (draggingNode, dropNode, dropType) => {
-  try {
-    const newSortOrder = dropNode.data.sortOrder
-    await updateCategorySortOrder(draggingNode.data.id, newSortOrder, { skipBusinessErrorMessage: true })
-    ElMessage.success('排序更新成功')
-  } catch (error) {
-    ElMessage.error('排序更新失败')
-    loadCategoryTree()
-  }
+  ElMessage.warning('当前版本暂不支持拖拽排序，请通过编辑排序值调整顺序')
+  loadCategoryTree()
 }
 
 const handleExport = async () => {

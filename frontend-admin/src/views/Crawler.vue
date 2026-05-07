@@ -367,8 +367,8 @@ const loadTasks = async () => {
   loading.value = true
   try {
     const res = await queryTasks(queryForm)
-    tasks.value = res.data.records
-    total.value = res.data.total
+    tasks.value = Array.isArray(res?.data?.records) ? res.data.records : []
+    total.value = Number(res?.data?.total || 0)
   } catch (error) {
     ElMessage.error('加载任务列表失败')
   } finally {
@@ -400,7 +400,7 @@ const showEditDialog = (row) => {
     crawlInterval: row.crawlInterval,
     maxDepth: row.maxDepth,
     intelligentMode: row.intelligentMode,
-    status: row.status,
+    status: row.status ? 1 : 0,
     categoryMapping: row.categoryMapping || [],
     customRules: row.customRules || {
       listPageSelector: '',
@@ -446,7 +446,7 @@ const handleValidateUrl = async () => {
   
   validating.value = true
   try {
-    const res = await validateUrl(taskForm.targetUrl)
+    const res = await validateUrl(taskForm.targetUrl, { skipBusinessErrorMessage: true })
     if (res.data.valid) {
       ElMessage.success('URL验证成功')
     } else {
@@ -465,7 +465,7 @@ const handleSubmit = async () => {
   submitting.value = true
   try {
     if (isEdit.value) {
-      await updateTask(editId.value, taskForm)
+      await updateTask(editId.value, taskForm, { skipBusinessErrorMessage: true })
       ElMessage.success('更新成功')
     } else {
       await createTask(taskForm, { skipBusinessErrorMessage: true })

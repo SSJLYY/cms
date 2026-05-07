@@ -267,10 +267,10 @@ const handleView = (row) => {
 
 const handleExport = async () => {
   try {
-    const { data } = await exportLogs(queryForm)
+    const { data } = await exportLogs(queryForm, { skipBusinessErrorMessage: true })
     ElMessage.success('导出成功: ' + data)
   } catch (error) {
-    ElMessage.error('导出失败')
+    ElMessage.error(error.response?.data?.message || '导出失败')
   }
 }
 
@@ -282,12 +282,12 @@ const handleClean = () => {
     inputErrorMessage: '日期格式不正确'
   }).then(async ({ value }) => {
     try {
-      const { data } = await cleanLogs(value + ' 00:00:00')
+      const { data } = await cleanLogs(value + ' 00:00:00', { skipBusinessErrorMessage: true })
       ElMessage.success(`成功清理 ${data} 条日志`)
       handleQuery()
       getStatistics()
     } catch (error) {
-      ElMessage.error('清理失败')
+      ElMessage.error(error.response?.data?.message || '清理失败')
     }
   })
 }

@@ -3,6 +3,7 @@ package com.resource.platform.module.image.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.resource.platform.module.image.dto.ImageQueryDTO;
 import com.resource.platform.module.image.entity.Image;
+import com.resource.platform.module.image.vo.ImageBatchDeleteResultVO;
 import com.resource.platform.module.image.vo.ImageStatisticsVO;
 import com.resource.platform.module.image.vo.ImageVO;
 import com.resource.platform.module.resource.vo.ResourceVO;
@@ -48,7 +49,7 @@ public interface ImageService {
     /**
      * 批量删除图片
      */
-    void deleteImages(List<Long> ids);
+    ImageBatchDeleteResultVO deleteImages(List<Long> ids);
     
     /**
      * 检查图片使用情况

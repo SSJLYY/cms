@@ -30,11 +30,12 @@ export function getResourceList(params) {
  * @param {Array} data.links - 下载链接数组
  * @returns {Promise} 返回创建结果
  */
-export function createResource(data) {
+export function createResource(data, config = {}) {
   return request({
     url: '/api/resources/admin/create',
     method: 'post',
-    data
+    data,
+    ...config
   })
 }
 
@@ -44,11 +45,12 @@ export function createResource(data) {
  * @param {Object} data - 更新的资源数据
  * @returns {Promise} 返回更新结果
  */
-export function updateResource(id, data) {
+export function updateResource(id, data, config = {}) {
   return request({
     url: `/api/resources/admin/update/${id}`,
     method: 'put',
-    data
+    data,
+    ...config
   })
 }
 
@@ -57,10 +59,11 @@ export function updateResource(id, data) {
  * @param {number} id - 资源ID
  * @returns {Promise} 返回删除结果
  */
-export function deleteResource(id) {
+export function deleteResource(id, config = {}) {
   return request({
     url: `/api/resources/admin/delete/${id}`,
-    method: 'delete'
+    method: 'delete',
+    ...config
   })
 }
 
@@ -69,10 +72,11 @@ export function deleteResource(id) {
  * @param {number} id - 资源ID
  * @returns {Promise} 返回状态切换结果
  */
-export function toggleResourceStatus(id) {
+export function toggleResourceStatus(id, config = {}) {
   return request({
     url: `/api/resources/admin/toggle-status/${id}`,
-    method: 'put'
+    method: 'put',
+    ...config
   })
 }
 
@@ -81,11 +85,12 @@ export function toggleResourceStatus(id) {
  * @param {Array} ids - 资源ID数组
  * @returns {Promise} 返回批量发布结果
  */
-export function batchPublishResources(ids) {
+export function batchPublishResources(ids, config = {}) {
   return request({
     url: '/api/resources/admin/batch-publish',
     method: 'put',
-    data: { ids }
+    data: { ids },
+    ...config
   })
 }
 
@@ -94,11 +99,12 @@ export function batchPublishResources(ids) {
  * @param {Array} ids - 资源ID数组
  * @returns {Promise} 返回批量下架结果
  */
-export function batchUnpublishResources(ids) {
+export function batchUnpublishResources(ids, config = {}) {
   return request({
     url: '/api/resources/admin/batch-unpublish',
     method: 'put',
-    data: { ids }
+    data: { ids },
+    ...config
   })
 }
 
@@ -107,11 +113,12 @@ export function batchUnpublishResources(ids) {
  * @param {Array} ids - 资源ID数组
  * @returns {Promise} 返回批量删除结果
  */
-export function batchDeleteResources(ids) {
+export function batchDeleteResources(ids, config = {}) {
   return request({
     url: '/api/resources/admin/batch-delete',
     method: 'delete',
-    data: { ids }
+    data: { ids },
+    ...config
   })
 }
 
@@ -121,10 +128,11 @@ export function batchDeleteResources(ids) {
  * @param {number} categoryId - 目标分类ID
  * @returns {Promise} 返回批量移动结果
  */
-export function batchMoveToCategory(ids, categoryId) {
+export function batchMoveToCategory(ids, categoryId, config = {}) {
   return request({
     url: '/api/resources/admin/batch-move-category',
     method: 'put',
-    data: { ids, categoryId }
+    data: { ids, categoryId },
+    ...config
   })
 }

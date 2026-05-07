@@ -42,11 +42,12 @@ export function getAdvertisementById(id) {
  * @param {string} data.link - 广告链接
  * @returns {Promise} 返回创建结果
  */
-export function createAdvertisement(data) {
+export function createAdvertisement(data, config = {}) {
   return request({
     url: '/api/promotion',
     method: 'post',
-    data
+    data,
+    ...config
   })
 }
 
@@ -56,11 +57,12 @@ export function createAdvertisement(data) {
  * @param {Object} data - 更新的广告数据
  * @returns {Promise} 返回更新结果
  */
-export function updateAdvertisement(id, data) {
+export function updateAdvertisement(id, data, config = {}) {
   return request({
     url: `/api/promotion/${id}`,
     method: 'put',
-    data
+    data,
+    ...config
   })
 }
 
@@ -69,10 +71,11 @@ export function updateAdvertisement(id, data) {
  * @param {number} id - 广告ID
  * @returns {Promise} 返回删除结果
  */
-export function deleteAdvertisement(id) {
+export function deleteAdvertisement(id, config = {}) {
   return request({
     url: `/api/promotion/${id}`,
-    method: 'delete'
+    method: 'delete',
+    ...config
   })
 }
 
@@ -82,11 +85,12 @@ export function deleteAdvertisement(id) {
  * @param {boolean} status - 新状态（true为启用，false为禁用）
  * @returns {Promise} 返回状态更新结果
  */
-export function updateStatus(id, status) {
+export function updateStatus(id, status, config = {}) {
   return request({
     url: `/api/promotion/${id}/status`,
     method: 'put',
-    params: { status }
+    params: { status },
+    ...config
   })
 }
 

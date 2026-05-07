@@ -1,6 +1,7 @@
 package com.resource.platform.module.resource.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.resource.platform.exception.BusinessException;
 import com.resource.platform.module.resource.entity.ResourceTag;
 import com.resource.platform.module.resource.entity.ResourceTagRelation;
 import com.resource.platform.exception.ResourceNotFoundException;
@@ -115,7 +116,10 @@ public class ResourceTagServiceImpl implements ResourceTagService {
                 if (tag != null) {
                     int currentUseCount = tag.getUseCount() == null ? 0 : tag.getUseCount();
                     tag.setUseCount(Math.max(0, currentUseCount - 1));
-                    resourceTagMapper.updateById(tag);
+                    int rows = resourceTagMapper.updateById(tag);
+                    if (rows <= 0) {
+                        throw new BusinessException("更新标签使用次数失败");
+                    }
                 }
             }
         }
@@ -138,7 +142,10 @@ public class ResourceTagServiceImpl implements ResourceTagService {
                 if (tag != null) {
                     int currentUseCount = tag.getUseCount() == null ? 0 : tag.getUseCount();
                     tag.setUseCount(currentUseCount + 1);
-                    resourceTagMapper.updateById(tag);
+                    int rows = resourceTagMapper.updateById(tag);
+                    if (rows <= 0) {
+                        throw new BusinessException("更新标签使用次数失败");
+                    }
                 }
             }
         }
@@ -185,7 +192,10 @@ public class ResourceTagServiceImpl implements ResourceTagService {
             throw new ValidationException("该标签正在被使用，无法删除");
         }
         
-        resourceTagMapper.deleteById(tagId);
+        int rows = resourceTagMapper.deleteById(tagId);
+        if (rows <= 0) {
+            throw new BusinessException("删除标签失败");
+        }
         log.info("删除标签: {}", tag.getTagName());
     }
 

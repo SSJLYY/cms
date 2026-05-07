@@ -36,20 +36,22 @@ export function getRevenueList(params) {
 /**
  * 删除收益记录
  */
-export function deleteRevenue(id) {
+export function deleteRevenue(id, config = {}) {
   return request({
     url: `/api/revenue/${id}`,
-    method: 'delete'
+    method: 'delete',
+    ...config
   })
 }
 
 /**
  * 批量删除收益记录
  */
-export function batchDeleteRevenue(ids) {
+export function batchDeleteRevenue(ids, config = {}) {
   return request({
     url: '/api/revenue/batch',
     method: 'delete',
-    data: ids
+    data: ids,
+    ...config
   })
 }

@@ -273,7 +273,7 @@ const handleDelete = async (row) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    await deleteFriendLink(row.id)
+    await deleteFriendLink(row.id, { skipBusinessErrorMessage: true })
     ElMessage.success('删除成功')
     loadData()
   } catch (error) {
@@ -288,7 +288,7 @@ const handleBatchDelete = async () => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    await batchDeleteFriendLinks(selectedIds.value)
+    await batchDeleteFriendLinks(selectedIds.value, { skipBusinessErrorMessage: true })
     ElMessage.success('删除成功')
     selectedIds.value = []
     loadData()
@@ -302,10 +302,10 @@ const handleSubmit = async () => {
     await formRef.value.validate()
     submitLoading.value = true
     if (formData.id) {
-      await updateFriendLink(formData)
+      await updateFriendLink(formData, { skipBusinessErrorMessage: true })
       ElMessage.success('更新成功')
     } else {
-      await createFriendLink(formData)
+      await createFriendLink(formData, { skipBusinessErrorMessage: true })
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false

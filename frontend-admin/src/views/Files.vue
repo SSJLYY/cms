@@ -349,7 +349,11 @@ const handleReset = () => {
   handleQuery()
 }
 
-const handleUploadSuccess = () => {
+const handleUploadSuccess = (response) => {
+  if (response?.code !== 200) {
+    ElMessage.error(response?.message || '上传失败')
+    return
+  }
   ElMessage.success('上传成功')
   getStatistics()
   handleQuery()
@@ -370,7 +374,7 @@ const toggleSelection = (id) => {
 }
 
 const handleCopyUrl = (row) => {
-  navigator.clipboard.writeText(row.fileUrl)
+  navigator.clipboard.writeText(getImageUrl(row.fileUrl))
   ElMessage.success('链接已复制到剪贴板')
 }
 
@@ -398,13 +402,22 @@ const handleBatchDelete = () => {
     type: 'warning'
   }).then(async () => {
     try {
-      await deleteImages(selectedIds.value, { skipBusinessErrorMessage: true })
-      ElMessage.success('批量删除成功')
+      const { data } = await deleteImages(selectedIds.value, { skipBusinessErrorMessage: true })
+      const deletedCount = data?.deletedCount ?? 0
+      const skippedUsedCount = data?.skippedUsedCount ?? 0
+      const storageFailedCount = data?.storageFailedCount ?? 0
+      if (deletedCount > 0 && skippedUsedCount === 0 && storageFailedCount === 0) {
+        ElMessage.success(`批量删除成功，已删除 ${deletedCount} 张图片`)
+      } else if (deletedCount > 0) {
+        ElMessage.warning(`已删除 ${deletedCount} 张图片，已跳过 ${skippedUsedCount} 张，存储删除失败 ${storageFailedCount} 张`)
+      } else {
+        ElMessage.warning('没有可以删除的图片')
+      }
       selectedIds.value = []
       handleQuery()
       getStatistics()
     } catch (error) {
-      ElMessage.error('批量删除失败')
+      ElMessage.error(error.response?.data?.message || '批量删除失败')
     }
   })
 }

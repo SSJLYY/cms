@@ -18,6 +18,7 @@ import com.resource.platform.module.crawler.service.IntelligentParserService;
 import com.resource.platform.module.image.service.ImageDownloadService;
 import com.resource.platform.module.resource.service.ResourceService;
 import com.resource.platform.module.crawler.support.CrawlerErrorHandler;
+import org.jsoup.nodes.Element;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -401,7 +402,7 @@ public class CrawlerExecutionServiceImpl implements CrawlerExecutionService {
                 task.setNextExecuteTime(LocalDateTime.now().plusHours(safeCrawlInterval));
             }
             
-            crawlerTaskMapper.updateById(task);
+            updateTaskOrThrow(task);
 
             // 更新日志
             crawlerLog.setStatus(2); // 成功
@@ -426,7 +427,7 @@ public class CrawlerExecutionServiceImpl implements CrawlerExecutionService {
             crawlerLog.setDuration((int) duration);
 
             // 更新日志
-            crawlerLogMapper.updateById(crawlerLog);
+            updateCrawlerLogOrWarn(crawlerLog);
 
             // 清理标记
             runningTasks.remove(taskId);
@@ -441,6 +442,20 @@ public class CrawlerExecutionServiceImpl implements CrawlerExecutionService {
         LambdaQueryWrapper<Resource> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Resource::getSourceUrl, sourceUrl);
         return resourceMapper.selectCount(wrapper) > 0;
+    }
+
+    private void updateTaskOrThrow(CrawlerTask task) {
+        int rows = crawlerTaskMapper.updateById(task);
+        if (rows <= 0) {
+            throw new BusinessException("更新爬虫任务执行结果失败");
+        }
+    }
+
+    private void updateCrawlerLogOrWarn(CrawlerLog crawlerLog) {
+        int rows = crawlerLogMapper.updateById(crawlerLog);
+        if (rows <= 0) {
+            log.error("更新爬虫日志失败: logId={}, taskId={}", crawlerLog.getId(), crawlerLog.getTaskId());
+        }
     }
 
     /**
@@ -634,7 +649,46 @@ public class CrawlerExecutionServiceImpl implements CrawlerExecutionService {
      */
     private List<String> extractPaginationLinks(Document doc, WebsiteStructure structure) {
         List<String> links = new ArrayList<>();
-        // TODO: 实现分页链接提取逻辑
+        String selector = structure != null ? structure.getPaginationSelector() : null;
+        String baseUrl = doc.baseUri();
+        if (baseUrl.contains("/")) {
+            baseUrl = baseUrl.replaceAll("(https?://[^/]+).*", "$1");
+        }
+
+        org.jsoup.select.Elements paginationElements = new org.jsoup.select.Elements();
+        if (org.springframework.util.StringUtils.hasText(selector)) {
+            paginationElements.addAll(doc.select(selector));
+        }
+        if (paginationElements.isEmpty()) {
+            paginationElements.addAll(doc.select("a[href*='page'], a[href*='p='], a[href*='paged='], .pagination a[href], .pager a[href], .page-numbers[href]"));
+        }
+
+        for (Element element : paginationElements) {
+            String href = element.absUrl("href");
+            String text = element.text() == null ? "" : element.text().trim().toLowerCase();
+            String className = element.className() == null ? "" : element.className().toLowerCase();
+            String rel = element.attr("rel");
+
+            if (!org.springframework.util.StringUtils.hasText(href)) {
+                continue;
+            }
+            if (!href.startsWith(baseUrl) || href.equals(doc.baseUri()) || href.contains("#") || href.startsWith("javascript:")) {
+                continue;
+            }
+
+            boolean looksLikePagination =
+                "next".equalsIgnoreCase(rel) ||
+                text.matches("^\\d+$") ||
+                text.contains("下一") ||
+                text.contains("next") ||
+                text.contains("后一") ||
+                className.contains("next") ||
+                className.contains("page");
+
+            if (looksLikePagination && !links.contains(href)) {
+                links.add(href);
+            }
+        }
         return links;
     }
 

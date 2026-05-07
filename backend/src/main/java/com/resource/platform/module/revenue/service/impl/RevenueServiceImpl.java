@@ -345,52 +345,39 @@ public class RevenueServiceImpl implements RevenueService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean deleteRevenue(Long id) {
-        // 记录业务开始
         log.info("执行删除收益记录业务逻辑: id={}", id);
-        
-        // 步骤1：验证参数
-        // 检查收益记录ID是否有效
+
         if (id == null || id <= 0) {
             log.warn("收益记录ID无效: id={}", id);
             throw new BusinessException(BizErrorCode.PARAM_ERROR, "收益记录ID无效");
         }
-        
-        // 步骤2：检查收益记录是否存在
-        // 先查询收益记录是否存在，记录删除前的信息
+
         log.debug("检查收益记录是否存在: id={}", id);
         Revenue existingRevenue = revenueMapper.selectById(id);
-        
         if (existingRevenue == null) {
             log.warn("收益记录不存在: id={}", id);
             throw new ResourceNotFoundException("收益记录不存在");
         }
-        
-        // 记录删除前的收益信息
-        log.info("准备删除收益记录: id={}, type={}, amount={}, status={}", 
-            existingRevenue.getId(), existingRevenue.getRevenueType(), 
+
+        log.info("准备删除收益记录: id={}, type={}, amount={}, status={}",
+            existingRevenue.getId(), existingRevenue.getRevenueType(),
             existingRevenue.getAmount(), existingRevenue.getStatus());
-        
-        // 步骤3：执行删除操作
-        // 从数据库中删除收益记录
+
         log.debug("执行删除操作: id={}", id);
         int rows = revenueMapper.deleteById(id);
-        
-        // 步骤4：验证删除结果
-        // 检查删除操作是否成功
         boolean success = rows > 0;
         if (success) {
-            log.info("收益记录删除成功: id={}, type={}, amount={}, rows={}", 
+            log.info("收益记录删除成功: id={}, type={}, amount={}, rows={}",
                 id, existingRevenue.getRevenueType(), existingRevenue.getAmount(), rows);
         } else {
             log.error("收益记录删除失败，影响行数为0: id={}", id);
+            throw new BusinessException("删除收益记录失败");
         }
-        
-        // 记录业务完成
+
         log.info("删除收益记录业务逻辑执行完成: id={}, success={}", id, success);
-        
-        return success;
+        return true;
     }
-    
+
     /**
      * 批量删除收益记录
      * 
@@ -410,24 +397,13 @@ public class RevenueServiceImpl implements RevenueService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean batchDeleteRevenue(List<Long> ids) {
-        // 记录业务开始
-        log.info("执行批量删除收益记录业务逻辑: ids={}, count={}", 
-            ids, ids != null ? ids.size() : 0);
-        
-        // 步骤1：验证参数
-        // 检查ID列表是否为空
+        log.info("执行批量删除收益记录业务逻辑: ids={}, count={}", ids, ids != null ? ids.size() : 0);
+
         if (ids == null || ids.isEmpty()) {
             log.warn("批量删除收益记录ID列表为空");
             throw new BusinessException("删除ID列表不能为空");
         }
 
-        if (ids.size() > 100) {
-            log.warn("批量删除收益记录数量超限: count={}", ids.size());
-            throw new BusinessException(BizErrorCode.PARAM_ERROR, "批量删除最多支持100条");
-        }
-
-        // 步骤2：验证每个ID的有效性
-        // 检查ID列表中是否有无效ID
         log.debug("验证ID列表中的每个ID");
         for (Long id : ids) {
             if (id == null || id <= 0) {
@@ -435,49 +411,40 @@ public class RevenueServiceImpl implements RevenueService {
                 throw new BusinessException(BizErrorCode.PARAM_ERROR, "包含无效的收益记录ID: " + id);
             }
         }
-        
-        // 步骤3：记录删除前的信息（可选）
-        // 查询要删除的收益记录信息用于日志记录
+
         log.debug("查询要删除的收益记录信息");
         List<Revenue> toDeleteRevenues = revenueMapper.selectBatchIds(ids);
-        log.info("准备批量删除收益记录: existingCount={}, requestCount={}", 
-            toDeleteRevenues.size(), ids.size());
-        
-        // 记录每个要删除的收益记录
+        if (toDeleteRevenues.size() != ids.size()) {
+            throw new ResourceNotFoundException("部分收益记录不存在或已被删除");
+        }
+        log.info("准备批量删除收益记录: existingCount={}, requestCount={}", toDeleteRevenues.size(), ids.size());
+
         BigDecimal totalDeleteAmount = BigDecimal.ZERO;
         for (Revenue revenue : toDeleteRevenues) {
-            log.debug("准备删除收益记录: id={}, type={}, amount={}, status={}", 
+            log.debug("准备删除收益记录: id={}, type={}, amount={}, status={}",
                 revenue.getId(), revenue.getRevenueType(), revenue.getAmount(), revenue.getStatus());
-            
+
             if (revenue.getAmount() != null) {
                 totalDeleteAmount = totalDeleteAmount.add(revenue.getAmount());
             }
         }
         log.info("批量删除涉及总金额: totalAmount={}", totalDeleteAmount);
-        
-        // 步骤4：执行批量删除操作
-        // 使用MyBatis Plus的批量删除功能
+
         log.debug("执行批量删除操作: count={}", ids.size());
         int rows = revenueMapper.deleteBatchIds(ids);
-        
-        // 步骤5：验证删除结果
-        // 检查删除操作是否成功
-        boolean success = rows > 0;
+        boolean success = rows == ids.size();
         if (success) {
-            log.info("收益记录批量删除成功: requestCount={}, deletedCount={}, totalAmount={}", 
+            log.info("收益记录批量删除成功: requestCount={}, deletedCount={}, totalAmount={}",
                 ids.size(), rows, totalDeleteAmount);
         } else {
-            log.warn("收益记录批量删除未删除任何记录: requestCount={}, deletedCount={}", 
-                ids.size(), rows);
+            throw new BusinessException("批量删除收益记录失败");
         }
-        
-        // 记录业务完成
-        log.info("批量删除收益记录业务逻辑执行完成: requestCount={}, deletedCount={}, success={}", 
+
+        log.info("批量删除收益记录业务逻辑执行完成: requestCount={}, deletedCount={}, success={}",
             ids.size(), rows, success);
-        
-        return success;
+        return true;
     }
-    
+
     private String getStartTime(String period) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startTime;

@@ -15,9 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
@@ -51,6 +53,10 @@ public class CategoryServiceImpl implements CategoryService {
     
     @Autowired
     private com.resource.platform.module.resource.mapper.ResourceMapper resourceMapper;
+
+    @Autowired
+    @Lazy
+    private CategoryService categoryServiceProxy;
 
     /**
      * 获取分类统计信息
@@ -461,6 +467,9 @@ public class CategoryServiceImpl implements CategoryService {
         log.debug("更新分类到数据库: categoryId={}, name={}, level={}", 
             category.getId(), category.getName(), category.getLevel());
         int rows = categoryMapper.updateById(category);
+        if (rows <= 0) {
+            throw new BusinessException("更新分类失败");
+        }
         
         // 记录更新成功
         log.info("更新分类成功: categoryId={}, name={}, level={}, affectedRows={}", 
@@ -483,7 +492,7 @@ public class CategoryServiceImpl implements CategoryService {
      * @throws ValidationException 当分类下有子分类时抛出
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
     public void deleteCategory(Long id) {
         // 记录删除开始
         log.info("开始删除分类: categoryId={}", id);
@@ -522,6 +531,9 @@ public class CategoryServiceImpl implements CategoryService {
         // 步骤4：删除分类
         log.debug("删除分类: categoryId={}", id);
         int rows = categoryMapper.deleteById(id);
+        if (rows <= 0) {
+            throw new BusinessException("删除分类失败");
+        }
         
         // 记录删除成功
         log.info("删除分类成功: categoryId={}, name={}, affectedRows={}", 
@@ -540,7 +552,6 @@ public class CategoryServiceImpl implements CategoryService {
      * @param ids 分类ID列表
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = "category:tree", allEntries = true)
     public void deleteCategories(List<Long> ids) {
         // 记录批量删除开始
@@ -549,24 +560,29 @@ public class CategoryServiceImpl implements CategoryService {
         // 统计删除结果
         int successCount = 0;
         int failCount = 0;
+        List<Long> failedIds = new ArrayList<>();
         
         // 步骤1：遍历分类ID列表
         for (Long id : ids) {
             try {
                 // 步骤2：调用单个删除方法
-                deleteCategory(id);
+                categoryServiceProxy.deleteCategory(id);
                 successCount++;
             } catch (Exception e) {
                 // 步骤3：记录删除失败
                 // 不抛出异常，继续处理剩余分类
                 log.error("批量删除分类失败: categoryId={}, error={}", id, e.getMessage(), e);
                 failCount++;
+                failedIds.add(id);
             }
         }
         
         // 记录批量删除结果
         log.info("批量删除分类完成: total={}, success={}, fail={}", 
             ids.size(), successCount, failCount);
+        if (failCount > 0) {
+            throw new BusinessException("批量删除分类存在失败记录");
+        }
     }
 
     /**
@@ -603,6 +619,9 @@ public class CategoryServiceImpl implements CategoryService {
         
         // 步骤3：保存到数据库
         int rows = categoryMapper.updateById(category);
+        if (rows <= 0) {
+            throw new BusinessException("更新分类排序失败");
+        }
         
         // 记录更新成功
         log.info("更新分类排序成功: categoryId={}, oldSortOrder={}, newSortOrder={}, affectedRows={}", 

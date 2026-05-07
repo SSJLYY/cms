@@ -116,7 +116,7 @@ public class LinkTypeController {
             }
         }
 
-        linkTypeService.removeByIds(ids);
+        linkTypeService.batchRemoveByIds(ids);
         return Result.success();
     }
 }

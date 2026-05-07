@@ -53,11 +53,12 @@ export const getFriendLinkById = (id) => {
  * @param {string} data.logo - 链接图标
  * @returns {Promise} 返回创建结果
  */
-export const createFriendLink = (data) => {
+export const createFriendLink = (data, config = {}) => {
   return request({
     url: '/api/friendlinks',
     method: 'post',
-    data
+    data,
+    ...config
   })
 }
 
@@ -67,11 +68,12 @@ export const createFriendLink = (data) => {
  * @param {number} data.id - 友情链接ID
  * @returns {Promise} 返回更新结果
  */
-export const updateFriendLink = (data) => {
+export const updateFriendLink = (data, config = {}) => {
   return request({
     url: '/api/friendlinks',
     method: 'put',
-    data
+    data,
+    ...config
   })
 }
 
@@ -80,10 +82,11 @@ export const updateFriendLink = (data) => {
  * @param {number} id - 友情链接ID
  * @returns {Promise} 返回删除结果
  */
-export const deleteFriendLink = (id) => {
+export const deleteFriendLink = (id, config = {}) => {
   return request({
     url: `/api/friendlinks/${id}`,
-    method: 'delete'
+    method: 'delete',
+    ...config
   })
 }
 
@@ -92,11 +95,12 @@ export const deleteFriendLink = (id) => {
  * @param {Array<number>} ids - 友情链接ID数组
  * @returns {Promise} 返回批量删除结果
  */
-export const batchDeleteFriendLinks = (ids) => {
+export const batchDeleteFriendLinks = (ids, config = {}) => {
   return request({
     url: '/api/friendlinks/batch',
     method: 'delete',
-    data: ids
+    data: ids,
+    ...config
   })
 }
 

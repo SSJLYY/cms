@@ -23,8 +23,8 @@ export const createTask = (data, config = {}) => {
  * @param {Object} data - 更新的任务数据
  * @returns {Promise} 返回更新结果
  */
-export const updateTask = (id, data) => {
-  return request.put(`/api/crawler/tasks/${id}`, data)
+export const updateTask = (id, data, config = {}) => {
+  return request.put(`/api/crawler/tasks/${id}`, data, config)
 }
 
 /**
@@ -94,9 +94,10 @@ export const stopTask = (id) => {
  * @param {string} url - 待验证的URL
  * @returns {Promise} 返回URL验证结果
  */
-export const validateUrl = (url) => {
+export const validateUrl = (url, config = {}) => {
   return request.post('/api/crawler/validate-url', null, {
-    params: { url }
+    params: { url },
+    ...config
   })
 }
 

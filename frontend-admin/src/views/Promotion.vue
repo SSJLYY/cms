@@ -237,6 +237,15 @@ const form = ref({
   status: 1, sortOrder: 0, startTime: null, endTime: null
 })
 
+const normalizeAdvertisementForm = (data = {}) => {
+  const normalizedName = data.name || data.title || ''
+  return {
+    ...data,
+    name: normalizedName,
+    title: data.title || normalizedName
+  }
+}
+
 const rules = {
   name: [{ required: true, message: '请输入广告名称', trigger: 'blur' }],
   position: [{ required: true, message: '请选择广告位置', trigger: 'change' }],
@@ -250,7 +259,7 @@ const loadAdvertisements = async () => {
       page: page.value, pageSize: pageSize.value,
       position: activePosition.value === 'all' ? null : activePosition.value
     })
-    advertisementList.value = data.records
+    advertisementList.value = (data.records || []).map(item => normalizeAdvertisementForm(item))
     total.value = data.total
   } catch (error) {
     ElMessage.error('加载广告列表失败')
@@ -267,19 +276,24 @@ const handlePositionChange = (val) => {
 
 const handleAdd = () => {
   dialogTitle.value = '✨ 添加广告'
-  form.value = { name: '', position: 'homepage', type: 'image', imageUrl: '', linkUrl: '', content: '', status: 1, sortOrder: 0, startTime: null, endTime: null }
+  form.value = normalizeAdvertisementForm({ name: '', position: 'homepage', type: 'image', imageUrl: '', linkUrl: '', content: '', status: 1, sortOrder: 0, startTime: null, endTime: null })
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
   dialogTitle.value = '✏️ 编辑广告'
-  form.value = { ...row }
+  form.value = normalizeAdvertisementForm(row)
   dialogVisible.value = true
 }
 
 const handleCopy = (row) => {
   dialogTitle.value = '📋 复制广告'
-  form.value = { ...row, id: null, name: row.name + ' (副本)' }
+  form.value = normalizeAdvertisementForm({
+    ...row,
+    id: null,
+    name: `${row.name || row.title || ''} (副本)`,
+    title: `${row.title || row.name || ''} (副本)`
+  })
   dialogVisible.value = true
 }
 
@@ -289,16 +303,16 @@ const handleSubmit = async () => {
     if (valid) {
       try {
         if (form.value.id) {
-          await updateAdvertisement(form.value.id, form.value)
+          await updateAdvertisement(form.value.id, normalizeAdvertisementForm(form.value), { skipBusinessErrorMessage: true })
           ElMessage.success('更新成功')
         } else {
-          await createAdvertisement(form.value)
+          await createAdvertisement(normalizeAdvertisementForm(form.value), { skipBusinessErrorMessage: true })
           ElMessage.success('创建成功')
         }
         dialogVisible.value = false
         loadAdvertisements()
       } catch (error) {
-        ElMessage.error('操作失败')
+        ElMessage.error(error.response?.data?.message || '操作失败')
       }
     }
   })
@@ -306,10 +320,10 @@ const handleSubmit = async () => {
 
 const handleStatusChange = async (row) => {
   try {
-    await updateStatus(row.id, row.status)
+    await updateStatus(row.id, row.status, { skipBusinessErrorMessage: true })
     ElMessage.success('状态更新成功')
   } catch (error) {
-    ElMessage.error('状态更新失败')
+    ElMessage.error(error.response?.data?.message || '状态更新失败')
     row.status = row.status === 1 ? 0 : 1
   }
 }
@@ -319,11 +333,11 @@ const handleDelete = (row) => {
     confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
   }).then(async () => {
     try {
-      await deleteAdvertisement(row.id)
+      await deleteAdvertisement(row.id, { skipBusinessErrorMessage: true })
       ElMessage.success('删除成功')
       loadAdvertisements()
     } catch (error) {
-      ElMessage.error('删除失败')
+      ElMessage.error(error.response?.data?.message || '删除失败')
     }
   })
 }

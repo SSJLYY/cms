@@ -92,6 +92,16 @@ public class SEOServiceImpl implements SEOService {
      * 日期时间格式化器 - 用于格式化完整的日期时间
      */
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private SEOSubmission buildSubmission(String engine, String url, String status, String responseMessage) {
+        SEOSubmission submission = new SEOSubmission();
+        submission.setEngine(engine);
+        submission.setUrl(url);
+        submission.setStatus(status);
+        submission.setResponseMessage(responseMessage);
+        submission.setSubmitTime(LocalDateTime.now());
+        return submission;
+    }
     
     /**
      * 获取SEO统计数据
@@ -249,88 +259,48 @@ public class SEOServiceImpl implements SEOService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public SubmissionResultVO batchSubmit(String engine) {
-        // 记录业务开始
         log.info("执行批量提交到搜索引擎业务逻辑: engine={}", engine);
-        
-        // 步骤1：查询有效资源
-        // 构建查询条件：状态为1（启用）且未删除
-        log.debug("查询有效资源记录: engine={}", engine);
+
         LambdaQueryWrapper<Resource> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Resource::getStatus, 1);  // 状态为启用
-        wrapper.eq(Resource::getDeleted, 0); // 未删除
+        wrapper.eq(Resource::getStatus, 1);
+        wrapper.eq(Resource::getDeleted, 0);
         List<Resource> resources = resourceMapper.selectList(wrapper);
         log.info("查询到待提交资源数量: engine={}, resourceCount={}", engine, resources.size());
-        
-        // 步骤2：初始化结果对象
-        // 创建提交结果VO对象
-        log.debug("初始化提交结果对象");
+
         SubmissionResultVO result = new SubmissionResultVO();
         int successCount = 0;
         int failedCount = 0;
-        
-        // 步骤3：遍历资源执行提交
-        // 为每个资源执行搜索引擎提交操作
-        log.debug("开始批量提交资源: engine={}", engine);
         String siteBaseUrl = getSiteBaseUrl();
+
         for (Resource resource : resources) {
-            // 构建资源URL
             String url = siteBaseUrl + "/resource/" + resource.getId();
-            log.debug("处理资源提交: resourceId={}, url={}, engine={}", 
-                resource.getId(), url, engine);
-            
-            // 创建SEO提交记录
-            SEOSubmission submission = new SEOSubmission();
-            submission.setEngine(engine);
-            submission.setUrl(url);
-            submission.setStatus("SUCCESS");  // 默认设置为成功
-            submission.setResponseMessage("提交成功");
-            submission.setSubmitTime(LocalDateTime.now());
-            
+            log.debug("处理资源提交: resourceId={}, url={}, engine={}", resource.getId(), url, engine);
+
             try {
-                // 步骤4：执行提交操作
-                // 将提交记录保存到数据库
-                log.debug("保存提交记录: resourceId={}, engine={}", resource.getId(), engine);
-                seoSubmissionMapper.insert(submission);
+                seoSubmissionMapper.insert(buildSubmission(engine, url, "SUCCESS", "提交成功"));
                 successCount++;
-                
-                // 记录成功提交
-                log.debug("资源提交成功: resourceId={}, url={}, engine={}", 
-                    resource.getId(), url, engine);
-                
+                log.debug("资源提交成功: resourceId={}, url={}, engine={}", resource.getId(), url, engine);
             } catch (Exception e) {
-                // 步骤5：处理提交失败
-                // 更新提交状态为失败并记录错误信息
-                log.warn("资源提交失败: resourceId={}, url={}, engine={}, error={}", 
+                log.warn("资源提交失败: resourceId={}, url={}, engine={}, error={}",
                     resource.getId(), url, engine, e.getMessage());
-                
-                submission.setStatus("FAILED");
-                submission.setResponseMessage("提交失败: " + e.getMessage());
-                
                 try {
-                    // 尝试保存失败记录
-                    seoSubmissionMapper.insert(submission);
+                    seoSubmissionMapper.insert(buildSubmission(engine, url, "FAILED", "提交失败: " + e.getMessage()));
                 } catch (Exception saveException) {
-                    log.error("保存失败记录异常: resourceId={}, error={}", 
+                    log.error("保存失败记录异常: resourceId={}, error={}",
                         resource.getId(), saveException.getMessage());
                 }
                 failedCount++;
             }
         }
-        
-        // 步骤6：封装提交结果
-        // 设置提交结果统计信息
-        log.debug("封装提交结果: engine={}, successCount={}, failedCount={}", 
-            engine, successCount, failedCount);
-        
+
         result.setSuccess(failedCount == 0);
         result.setSuccessCount(successCount);
         result.setFailedCount(failedCount);
         result.setMessage(String.format("成功提交%d个，失败%d个", successCount, failedCount));
-        
-        // 记录业务完成
-        log.info("批量提交到搜索引擎业务逻辑执行完成: engine={}, success={}, successCount={}, failedCount={}", 
+
+        log.info("批量提交到搜索引擎业务逻辑执行完成: engine={}, success={}, successCount={}, failedCount={}",
             engine, result.isSuccess(), successCount, failedCount);
-        
+
         return result;
     }
     
@@ -490,94 +460,59 @@ public class SEOServiceImpl implements SEOService {
     @Override
     @Transactional
     public SubmissionResultVO resubmit(Long id) {
-        // 记录业务开始
         log.info("执行重新提交SEO记录业务逻辑: id={}", id);
-        
-        // 步骤1：验证参数
-        // 检查提交记录ID是否有效
+
         if (id == null || id <= 0) {
             log.warn("提交记录ID无效: id={}", id);
             throw new BusinessException(BizErrorCode.PARAM_ERROR, "提交记录ID无效");
         }
-        
-        // 步骤2：查找原始提交记录
-        // 从数据库中查询原始提交记录
-        log.debug("查找原始提交记录: id={}", id);
+
         SEOSubmission original = seoSubmissionMapper.selectById(id);
-        
         if (original == null) {
             log.warn("提交记录不存在: id={}", id);
             throw new ResourceNotFoundException("提交记录不存在");
         }
-        
-        // 记录原始提交记录信息
-        log.info("找到原始提交记录: id={}, engine={}, url={}, originalStatus={}", 
+
+        log.info("找到原始提交记录: id={}, engine={}, url={}, originalStatus={}",
             original.getId(), original.getEngine(), original.getUrl(), original.getStatus());
-        
-        // 步骤3：创建新的提交记录
-        // 基于原始记录创建新的提交记录
-        log.debug("创建新的提交记录");
-        SEOSubmission submission = new SEOSubmission();
-        submission.setEngine(original.getEngine());
-        submission.setUrl(original.getUrl());
-        submission.setStatus("SUCCESS");  // 默认设置为成功
-        submission.setResponseMessage("重新提交成功");
-        submission.setSubmitTime(LocalDateTime.now());
-        
-        // 步骤4：初始化结果对象
-        // 创建提交结果VO对象
-        log.debug("初始化重新提交结果对象");
+
         SubmissionResultVO result = new SubmissionResultVO();
-        
+
         try {
-            // 步骤5：执行重新提交操作
-            // 将新的提交记录保存到数据库
-            log.debug("执行重新提交操作: engine={}, url={}", 
-                submission.getEngine(), submission.getUrl());
-            seoSubmissionMapper.insert(submission);
-            
-            // 设置成功结果
+            SEOSubmission saved = buildSubmission(original.getEngine(), original.getUrl(), "SUCCESS", "重新提交成功");
+            seoSubmissionMapper.insert(saved);
             result.setSuccess(true);
             result.setSuccessCount(1);
             result.setFailedCount(0);
             result.setMessage("重新提交成功");
-            
-            // 记录成功提交
-            log.info("重新提交成功: originalId={}, newId={}, engine={}, url={}", 
-                id, submission.getId(), submission.getEngine(), submission.getUrl());
-            
+            log.info("重新提交成功: originalId={}, newId={}, engine={}, url={}",
+                id, saved.getId(), saved.getEngine(), saved.getUrl());
         } catch (Exception e) {
-            // 步骤6：处理重新提交失败
-            // 更新提交状态为失败并记录错误信息
-            log.warn("重新提交失败: originalId={}, engine={}, url={}, error={}", 
-                id, submission.getEngine(), submission.getUrl(), e.getMessage());
-            
-            submission.setStatus("FAILED");
-            submission.setResponseMessage("重新提交失败: " + e.getMessage());
-            
+            log.warn("重新提交失败: originalId={}, engine={}, url={}, error={}",
+                id, original.getEngine(), original.getUrl(), e.getMessage());
             try {
-                // 尝试保存失败记录
-                seoSubmissionMapper.insert(submission);
-                log.debug("失败记录保存成功: newId={}", submission.getId());
+                seoSubmissionMapper.insert(buildSubmission(
+                    original.getEngine(),
+                    original.getUrl(),
+                    "FAILED",
+                    "重新提交失败: " + e.getMessage()
+                ));
             } catch (Exception saveException) {
-                log.error("保存失败记录异常: originalId={}, error={}", 
+                log.error("保存失败记录异常: originalId={}, error={}",
                     id, saveException.getMessage());
             }
-            
-            // 设置失败结果
             result.setSuccess(false);
             result.setSuccessCount(0);
             result.setFailedCount(1);
             result.setMessage("重新提交失败");
         }
-        
-        // 记录业务完成
-        log.info("重新提交SEO记录业务逻辑执行完成: originalId={}, success={}, successCount={}, failedCount={}", 
+
+        log.info("重新提交SEO记录业务逻辑执行完成: originalId={}, success={}, successCount={}, failedCount={}",
             id, result.isSuccess(), result.getSuccessCount(), result.getFailedCount());
-        
+
         return result;
     }
-    
+
     /**
      * 删除SEO提交历史记录
      * 
@@ -595,48 +530,35 @@ public class SEOServiceImpl implements SEOService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteHistory(Long id) {
-        // 记录业务开始
         log.info("执行删除SEO提交历史记录业务逻辑: id={}", id);
-        
-        // 步骤1：验证参数
-        // 检查提交记录ID是否有效
+
         if (id == null || id <= 0) {
             log.warn("提交记录ID无效: id={}", id);
             throw new BusinessException(BizErrorCode.PARAM_ERROR, "提交记录ID无效");
         }
-        
-        // 步骤2：检查提交记录是否存在
-        // 先查询提交记录是否存在，记录删除前的信息
+
         log.debug("检查SEO提交记录是否存在: id={}", id);
         SEOSubmission submission = seoSubmissionMapper.selectById(id);
-        
         if (submission == null) {
             log.warn("SEO提交记录不存在: id={}", id);
             throw new ResourceNotFoundException("提交记录不存在");
         }
-        
-        // 记录删除前的提交信息
-        log.info("准备删除SEO提交记录: id={}, engine={}, url={}, status={}, submitTime={}", 
-            submission.getId(), submission.getEngine(), submission.getUrl(), 
+
+        log.info("准备删除SEO提交记录: id={}, engine={}, url={}, status={}, submitTime={}",
+            submission.getId(), submission.getEngine(), submission.getUrl(),
             submission.getStatus(), submission.getSubmitTime());
-        
-        // 步骤3：执行删除操作
-        // 从数据库中删除提交记录
+
         log.debug("执行删除操作: id={}", id);
         int rows = seoSubmissionMapper.deleteById(id);
-        
-        // 步骤4：验证删除结果
-        // 检查删除操作是否成功
         if (rows > 0) {
-            log.info("SEO提交记录删除成功: id={}, engine={}, url={}, rows={}", 
+            log.info("SEO提交记录删除成功: id={}, engine={}, url={}, rows={}",
                 id, submission.getEngine(), submission.getUrl(), rows);
         } else {
             log.error("SEO提交记录删除失败，影响行数为0: id={}", id);
             throw new BusinessException("删除操作失败");
         }
-        
-        // 记录业务完成
-        log.info("删除SEO提交历史记录业务逻辑执行完成: id={}, engine={}, url={}", 
+
+        log.info("删除SEO提交历史记录业务逻辑执行完成: id={}, engine={}, url={}",
             id, submission.getEngine(), submission.getUrl());
     }
 }

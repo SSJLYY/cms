@@ -216,6 +216,15 @@ public class LogServiceImpl implements LogService {
         if (queryDTO.getEndTime() != null) {
             wrapper.le(SystemLog::getCreateTime, queryDTO.getEndTime());
         }
+        if (queryDTO.getKeyword() != null && !queryDTO.getKeyword().isEmpty()) {
+            wrapper.and(w -> w
+                .like(SystemLog::getDescription, queryDTO.getKeyword())
+                .or()
+                .like(SystemLog::getRequestUrl, queryDTO.getKeyword())
+                .or()
+                .like(SystemLog::getErrorMessage, queryDTO.getKeyword())
+            );
+        }
         
         wrapper.orderByDesc(SystemLog::getCreateTime);
         
@@ -226,16 +235,16 @@ public class LogServiceImpl implements LogService {
         csv.append("ID,模块,类型,描述,请求URL,请求方法,IP地址,状态,耗时(ms),创建时间\n");
         
         for (SystemLog log : logs) {
-            csv.append(log.getId()).append(",")
-               .append(log.getModule()).append(",")
-               .append(log.getType()).append(",")
-               .append(log.getDescription()).append(",")
-               .append(log.getRequestUrl()).append(",")
-               .append(log.getRequestMethod()).append(",")
-               .append(log.getIpAddress()).append(",")
-               .append(log.getStatus()).append(",")
-               .append(log.getDuration()).append(",")
-               .append(log.getCreateTime()).append("\n");
+            csv.append(csvValue(log.getId())).append(",")
+               .append(csvValue(log.getModule())).append(",")
+               .append(csvValue(log.getType())).append(",")
+               .append(csvValue(log.getDescription())).append(",")
+               .append(csvValue(log.getRequestUrl())).append(",")
+               .append(csvValue(log.getRequestMethod())).append(",")
+               .append(csvValue(log.getIpAddress())).append(",")
+               .append(csvValue(log.getStatus())).append(",")
+               .append(csvValue(log.getDuration())).append(",")
+               .append(csvValue(log.getCreateTime())).append("\n");
         }
         
         // 保存到临时文件
@@ -255,5 +264,13 @@ public class LogServiceImpl implements LogService {
             log.error("导出日志失败", e);
             throw new BusinessException(BizErrorCode.LOG_EXPORT_FAILED, e);
         }
+    }
+
+    private String csvValue(Object value) {
+        if (value == null) {
+            return "";
+        }
+        String text = String.valueOf(value).replace("\"", "\"\"");
+        return "\"" + text + "\"";
     }
 }

@@ -292,7 +292,7 @@ const updateTime = () => {
 const getMetrics = async () => {
   try {
     const res = await fetchMetrics()
-    metrics.value = res.data
+    metrics.value = res?.data || {}
   } catch (error) {
     ElMessage.error('获取核心指标失败')
   }
@@ -302,7 +302,7 @@ const getTrendData = async () => {
   try {
     loading.value = true
     const res = await fetchTrendData(trendDays.value)
-    renderChart(res.data)
+    renderChart(res?.data || { dates: [], resourceData: [], downloadData: [], userData: [] })
   } catch (error) {
     ElMessage.error('获取趋势数据失败')
   } finally {
@@ -313,7 +313,7 @@ const getTrendData = async () => {
 const getPendingTasks = async () => {
   try {
     const res = await fetchPendingTasks()
-    pendingTasks.value = res.data
+    pendingTasks.value = res?.data || {}
   } catch (error) {
     ElMessage.error('获取待处理事项失败')
   }
@@ -322,10 +322,11 @@ const getPendingTasks = async () => {
 const getSystemStatus = async () => {
   try {
     const res = await fetchSystemStatus()
+    const data = res?.data || {}
     systemStatus.value = [
-      { label: 'CPU 使用率', value: res.data.cpuUsage || 0, color: getProgressColor(res.data.cpuUsage || 0) },
-      { label: '内存使用率', value: res.data.memoryUsage || 0, color: getProgressColor(res.data.memoryUsage || 0) },
-      { label: '磁盘使用率', value: res.data.diskUsage || 0, color: getProgressColor(res.data.diskUsage || 0) }
+      { label: 'CPU 使用率', value: data.cpuUsage || 0, color: getProgressColor(data.cpuUsage || 0) },
+      { label: '内存使用率', value: data.memoryUsage || 0, color: getProgressColor(data.memoryUsage || 0) },
+      { label: '磁盘使用率', value: data.diskUsage || 0, color: getProgressColor(data.diskUsage || 0) }
     ]
   } catch (error) {
     ElMessage.error('获取系统状态失败')

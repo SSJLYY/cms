@@ -357,8 +357,10 @@ const isExternalReferer = (referer) => {
 const loadOverview = async () => {
   try {
     const res = await getStatisticsOverview(statsPeriod.value)
-    if (res.code === 200) {
-      overviewData.value = res.data
+    overviewData.value = res?.data || {
+      totalDownloads: 0,
+      totalVisits: 0,
+      newVisits: 0
     }
   } catch (error) {
     ElMessage.error('加载统计概览失败')
@@ -368,18 +370,16 @@ const loadOverview = async () => {
 const loadDownloadDistribution = async () => {
   try {
     const res = await getDownloadDistribution(statsPeriod.value)
-    if (res.code === 200) {
-      const data = res.data || []
-      
-      topDownloads.value = data.slice(0, 5).map((item, index) => ({
-        name: item.name,
-        category: '电脑软件',
-        downloads: item.value,
-        trend: index % 2 === 0 ? 'up' : 'down'
-      }))
-      
-      initDownloadChart(data)
-    }
+    const data = Array.isArray(res?.data) ? res.data : []
+
+    topDownloads.value = data.slice(0, 5).map((item, index) => ({
+      name: item.name,
+      category: '电脑软件',
+      downloads: item.value,
+      trend: index % 2 === 0 ? 'up' : 'down'
+    }))
+
+    initDownloadChart(data)
   } catch (error) {
     ElMessage.error('加载下载分布失败')
   }
@@ -393,10 +393,9 @@ const loadVisitDetails = async () => {
       pageNum: currentPage.value,
       pageSize: pageSize.value
     })
-    if (res.code === 200) {
-      visitStats.value = res.data.records || []
-      total.value = res.data.total || 0
-    }
+    const records = res?.data?.records
+    visitStats.value = Array.isArray(records) ? records : []
+    total.value = Number(res?.data?.total || 0)
   } catch (error) {
     ElMessage.error('加载访问统计失败')
   } finally {
@@ -407,9 +406,7 @@ const loadVisitDetails = async () => {
 const loadRealtimeActivities = async () => {
   try {
     const res = await getRealtimeActivities(10)
-    if (res.code === 200) {
-      realtimeActivities.value = res.data || []
-    }
+    realtimeActivities.value = Array.isArray(res?.data) ? res.data : []
   } catch (error) {
     ElMessage.error('加载实时活动失败')
   }

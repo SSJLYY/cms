@@ -226,26 +226,30 @@ const formatTime = (time) => {
 const loadOverview = async () => {
   try {
     const res = await getRevenueOverview(period.value)
-    if (res.code === 200) overviewData.value = res.data
-  } catch (error) { /* silent */ }
+    overviewData.value = res?.data || {}
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '加载收益概览失败')
+  }
 }
 
 const loadRevenueTypes = async () => {
   try {
     const res = await getRevenueByType(period.value)
-    if (res.code === 200) revenueTypes.value = res.data || []
-  } catch (error) { /* silent */ }
+    revenueTypes.value = res?.data || []
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '加载收益类型失败')
+  }
 }
 
 const loadRevenueList = async () => {
   tableLoading.value = true
   try {
     const res = await getRevenueList({ pageNum: currentPage.value, pageSize: pageSize.value, period: period.value })
-    if (res.code === 200) {
-      revenueList.value = res.data.records || []
-      total.value = res.data.total || 0
-    }
-  } catch (error) { /* silent */ } finally {
+    revenueList.value = Array.isArray(res?.data?.records) ? res.data.records : []
+    total.value = Number(res?.data?.total || 0)
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '加载收益列表失败')
+  } finally {
     tableLoading.value = false
   }
 }
@@ -265,10 +269,14 @@ const handleDelete = async (id) => {
     await ElMessageBox.confirm('确定要删除这条收益记录吗？', '提示', {
       confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
     })
-    const res = await deleteRevenue(id)
-    if (res.code === 200) { ElMessage.success('删除成功'); loadAllData() }
-    else ElMessage.error(res.message || '删除失败')
-  } catch (error) { /* cancel */ }
+    await deleteRevenue(id, { skipBusinessErrorMessage: true })
+    ElMessage.success('删除成功')
+    loadAllData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '删除失败')
+    }
+  }
 }
 
 const handleBatchDelete = async () => {
@@ -276,10 +284,15 @@ const handleBatchDelete = async () => {
     await ElMessageBox.confirm(`确定要删除选中的 ${selectedIds.value.length} 条记录吗？`, '提示', {
       confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
     })
-    const res = await batchDeleteRevenue(selectedIds.value)
-    if (res.code === 200) { ElMessage.success('批量删除成功'); selectedIds.value = []; loadAllData() }
-    else ElMessage.error(res.message || '批量删除失败')
-  } catch (error) { /* cancel */ }
+    await batchDeleteRevenue(selectedIds.value, { skipBusinessErrorMessage: true })
+    ElMessage.success('批量删除成功')
+    selectedIds.value = []
+    loadAllData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '批量删除失败')
+    }
+  }
 }
 
 onMounted(() => loadAllData())

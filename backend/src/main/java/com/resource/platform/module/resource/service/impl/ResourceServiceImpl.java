@@ -27,6 +27,7 @@ import com.resource.platform.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -71,6 +72,10 @@ public class ResourceServiceImpl implements ResourceService {
     
     @Autowired
     private ImageService imageService;
+
+    @Autowired
+    @Lazy
+    private ResourceService resourceServiceProxy;
 
     /**
      * 获取已发布的资源列表
@@ -324,7 +329,10 @@ public class ResourceServiceImpl implements ResourceService {
         resource.setId(id);
         Long resolvedCoverImageId = resolveCoverImageId(dto.getImageIds(), dto.getCoverImageId());
         resource.setCoverImageId(resolvedCoverImageId);
-        resourceMapper.updateById(resource);
+        int rows = resourceMapper.updateById(resource);
+        if (rows <= 0) {
+            throw new BusinessException("更新资源失败");
+        }
 
         // 3. 删除旧的下载链接
         LambdaQueryWrapper<DownloadLink> wrapper = new LambdaQueryWrapper<>();
@@ -365,6 +373,10 @@ public class ResourceServiceImpl implements ResourceService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteResource(Long id) {
+        Resource existing = resourceMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(BizErrorCode.RESOURCE_NOT_FOUND);
+        }
         // 1. 获取资源关联的所有图片
         LambdaQueryWrapper<ResourceImage> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ResourceImage::getResourceId, id);
@@ -374,7 +386,10 @@ public class ResourceServiceImpl implements ResourceService {
             .collect(Collectors.toList());
 
         // 2. 删除资源
-        resourceMapper.deleteById(id);
+        int rows = resourceMapper.deleteById(id);
+        if (rows <= 0) {
+            throw new BusinessException("删除资源失败");
+        }
 
         // 3. 删除资源图片关联
         resourceImageMapper.delete(wrapper);
@@ -423,7 +438,10 @@ public class ResourceServiceImpl implements ResourceService {
         
         // 步骤3：更新数据库
         log.debug("更新资源状态: resourceId={}, oldStatus={}, newStatus={}", id, oldStatus, newStatus);
-        resourceMapper.updateById(resource);
+        int rows = resourceMapper.updateById(resource);
+        if (rows <= 0) {
+            throw new BusinessException("切换资源状态失败");
+        }
         
         // 记录操作成功
         log.info("切换资源状态成功: resourceId={}, oldStatus={}, newStatus={}", id, oldStatus, newStatus);
@@ -455,6 +473,9 @@ public class ResourceServiceImpl implements ResourceService {
         
         // 执行更新
         int rows = resourceMapper.update(null, wrapper);
+        if (rows <= 0) {
+            throw new BusinessException(BizErrorCode.RESOURCE_NOT_FOUND);
+        }
         
         // 记录更新结果
         log.debug("更新资源下载次数完成: resourceId={}, affectedRows={}", id, rows);
@@ -510,7 +531,10 @@ public class ResourceServiceImpl implements ResourceService {
         // 保存资源图片关联
         if (imageIds != null && !imageIds.isEmpty()) {
             // 如果没有指定封面图，使用第一张图片作为封面
-            resourceMapper.updateById(resource);
+            int rows = resourceMapper.updateById(resource);
+            if (rows <= 0) {
+                throw new BusinessException("更新爬取资源封面失败");
+            }
 
             saveResourceImages(resource.getId(), imageIds, resolvedCoverImageId);
         }
@@ -734,7 +758,7 @@ public class ResourceServiceImpl implements ResourceService {
         List<Long> failedIds = new ArrayList<>();
         for (Long id : ids) {
             try {
-                deleteResource(id);
+                resourceServiceProxy.deleteResource(id);
                 deletedCount++;
             } catch (Exception e) {
                 log.warn("删除资源失败: resourceId={}, error={}", id, e.getMessage());

@@ -15,6 +15,7 @@ import com.resource.platform.module.image.service.ImageService;
 import com.resource.platform.module.system.service.StorageService;
 import com.resource.platform.util.FileValidationUtil;
 import com.resource.platform.util.ImageUtil;
+import com.resource.platform.module.image.vo.ImageBatchDeleteResultVO;
 import com.resource.platform.module.image.vo.ImageStatisticsVO;
 import com.resource.platform.module.image.vo.ImageVO;
 import com.resource.platform.module.resource.vo.ResourceVO;
@@ -453,10 +454,8 @@ public class ImageServiceImpl implements ImageService {
         if (image == null) {
             throw new ResourceNotFoundException("图片", id);
         }
-        
-        // 检查是否被使用
+
         if (Integer.valueOf(1).equals(image.getIsUsed())) {
-            // 获取使用该图片的资源列表
             List<ResourceVO> usingResources = getImageUsageDetails(id);
             if (!usingResources.isEmpty()) {
                 String resourceNames = usingResources.stream()
@@ -466,34 +465,40 @@ public class ImageServiceImpl implements ImageService {
                     String.format("图片正在被以下资源使用，无法删除: %s", resourceNames)
                 );
             } else {
-                // 如果状态为已使用但实际没有关联，更新状态后再尝试删除
-                log.warn("图片 {} 状态为已使用但无实际关联，更新状态", id);
+                log.warn("图片 {} 标记为使用中，但未查询到实际关联资源，准备刷新使用状态", id);
                 updateImageUsageStatus(id);
                 image = imageMapper.selectById(id);
             }
         }
-        
-        // 删除存储的文件
+
         try {
             storageService.delete(image.getFileUrl());
             if (image.getThumbnailUrl() != null) {
                 storageService.delete(image.getThumbnailUrl());
             }
         } catch (Exception e) {
-            log.error("删除存储文件失败", e);
+            log.error("删除图片存储文件失败: imageId={}, fileUrl={}", image.getId(), image.getFileUrl(), e);
+            throw new BusinessException("删除图片存储文件失败");
         }
-        
-        // 删除数据库记录
-        imageMapper.deleteById(id);
-        log.info("图片删除成功, imageId: {}", id);
+
+        int rows = imageMapper.deleteById(id);
+        if (rows <= 0) {
+            throw new BusinessException("删除图片记录失败");
+        }
+        log.info("删除图片成功, imageId: {}", id);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteImages(List<Long> ids) {
+    public ImageBatchDeleteResultVO deleteImages(List<Long> ids) {
+        ImageBatchDeleteResultVO result = new ImageBatchDeleteResultVO();
+        result.setRequestedCount(ids == null ? 0 : ids.size());
+        result.setDeletedCount(0);
+        result.setSkippedUsedCount(0);
+        result.setStorageFailedCount(0);
         if (ids == null || ids.isEmpty()) {
             log.debug("图片ID列表为空，跳过批量删除");
-            return;
+            return result;
         }
 
         log.info("开始批量删除图片，数量: {}", ids.size());
@@ -502,7 +507,10 @@ public class ImageServiceImpl implements ImageService {
         List<Image> images = imageMapper.selectBatchIds(ids);
         if (images.isEmpty()) {
             log.warn("批量删除图片：未找到任何匹配记录");
-            return;
+            return result;
+        }
+        if (images.size() != ids.size()) {
+            throw new ResourceNotFoundException("部分图片不存在或已被删除");
         }
 
         // 过滤掉已被资源使用的图片
@@ -514,32 +522,47 @@ public class ImageServiceImpl implements ImageService {
                 deletableImages.add(image);
             }
         }
+        result.setSkippedUsedCount(ids.size() - deletableImages.size());
 
         if (deletableImages.isEmpty()) {
             log.info("批量删除图片：所有图片均被使用，无法删除");
-            return;
+            return result;
         }
 
         List<Long> deletableIds = deletableImages.stream()
             .map(Image::getId)
             .collect(Collectors.toList());
 
-        // 批量删除存储文件
+        // 仅删除存储删除成功的图片记录，避免文件残留但数据库已删除
+        List<Long> storageDeletedIds = new ArrayList<>();
         for (Image image : deletableImages) {
             try {
                 storageService.delete(image.getFileUrl());
                 if (image.getThumbnailUrl() != null) {
                     storageService.delete(image.getThumbnailUrl());
                 }
+                storageDeletedIds.add(image.getId());
             } catch (Exception e) {
                 log.error("删除存储文件失败: imageId={}, fileUrl={}", image.getId(), image.getFileUrl(), e);
             }
         }
 
-        // 批量删除数据库记录
-        imageMapper.deleteBatchIds(deletableIds);
-        log.info("批量删除图片完成: requested={}, skipped(used)={}, deleted={}",
-            ids.size(), ids.size() - deletableIds.size(), deletableIds.size());
+        if (storageDeletedIds.isEmpty()) {
+            throw new BusinessException("批量删除图片失败，存储文件删除未成功");
+        }
+        result.setStorageFailedCount(deletableIds.size() - storageDeletedIds.size());
+
+        int rows = imageMapper.deleteBatchIds(storageDeletedIds);
+        if (rows != storageDeletedIds.size()) {
+            throw new BusinessException("批量删除图片记录失败");
+        }
+        result.setDeletedCount(rows);
+        log.info("批量删除图片完成: requested={}, skipped(used)={}, deleted={}, storageFailed={}",
+            ids.size(),
+            ids.size() - deletableIds.size(),
+            rows,
+            deletableIds.size() - storageDeletedIds.size());
+        return result;
     }
 
     @Override
@@ -578,7 +601,10 @@ public class ImageServiceImpl implements ImageService {
                 
                 if (!newStatus.equals(oldStatus)) {
                     image.setIsUsed(newStatus);
-                    imageMapper.updateById(image);
+                    int rows = imageMapper.updateById(image);
+                    if (rows <= 0) {
+                        throw new BusinessException("更新图片使用状态失败");
+                    }
                     log.info("图片 {} 状态已更新: {} -> {}", imageId, oldStatus, newStatus);
                 } else {
                     log.debug("图片 {} 状态无需更新，当前状态: {}", imageId, oldStatus);
@@ -624,7 +650,10 @@ public class ImageServiceImpl implements ImageService {
             int newStatus = refCount > 0 ? 1 : 0;
             if (!Integer.valueOf(newStatus).equals(image.getIsUsed())) {
                 image.setIsUsed(newStatus);
-                imageMapper.updateById(image);
+                int rows = imageMapper.updateById(image);
+                if (rows <= 0) {
+                    throw new BusinessException("批量更新图片使用状态失败");
+                }
                 updatedCount++;
             }
         }

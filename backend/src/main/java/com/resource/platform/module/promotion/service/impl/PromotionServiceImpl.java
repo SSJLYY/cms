@@ -15,6 +15,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -50,6 +51,19 @@ public class PromotionServiceImpl implements PromotionService {
     
     @Autowired
     private AdvertisementMapper advertisementMapper;
+
+    private String resolveAdvertisementName(AdvertisementDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+        if (StringUtils.hasText(dto.getName())) {
+            return dto.getName().trim();
+        }
+        if (StringUtils.hasText(dto.getTitle())) {
+            return dto.getTitle().trim();
+        }
+        return null;
+    }
     
     /**
      * 获取广告列表
@@ -212,7 +226,7 @@ public class PromotionServiceImpl implements PromotionService {
         }
         
         // 检查必填字段
-        if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
+        if (resolveAdvertisementName(dto) == null) {
             log.warn("广告标题为空");
             throw new BusinessException(BizErrorCode.PARAM_ERROR, "广告标题不能为空");
         }
@@ -226,7 +240,10 @@ public class PromotionServiceImpl implements PromotionService {
         // 查询数据库中是否存在同标题的广告
         log.debug("检查广告标题是否重复: title={}", dto.getTitle());
         LambdaQueryWrapper<Advertisement> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Advertisement::getTitle, dto.getTitle());
+        String normalizedName = resolveAdvertisementName(dto);
+        wrapper.and(w -> w.eq(Advertisement::getTitle, normalizedName)
+                .or()
+                .eq(Advertisement::getName, normalizedName));
         long count = advertisementMapper.selectCount(wrapper);
         
         if (count > 0) {
@@ -239,6 +256,8 @@ public class PromotionServiceImpl implements PromotionService {
         log.debug("创建广告实体对象");
         Advertisement advertisement = new Advertisement();
         BeanUtils.copyProperties(dto, advertisement);
+        advertisement.setName(normalizedName);
+        advertisement.setTitle(normalizedName);
         
         // 步骤4：设置默认值
         // 设置默认排序值
@@ -317,7 +336,7 @@ public class PromotionServiceImpl implements PromotionService {
         }
         
         // 检查必填字段
-        if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
+        if (resolveAdvertisementName(dto) == null) {
             log.warn("广告标题为空: id={}", id);
             throw new BusinessException(BizErrorCode.PARAM_ERROR, "广告标题不能为空");
         }
@@ -345,8 +364,11 @@ public class PromotionServiceImpl implements PromotionService {
         // 查询是否有其他广告使用相同标题
         log.debug("检查广告标题是否重复: id={}, title={}", id, dto.getTitle());
         LambdaQueryWrapper<Advertisement> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Advertisement::getTitle, dto.getTitle())
-               .ne(Advertisement::getId, id);
+        String normalizedName = resolveAdvertisementName(dto);
+        wrapper.ne(Advertisement::getId, id)
+               .and(w -> w.eq(Advertisement::getTitle, normalizedName)
+                       .or()
+                       .eq(Advertisement::getName, normalizedName));
         long count = advertisementMapper.selectCount(wrapper);
         
         if (count > 0) {
@@ -360,6 +382,8 @@ public class PromotionServiceImpl implements PromotionService {
         log.debug("准备更新广告实体对象");
         BeanUtils.copyProperties(dto, advertisement);
         advertisement.setId(id);
+        advertisement.setName(normalizedName);
+        advertisement.setTitle(normalizedName);
         
         // 执行更新操作
         log.debug("更新广告到数据库: id={}", id);
@@ -617,63 +641,52 @@ public class PromotionServiceImpl implements PromotionService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void recordClick(Long id) {
-        // 记录业务开始
         log.info("执行记录广告点击业务逻辑: id={}", id);
-        
-        // 步骤1：验证参数
-        // 检查广告ID是否有效
+
         if (id == null || id <= 0) {
             log.warn("广告ID无效: id={}", id);
             throw new BusinessException(BizErrorCode.PARAM_ERROR, "广告ID无效");
         }
-        
-        // 步骤2：检查广告是否存在
-        // 查询现有的广告
-        log.debug("检查广告是否存在: id={}", id);
+
         Advertisement advertisement = advertisementMapper.selectById(id);
         if (advertisement == null) {
             log.warn("广告不存在: id={}", id);
             throw new ResourceNotFoundException("广告不存在");
         }
-        
-        // 检查广告是否启用
+
         if (!Integer.valueOf(1).equals(advertisement.getStatus())) {
             log.warn("广告未启用，无法记录点击: id={}, status={}", id, advertisement.getStatus());
             throw new BusinessException("广告未启用");
         }
-        
-        // 记录点击前的信息
-        Integer oldClickCount = advertisement.getClickCount();
-        if (oldClickCount == null) {
-            oldClickCount = 0;
+
+        LocalDateTime now = LocalDateTime.now();
+        if (advertisement.getStartTime() != null && advertisement.getStartTime().isAfter(now)) {
+            log.warn("广告尚未开始投放，无法记录点击: id={}, startTime={}", id, advertisement.getStartTime());
+            throw new BusinessException("广告尚未开始投放");
         }
-        Integer newClickCount = oldClickCount + 1;
-        
-        log.info("广告点击统计: id={}, title={}, oldClickCount={}, newClickCount={}", 
-            id, advertisement.getTitle(), oldClickCount, newClickCount);
-        
-        // 步骤3：更新点击计数
-        // 增加点击计数
-        advertisement.setClickCount(newClickCount);
-        
-        // 执行更新操作
-        log.debug("更新广告点击计数到数据库: id={}, clickCount={}", id, newClickCount);
-        int rows = advertisementMapper.updateById(advertisement);
-        
-        // 步骤4：验证更新结果
-        // 检查更新操作是否成功
+        if (advertisement.getEndTime() != null && advertisement.getEndTime().isBefore(now)) {
+            log.warn("广告已结束投放，无法记录点击: id={}, endTime={}", id, advertisement.getEndTime());
+            throw new BusinessException("广告已结束投放");
+        }
+
+        Integer oldClickCount = advertisement.getClickCount();
+        int expectedClickCount = (oldClickCount != null ? oldClickCount : 0) + 1;
+        log.info("准备记录广告点击: id={}, title={}, oldClickCount={}, expectedClickCount={}",
+            id, advertisement.getTitle(), oldClickCount, expectedClickCount);
+
+        log.debug("更新广告点击计数到数据库: id={}, expectedClickCount={}", id, expectedClickCount);
+        int rows = advertisementMapper.incrementClickCount(id, now);
         if (rows > 0) {
-            log.info("广告点击记录成功: id={}, title={}, clickCount={}, rows={}", 
-                id, advertisement.getTitle(), newClickCount, rows);
+            log.info("广告点击记录成功: id={}, title={}, expectedClickCount={}, rows={}",
+                id, advertisement.getTitle(), expectedClickCount, rows);
         } else {
-            log.error("广告点击记录失败，影响行数为0: id={}, clickCount={}", id, newClickCount);
+            log.error("广告点击记录失败，影响行数为0: id={}, expectedClickCount={}", id, expectedClickCount);
             throw new BusinessException("广告点击记录失败");
         }
-        
-        // 记录业务完成
-        log.info("记录广告点击业务逻辑执行完成: id={}, clickCount={}", id, newClickCount);
+
+        log.info("记录广告点击业务逻辑执行完成: id={}, expectedClickCount={}", id, expectedClickCount);
     }
-    
+
     /**
      * 获取广告位置选项
      * 

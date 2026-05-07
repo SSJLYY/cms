@@ -70,7 +70,8 @@ public class PromotionController {
     @PreAuthorize("hasRole('ADMIN')")
     @OperationLog(module = "推广管理", type = "创建", description = "创建广告")
     public Result<Void> createAdvertisement(@Validated @RequestBody AdvertisementDTO dto) {
-        if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
+        if ((dto.getName() == null || dto.getName().trim().isEmpty())
+                && (dto.getTitle() == null || dto.getTitle().trim().isEmpty())) {
             log.warn("广告标题为空");
             throw new BusinessException(BizErrorCode.PARAM_ERROR, "广告标题不能为空");
         }
@@ -94,7 +95,8 @@ public class PromotionController {
             throw new BusinessException(BizErrorCode.PARAM_ERROR, "广告ID无效");
         }
 
-        if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
+        if ((dto.getName() == null || dto.getName().trim().isEmpty())
+                && (dto.getTitle() == null || dto.getTitle().trim().isEmpty())) {
             log.warn("广告标题为空: id={}", id);
             throw new BusinessException(BizErrorCode.PARAM_ERROR, "广告标题不能为空");
         }

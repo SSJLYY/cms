@@ -286,6 +286,12 @@ const currentPage = ref(1)
 const pageSize = 9
 const advertisements = ref([])
 
+const normalizeAdvertisement = (ad = {}) => ({
+  ...ad,
+  name: ad.name || ad.title || '',
+  title: ad.title || ad.name || ''
+})
+
 const isChristmasTheme = computed(() => {
   return document.documentElement.getAttribute('data-theme') === 'christmas'
 })
@@ -502,7 +508,7 @@ const loadAdvertisements = async () => {
   try {
     const res = await getActiveAdvertisements('homepage')
     if (res.code === 200 && res.data) {
-      advertisements.value = res.data
+        advertisements.value = res.data.map(normalizeAdvertisement)
     }
   } catch (error) {
     // 静默处理，广告加载失败不影响核心功能

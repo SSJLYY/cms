@@ -227,6 +227,25 @@ const configMap = {
   security: securityConfig
 }
 
+const buildEmailTestPayload = () => ({
+  host: emailConfig['email.smtp.host'] || '',
+  port: String(emailConfig['email.smtp.port'] || ''),
+  username: emailConfig['email.username'] || '',
+  password: emailConfig['email.password'] || '',
+  from: emailConfig['email.from'] || '',
+  fromName: emailConfig['email.from.name'] || '',
+  sslEnable: String(Boolean(emailConfig['email.ssl.enable']))
+})
+
+const buildStorageTestPayload = () => ({
+  type: storageConfig['storage.type'] || '',
+  path: storageConfig['storage.local.path'] || '',
+  endpoint: storageConfig['storage.oss.endpoint'] || '',
+  accessKey: storageConfig['storage.oss.accessKey'] || '',
+  secretKey: storageConfig['storage.oss.secretKey'] || '',
+  bucketName: storageConfig['storage.oss.bucket'] || ''
+})
+
 const loadConfigs = async (category) => {
   try {
     const { data } = await request({
@@ -262,7 +281,7 @@ const handleSave = async (category) => {
     })
     ElMessage.success('保存成功')
   } catch (error) {
-    ElMessage.error('保存失败')
+    ElMessage.error(error.response?.data?.message || '保存失败')
   }
 }
 
@@ -279,13 +298,13 @@ const handleReset = async (category) => {
     ElMessage.success('重置成功')
     loadConfigs(category)
   } catch (error) {
-    ElMessage.error('重置失败')
+    ElMessage.error(error.response?.data?.message || '重置失败')
   }
 }
 
 const handleTest = async (type) => {
   try {
-    const configs = type === 'email' ? emailConfig : storageConfig
+    const configs = type === 'email' ? buildEmailTestPayload() : buildStorageTestPayload()
     const endpoint = type === 'email' ? '/api/config/test/email' : '/api/config/test/storage'
     const { data } = await request({
       url: endpoint,
@@ -300,7 +319,7 @@ const handleTest = async (type) => {
       ElMessage.error('测试失败')
     }
   } catch (error) {
-    ElMessage.error('测试失败')
+    ElMessage.error(error.response?.data?.message || '测试失败')
   }
 }
 

@@ -51,11 +51,12 @@ export function getFeedbackById(id) {
  * @param {string} reply - 回复内容
  * @returns {Promise} 返回回复结果
  */
-export function replyFeedback(id, reply) {
+export function replyFeedback(id, reply, config = {}) {
   return request({
     url: `/api/feedback/${id}/reply`,
     method: 'post',
-    data: { reply }
+    data: { reply },
+    ...config
   })
 }
 
@@ -65,11 +66,12 @@ export function replyFeedback(id, reply) {
  * @param {string} status - 新状态（pending/processing/resolved/closed）
  * @returns {Promise} 返回状态更新结果
  */
-export function updateFeedbackStatus(id, status) {
+export function updateFeedbackStatus(id, status, config = {}) {
   return request({
     url: `/api/feedback/${id}/status`,
     method: 'put',
-    data: { status }
+    data: { status },
+    ...config
   })
 }
 
@@ -78,10 +80,11 @@ export function updateFeedbackStatus(id, status) {
  * @param {number} id - 反馈ID
  * @returns {Promise} 返回删除结果
  */
-export function deleteFeedback(id) {
+export function deleteFeedback(id, config = {}) {
   return request({
     url: `/api/feedback/${id}`,
-    method: 'delete'
+    method: 'delete',
+    ...config
   })
 }
 
@@ -90,11 +93,12 @@ export function deleteFeedback(id) {
  * @param {Array<number>} ids - 反馈ID数组
  * @returns {Promise} 返回批量删除结果
  */
-export function deleteFeedbacks(ids) {
+export function deleteFeedbacks(ids, config = {}) {
   return request({
     url: '/api/feedback/batch',
     method: 'delete',
-    data: ids
+    data: ids,
+    ...config
   })
 }
 

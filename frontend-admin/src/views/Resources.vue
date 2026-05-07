@@ -234,7 +234,7 @@
               @click="selectCoverImage(img)"
             >
               <el-image 
-                :src="img.thumbnailUrl || img.fileUrl" 
+                :src="getImageUrl(img.thumbnailUrl || img.fileUrl)" 
                 fit="cover"
                 style="width: 100%; height: 100%"
                 loading="lazy"
@@ -294,7 +294,7 @@
                 :class="{ 'is-cover': img.id === form.coverImageId }"
               >
                 <el-image 
-                  :src="img.thumbnailUrl || img.fileUrl" 
+                  :src="getImageUrl(img.thumbnailUrl || img.fileUrl)" 
                   fit="cover"
                   style="width: 100%; height: 100%"
                 />
@@ -485,6 +485,12 @@ const formatDateTime = (dateStr) => {
   })
 }
 
+const getImageUrl = (url) => {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  return window.location.origin + (url.startsWith('/') ? url : `/${url}`)
+}
+
 const loadResources = async () => {
   try {
     tableLoading.value = true
@@ -557,7 +563,7 @@ const selectCoverImage = (img) => {
     form.imageIds.push(img.id)
     if (!form.coverImageId) {
       form.coverImageId = img.id
-      form.coverImageUrl = img.fileUrl
+      form.coverImageUrl = getImageUrl(img.fileUrl)
     }
   }
   showImageSelector.value = false
@@ -576,7 +582,7 @@ const setCoverImage = (imageId) => {
   form.coverImageId = imageId
   const img = form.images.find(i => i.id === imageId)
   if (img) {
-    form.coverImageUrl = img.fileUrl
+    form.coverImageUrl = getImageUrl(img.fileUrl)
   }
 }
 
@@ -655,17 +661,17 @@ const handleSave = async () => {
     }
     
     if (form.id) {
-      await updateResource(form.id, submitData)
+      await updateResource(form.id, submitData, { skipBusinessErrorMessage: true })
       ElMessage.success('更新成功')
     } else {
-      await createResource(submitData)
+      await createResource(submitData, { skipBusinessErrorMessage: true })
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
     loadResources()
   } catch (error) {
     if (error !== false) {
-      ElMessage.error('保存失败')
+      ElMessage.error(error.response?.data?.message || '保存失败')
     }
   } finally {
     saveLoading.value = false
@@ -674,11 +680,11 @@ const handleSave = async () => {
 
 const handleToggleStatus = async (row) => {
   try {
-    await toggleResourceStatus(row.id)
+    await toggleResourceStatus(row.id, { skipBusinessErrorMessage: true })
     ElMessage.success('状态切换成功')
     loadResources()
   } catch (error) {
-    ElMessage.error('状态切换失败')
+    ElMessage.error(error.response?.data?.message || '状态切换失败')
   }
 }
 
@@ -689,12 +695,12 @@ const handleDelete = async (id) => {
       confirmButtonText: '确定',
       cancelButtonText: '取消'
     })
-    await deleteResource(id)
+    await deleteResource(id, { skipBusinessErrorMessage: true })
     ElMessage.success('删除成功')
     loadResources()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除失败')
+      ElMessage.error(error.response?.data?.message || '删除失败')
     }
   }
 }
@@ -722,14 +728,14 @@ const handleBatchPublish = async () => {
     
     batchLoading.value = true
     const ids = selectedResources.value.map(item => item.id)
-    const result = await batchPublishResources(ids)
+    const result = await batchPublishResources(ids, { skipBusinessErrorMessage: true })
     
     ElMessage.success(`成功发布 ${result.data} 个资源`)
     selectedResources.value = []
     loadResources()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('批量发布失败')
+      ElMessage.error(error.response?.data?.message || '批量发布失败')
     }
   } finally {
     batchLoading.value = false
@@ -755,14 +761,14 @@ const handleBatchUnpublish = async () => {
     
     batchLoading.value = true
     const ids = selectedResources.value.map(item => item.id)
-    const result = await batchUnpublishResources(ids)
+    const result = await batchUnpublishResources(ids, { skipBusinessErrorMessage: true })
     
     ElMessage.success(`成功下架 ${result.data} 个资源`)
     selectedResources.value = []
     loadResources()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('批量下架失败')
+      ElMessage.error(error.response?.data?.message || '批量下架失败')
     }
   } finally {
     batchLoading.value = false
@@ -788,14 +794,14 @@ const handleBatchDelete = async () => {
     
     batchLoading.value = true
     const ids = selectedResources.value.map(item => item.id)
-    const result = await batchDeleteResources(ids)
+    const result = await batchDeleteResources(ids, { skipBusinessErrorMessage: true })
     
     ElMessage.success(`成功删除 ${result.data} 个资源`)
     selectedResources.value = []
     loadResources()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('批量删除失败')
+      ElMessage.error(error.response?.data?.message || '批量删除失败')
     }
   } finally {
     batchLoading.value = false
@@ -811,7 +817,7 @@ const handleConfirmBatchMove = async () => {
   try {
     batchLoading.value = true
     const ids = selectedResources.value.map(item => item.id)
-    const result = await batchMoveToCategory(ids, batchMoveTargetCategory.value)
+    const result = await batchMoveToCategory(ids, batchMoveTargetCategory.value, { skipBusinessErrorMessage: true })
     
     ElMessage.success(`成功移动 ${result.data} 个资源`)
     selectedResources.value = []
@@ -819,7 +825,7 @@ const handleConfirmBatchMove = async () => {
     batchMoveTargetCategory.value = null
     loadResources()
   } catch (error) {
-    ElMessage.error('批量移动失败')
+    ElMessage.error(error.response?.data?.message || '批量移动失败')
   } finally {
     batchLoading.value = false
   }
