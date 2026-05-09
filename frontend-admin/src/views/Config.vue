@@ -98,8 +98,6 @@
               <el-select v-model="storageConfig['storage.type']" class="full-width">
                 <el-option label="本地存储" value="local" />
                 <el-option label="阿里云OSS" value="oss" />
-                <el-option label="腾讯云COS" value="cos" />
-                <el-option label="七牛云" value="qiniu" />
               </el-select>
             </el-form-item>
             <el-form-item label="本地存储路径">

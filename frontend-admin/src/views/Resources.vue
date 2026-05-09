@@ -410,13 +410,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Refresh, Edit, Delete, Switch, Picture, Compass, Check, Close, FolderOpened, Link } from '@element-plus/icons-vue'
 import { getResourceList, createResource, updateResource, deleteResource, toggleResourceStatus, batchPublishResources, batchUnpublishResources, batchDeleteResources, batchMoveToCategory } from '../api/resource'
 import { getCategoryList } from '../api/category'
 import { queryImages } from '../api/image'
 import { getLinkTypes } from '../api/linkType'
+
+const route = useRoute()
+const router = useRouter()
 
 const resources = ref([])
 const categories = ref([])
@@ -437,6 +441,7 @@ const queryParams = reactive({
   keyword: '',
   categoryId: null,
   status: null,
+  auditStatus: null,
   source: null,
   pageNum: 1,
   pageSize: 10
@@ -495,13 +500,30 @@ const loadResources = async () => {
   try {
     tableLoading.value = true
     const res = await getResourceList(queryParams)
-    resources.value = Array.isArray(res?.data?.records) ? res.data.records : []
-    total.value = Number(res?.data?.total || 0)
+    const records = Array.isArray(res?.data?.records) ? res.data.records : []
+    const totalCount = Number(res?.data?.total || 0)
+    if (records.length === 0 && totalCount > 0 && queryParams.pageNum > 1) {
+      queryParams.pageNum -= 1
+      return await loadResources()
+    }
+    resources.value = records
+    total.value = totalCount
+    selectedResources.value = selectedResources.value.filter((selected) =>
+      resources.value.some((item) => item.id === selected.id)
+    )
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '加载资源失败')
   } finally {
     tableLoading.value = false
   }
+}
+
+const applyRouteFilters = () => {
+  queryParams.pageNum = 1
+  queryParams.status = route.query.status !== undefined && route.query.status !== null && route.query.status !== ''
+    ? Number(route.query.status)
+    : null
+  queryParams.auditStatus = typeof route.query.auditStatus === 'string' ? route.query.auditStatus : null
 }
 
 const loadCategories = async () => {
@@ -532,12 +554,14 @@ const loadLinkTypes = async () => {
 }
 
 const handleReset = () => {
+  selectedResources.value = []
   queryParams.keyword = ''
   queryParams.categoryId = null
   queryParams.status = null
+  queryParams.auditStatus = null
   queryParams.source = null
   queryParams.pageNum = 1
-  loadResources()
+  router.replace({ path: route.path, query: {} })
 }
 
 const loadImages = async () => {
@@ -832,10 +856,20 @@ const handleConfirmBatchMove = async () => {
 }
 
 onMounted(() => {
+  applyRouteFilters()
   loadResources()
   loadCategories()
   loadLinkTypes()
 })
+
+watch(
+  () => route.query,
+  () => {
+    selectedResources.value = []
+    applyRouteFilters()
+    loadResources()
+  }
+)
 </script>
 
 

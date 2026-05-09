@@ -70,11 +70,7 @@ public class CrawlerLogServiceImpl implements CrawlerLogService {
             query.getPageSize() == null || query.getPageSize() < 1 ? 10 : Math.min(query.getPageSize(), MAX_PAGE_SIZE));
         Page<CrawlerLog> resultPage = crawlerLogMapper.selectPage(page, wrapper);
         
-        List<CrawlerLogVO> voList = resultPage.getRecords().stream()
-                .map(this::convertToVO)
-                .collect(Collectors.toList());
-        
-        return new PageResult<>(resultPage.getTotal(), voList);
+        return PageResult.of(resultPage, this::convertToVO);
     }
 
     @Override

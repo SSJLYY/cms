@@ -129,10 +129,7 @@ public class PromotionServiceImpl implements PromotionService {
         // 步骤4：封装分页结果
         // 创建分页结果对象
         log.debug("封装分页结果");
-        PageResult<Advertisement> pageResult = new PageResult<>(
-            resultPage.getTotal(),
-            resultPage.getRecords()
-        );
+        PageResult<Advertisement> pageResult = PageResult.of(resultPage);
         
         // 记录每个广告的基本信息
         for (Advertisement ad : resultPage.getRecords()) {

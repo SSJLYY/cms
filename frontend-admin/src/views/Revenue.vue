@@ -1,10 +1,9 @@
 <template>
   <div class="revenue-container">
-    <!-- 顶部收益概览 -->
     <div class="overview-grid">
       <div class="overview-card">
         <div class="ov-icon-wrap" style="background: linear-gradient(135deg, #43e97b22, #38f9d722);">
-          <span class="ov-emoji">💰</span>
+          <span class="ov-emoji">💵</span>
         </div>
         <div class="ov-body">
           <div class="ov-value" style="color: #43e97b;">¥{{ overviewData.totalRevenue || '0.00' }}</div>
@@ -28,13 +27,13 @@
         </div>
         <div class="ov-body">
           <div class="ov-value" style="color: #f093fb;">{{ overviewData.revenueItemCount || 0 }}</div>
-          <div class="ov-label">收益项数量</div>
+          <div class="ov-label">收益记录数</div>
         </div>
       </div>
 
       <div class="overview-card period-card">
         <div class="ov-icon-wrap" style="background: linear-gradient(135deg, #fa709a22, #fee14022);">
-          <span class="ov-emoji">📅</span>
+          <span class="ov-emoji">🗓️</span>
         </div>
         <div class="ov-body">
           <div class="ov-label" style="margin-bottom: 8px;">统计周期</div>
@@ -48,16 +47,15 @@
       </div>
     </div>
 
-    <!-- 收益类型卡片 -->
     <div class="revenue-types-section" v-if="revenueTypes.length > 0">
       <div class="section-header">
-        <span class="section-icon">💎</span>
+        <span class="section-icon">🧾</span>
         收益分类概览
       </div>
       <div class="type-cards-grid">
         <div
           v-for="(item, index) in revenueTypes"
-          :key="index"
+          :key="item.revenueType || index"
           class="type-card"
           :style="{ '--card-color': iconColors[index % iconColors.length].color, '--card-bg': iconColors[index % iconColors.length].bg }"
         >
@@ -68,7 +66,7 @@
           </div>
           <div class="type-body">
             <div class="type-amount">¥{{ item.totalAmount || '0.00' }}</div>
-            <div class="type-name">{{ item.typeName }}</div>
+            <div class="type-name">{{ item.typeName || getTypeName(item.revenueType) }}</div>
           </div>
           <div class="type-footer">
             <span>下载: {{ item.downloadCount || 0 }}次</span>
@@ -78,7 +76,6 @@
       </div>
     </div>
 
-    <!-- 收益明细表格 -->
     <div class="table-card">
       <div class="table-header">
         <div class="table-title">
@@ -146,7 +143,7 @@
           :page-sizes="[10, 20, 50, 100]"
           :total="total"
           layout="total, sizes, prev, pager, next, jumper"
-          @size-change="loadRevenueList"
+          @size-change="handlePageSizeChange"
           @current-change="loadRevenueList"
         />
       </div>
@@ -182,14 +179,14 @@ const revenueTypes = ref([])
 const revenueList = ref([])
 
 const typeNameMap = {
-  'cloud_storage': '云存储',
-  'download_revenue': '下载收益',
-  'mobile_cloud': '移动云盘',
-  'mobile_cloud_backup': '移动云盘（备用）',
-  'uc_cloud': 'UC网盘',
+  cloud_storage: '云存储',
+  download_revenue: '下载收益',
+  mobile_cloud: '移动云盘',
+  mobile_cloud_backup: '移动云盘(备用)',
+  uc_cloud: 'UC网盘',
   '12_cloud': '12云盘',
-  'lanzou_cloud': '蓝奏云',
-  'chengtong_cloud': '城通网盘'
+  lanzou_cloud: '蓝奏云',
+  chengtong_cloud: '城通网盘'
 }
 
 const iconComponents = [Upload, Money, Box, FolderOpened, Files, Document, Folder, Grid, Connection]
@@ -207,26 +204,41 @@ const iconColors = [
 ]
 
 const getIconComponent = (index) => iconComponents[index % iconComponents.length]
-const getTypeName = (type) => typeNameMap[type] || type
+const getTypeName = (type) => typeNameMap[type] || type || '-'
 
 const getTypeTagColor = (type) => ({
-  'cloud_storage': 'primary', 'download_revenue': 'success',
-  'mobile_cloud': 'warning', 'mobile_cloud_backup': 'info',
-  'uc_cloud': 'danger', 'lanzou_cloud': 'success', 'chengtong_cloud': 'warning'
+  cloud_storage: 'primary',
+  download_revenue: 'success',
+  mobile_cloud: 'warning',
+  mobile_cloud_backup: 'info',
+  uc_cloud: 'danger',
+  lanzou_cloud: 'success',
+  chengtong_cloud: 'warning'
 }[type] || '')
 
-const getStatusName = (status) => ({ 'pending': '待结算', 'settled': '已结算', 'cancelled': '已取消' }[status] || status)
-const getStatusTagColor = (status) => ({ 'pending': 'warning', 'settled': 'success', 'cancelled': 'info' }[status] || '')
+const getStatusName = (status) => ({
+  pending: '待结算',
+  settled: '已结算',
+  cancelled: '已取消'
+}[status] || status || '-')
+
+const getStatusTagColor = (status) => ({
+  pending: 'warning',
+  settled: 'success',
+  cancelled: 'info'
+}[status] || '')
+
+const isCancelAction = (error) => error === 'cancel' || error === 'close'
 
 const formatTime = (time) => {
   if (!time) return '-'
-  return time.replace('T', ' ').substring(0, 19)
+  return String(time).replace('T', ' ').substring(0, 19)
 }
 
 const loadOverview = async () => {
   try {
     const res = await getRevenueOverview(period.value)
-    overviewData.value = res?.data || {}
+    overviewData.value = res?.data || { totalRevenue: 0, totalDownloads: 0, revenueItemCount: 0 }
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '加载收益概览失败')
   }
@@ -235,7 +247,7 @@ const loadOverview = async () => {
 const loadRevenueTypes = async () => {
   try {
     const res = await getRevenueByType(period.value)
-    revenueTypes.value = res?.data || []
+    revenueTypes.value = Array.isArray(res?.data) ? res.data : []
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '加载收益类型失败')
   }
@@ -244,9 +256,20 @@ const loadRevenueTypes = async () => {
 const loadRevenueList = async () => {
   tableLoading.value = true
   try {
-    const res = await getRevenueList({ pageNum: currentPage.value, pageSize: pageSize.value, period: period.value })
-    revenueList.value = Array.isArray(res?.data?.records) ? res.data.records : []
-    total.value = Number(res?.data?.total || 0)
+    const res = await getRevenueList({
+      pageNum: currentPage.value,
+      pageSize: pageSize.value,
+      period: period.value
+    })
+    const records = Array.isArray(res?.data?.records) ? res.data.records : []
+    const totalCount = Number(res?.data?.total || 0)
+    if (records.length === 0 && totalCount > 0 && currentPage.value > 1) {
+      currentPage.value -= 1
+      return await loadRevenueList()
+    }
+    revenueList.value = records
+    total.value = totalCount
+    selectedIds.value = selectedIds.value.filter((id) => revenueList.value.some((item) => item.id === id))
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '加载收益列表失败')
   } finally {
@@ -254,48 +277,80 @@ const loadRevenueList = async () => {
   }
 }
 
-const loadAllData = () => {
-  loadOverview()
-  loadRevenueTypes()
-  loadRevenueList()
+const loadAllData = async () => {
+  await Promise.all([loadOverview(), loadRevenueTypes(), loadRevenueList()])
 }
 
-const handlePeriodChange = () => { currentPage.value = 1; loadAllData() }
-const handleRefresh = () => { loadAllData(); ElMessage.success('数据已刷新') }
-const handleSelectionChange = (selection) => { selectedIds.value = selection.map(item => item.id) }
+const handlePeriodChange = async () => {
+  currentPage.value = 1
+  selectedIds.value = []
+  await loadAllData()
+}
+
+const handleRefresh = async () => {
+  await loadAllData()
+  ElMessage.success('数据已刷新')
+}
+
+const handleSelectionChange = (selection) => {
+  selectedIds.value = selection.map(item => item.id)
+}
+
+const handlePageSizeChange = async () => {
+  currentPage.value = 1
+  await loadRevenueList()
+}
 
 const handleDelete = async (id) => {
   try {
     await ElMessageBox.confirm('确定要删除这条收益记录吗？', '提示', {
-      confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
     })
     await deleteRevenue(id, { skipBusinessErrorMessage: true })
     ElMessage.success('删除成功')
-    loadAllData()
+    if (revenueList.value.length === 1 && currentPage.value > 1) {
+      currentPage.value -= 1
+    }
+    await loadAllData()
   } catch (error) {
-    if (error !== 'cancel') {
+    if (!isCancelAction(error)) {
       ElMessage.error(error.response?.data?.message || '删除失败')
     }
   }
 }
 
 const handleBatchDelete = async () => {
+  if (selectedIds.value.length === 0) {
+    return
+  }
+
   try {
+    const selectedCount = selectedIds.value.length
+    const shouldFallbackPage = revenueList.value.length > 0 && selectedCount >= revenueList.value.length && currentPage.value > 1
     await ElMessageBox.confirm(`确定要删除选中的 ${selectedIds.value.length} 条记录吗？`, '提示', {
-      confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
     })
     await batchDeleteRevenue(selectedIds.value, { skipBusinessErrorMessage: true })
     ElMessage.success('批量删除成功')
     selectedIds.value = []
-    loadAllData()
+    if (shouldFallbackPage) {
+      currentPage.value -= 1
+    }
+    await loadAllData()
   } catch (error) {
-    if (error !== 'cancel') {
+    if (!isCancelAction(error)) {
       ElMessage.error(error.response?.data?.message || '批量删除失败')
     }
   }
 }
 
-onMounted(() => loadAllData())
+onMounted(() => {
+  loadAllData()
+})
 </script>
 
 <style scoped>
@@ -305,7 +360,6 @@ onMounted(() => loadAllData())
   min-height: 100%;
 }
 
-/* 概览网格 */
 .overview-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -360,7 +414,6 @@ onMounted(() => loadAllData())
   color: #606266;
 }
 
-/* 收益类型 */
 .revenue-types-section {
   background: white;
   border-radius: 16px;
@@ -437,7 +490,6 @@ onMounted(() => loadAllData())
   border-top: 1px solid #f0f0f0;
 }
 
-/* 表格卡片 */
 .table-card {
   background: white;
   border-radius: 16px;

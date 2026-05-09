@@ -1,10 +1,9 @@
 <template>
   <div class="promotion-container">
-    <!-- 顶部工具栏 -->
     <div class="toolbar">
       <div class="toolbar-left">
         <div class="page-title">
-          <span class="title-icon">📢</span>
+          <span class="title-icon">📙</span>
           广告推广管理
           <span class="count-badge">共 {{ total }} 条</span>
         </div>
@@ -19,7 +18,6 @@
       </div>
     </div>
 
-    <!-- 位置标签页 + 表格 -->
     <div class="table-card">
       <div class="position-tabs">
         <button
@@ -106,13 +104,12 @@
           :total="total"
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
-          @size-change="loadAdvertisements"
+          @size-change="handlePageSizeChange"
           @current-change="loadAdvertisements"
         />
       </div>
     </div>
 
-    <!-- 添加/编辑对话框 -->
     <el-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
@@ -128,21 +125,25 @@
 
         <el-form-item label="广告位置" prop="position">
           <el-select v-model="form.position" placeholder="请选择广告位置" style="width: 100%">
-            <el-option v-for="tab in positionTabs.filter(t => t.value !== 'all')" :key="tab.value"
-              :label="tab.icon + ' ' + tab.label" :value="tab.value" />
+            <el-option
+              v-for="tab in positionTabs.filter(t => t.value !== 'all')"
+              :key="tab.value"
+              :label="`${tab.icon} ${tab.label}`"
+              :value="tab.value"
+            />
           </el-select>
         </el-form-item>
 
         <el-form-item label="广告类型" prop="type">
           <el-select v-model="form.type" placeholder="请选择广告类型" style="width: 100%">
-            <el-option label="🖼️ 图片广告" value="image" />
+            <el-option label="🖼 图片广告" value="image" />
             <el-option label="📝 文字广告" value="text" />
-            <el-option label="🎬 视频广告" value="video" />
+            <el-option label="🎞 视频广告" value="video" />
           </el-select>
         </el-form-item>
 
         <el-form-item label="广告图片" prop="imageUrl" v-if="form.type === 'image'">
-          <el-input v-model="form.imageUrl" placeholder="请输入图片URL" />
+          <el-input v-model="form.imageUrl" placeholder="请输入图片 URL" />
           <div v-if="form.imageUrl" class="img-preview">
             <el-image :src="form.imageUrl" fit="contain" style="max-width:100%;max-height:200px;border-radius:8px;" />
           </div>
@@ -178,12 +179,24 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="开始时间">
-              <el-date-picker v-model="form.startTime" type="datetime" placeholder="选择开始时间" style="width:100%" />
+              <el-date-picker
+                v-model="form.startTime"
+                type="datetime"
+                value-format="YYYY-MM-DDTHH:mm:ss"
+                placeholder="选择开始时间"
+                style="width:100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="结束时间">
-              <el-date-picker v-model="form.endTime" type="datetime" placeholder="选择结束时间" style="width:100%" />
+              <el-date-picker
+                v-model="form.endTime"
+                type="datetime"
+                value-format="YYYY-MM-DDTHH:mm:ss"
+                placeholder="选择结束时间"
+                style="width:100%"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -217,12 +230,12 @@ const positionTabs = [
   { value: 'all', label: '全部', icon: '📋' },
   { value: 'homepage', label: '首页', icon: '🏠' },
   { value: 'download', label: '下载页', icon: '⬇️' },
-  { value: 'category', label: '分类页', icon: '📁' },
-  { value: 'custom', label: '自定义页', icon: '✏️' }
+  { value: 'category', label: '分类页', icon: '🗂' },
+  { value: 'custom', label: '自定义页', icon: '✨' }
 ]
 
-const advertisementList = ref([])
 const loading = ref(false)
+const advertisementList = ref([])
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -231,20 +244,23 @@ const activePosition = ref('all')
 const dialogVisible = ref(false)
 const dialogTitle = ref('添加广告')
 const formRef = ref(null)
-const form = ref({
-  name: '', position: 'homepage', type: 'image',
-  imageUrl: '', linkUrl: '', content: '',
-  status: 1, sortOrder: 0, startTime: null, endTime: null
+
+const createDefaultForm = () => ({
+  id: null,
+  name: '',
+  title: '',
+  position: 'homepage',
+  type: 'image',
+  imageUrl: '',
+  linkUrl: '',
+  content: '',
+  status: 1,
+  sortOrder: 0,
+  startTime: null,
+  endTime: null
 })
 
-const normalizeAdvertisementForm = (data = {}) => {
-  const normalizedName = data.name || data.title || ''
-  return {
-    ...data,
-    name: normalizedName,
-    title: data.title || normalizedName
-  }
-}
+const form = ref(createDefaultForm())
 
 const rules = {
   name: [{ required: true, message: '请输入广告名称', trigger: 'blur' }],
@@ -252,16 +268,55 @@ const rules = {
   type: [{ required: true, message: '请选择广告类型', trigger: 'change' }]
 }
 
+const isCancelAction = (error) => error === 'cancel' || error === 'close'
+
+const normalizeDateTime = (value) => {
+  if (!value) {
+    return null
+  }
+  return String(value).replace(' ', 'T').substring(0, 19)
+}
+
+const normalizeAdvertisementForm = (data = {}) => {
+  const normalizedName = (data.name || data.title || '').trim()
+  return {
+    ...createDefaultForm(),
+    ...data,
+    name: normalizedName,
+    title: normalizedName,
+    status: data.status == null ? 1 : Number(data.status),
+    sortOrder: Number(data.sortOrder ?? 0),
+    startTime: normalizeDateTime(data.startTime),
+    endTime: normalizeDateTime(data.endTime)
+  }
+}
+
+const buildAdvertisementPayload = (data) => {
+  const normalized = normalizeAdvertisementForm(data)
+  return {
+    ...normalized,
+    title: normalized.name,
+    startTime: normalizeDateTime(normalized.startTime),
+    endTime: normalizeDateTime(normalized.endTime)
+  }
+}
+
 const loadAdvertisements = async () => {
   loading.value = true
   try {
     const { data } = await getAdvertisementList({
-      page: page.value, pageSize: pageSize.value,
+      page: page.value,
+      pageSize: pageSize.value,
       position: activePosition.value === 'all' ? null : activePosition.value
     })
     const records = Array.isArray(data?.records) ? data.records : []
+    const totalCount = Number(data?.total || 0)
+    if (records.length === 0 && totalCount > 0 && page.value > 1) {
+      page.value -= 1
+      return await loadAdvertisements()
+    }
     advertisementList.value = records.map(item => normalizeAdvertisementForm(item))
-    total.value = Number(data?.total || 0)
+    total.value = totalCount
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '加载广告列表失败')
   } finally {
@@ -269,89 +324,139 @@ const loadAdvertisements = async () => {
   }
 }
 
-const handlePositionChange = (val) => {
-  activePosition.value = val
+const handlePositionChange = async (value) => {
+  activePosition.value = value
   page.value = 1
-  loadAdvertisements()
+  await loadAdvertisements()
+}
+
+const handlePageSizeChange = async () => {
+  page.value = 1
+  await loadAdvertisements()
 }
 
 const handleAdd = () => {
-  dialogTitle.value = '✨ 添加广告'
-  form.value = normalizeAdvertisementForm({ name: '', position: 'homepage', type: 'image', imageUrl: '', linkUrl: '', content: '', status: 1, sortOrder: 0, startTime: null, endTime: null })
+  dialogTitle.value = '添加广告'
+  form.value = createDefaultForm()
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
-  dialogTitle.value = '✏️ 编辑广告'
+  dialogTitle.value = '编辑广告'
   form.value = normalizeAdvertisementForm(row)
   dialogVisible.value = true
 }
 
 const handleCopy = (row) => {
-  dialogTitle.value = '📋 复制广告'
-  form.value = normalizeAdvertisementForm({
+  dialogTitle.value = '复制广告'
+  const copiedForm = normalizeAdvertisementForm({
     ...row,
     id: null,
     name: `${row.name || row.title || ''} (副本)`,
     title: `${row.title || row.name || ''} (副本)`
   })
+  form.value = copiedForm
   dialogVisible.value = true
 }
 
 const handleSubmit = async () => {
-  if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
-    if (valid) {
-      try {
-        if (form.value.id) {
-          await updateAdvertisement(form.value.id, normalizeAdvertisementForm(form.value), { skipBusinessErrorMessage: true })
-          ElMessage.success('更新成功')
-        } else {
-          await createAdvertisement(normalizeAdvertisementForm(form.value), { skipBusinessErrorMessage: true })
-          ElMessage.success('创建成功')
-        }
-        dialogVisible.value = false
-        loadAdvertisements()
-      } catch (error) {
-        ElMessage.error(error.response?.data?.message || '操作失败')
-      }
+  if (!formRef.value) {
+    return
+  }
+
+  await formRef.value.validate()
+
+  if (form.value.startTime && form.value.endTime && form.value.startTime > form.value.endTime) {
+    ElMessage.error('结束时间不能早于开始时间')
+    return
+  }
+
+  try {
+    const payload = buildAdvertisementPayload(form.value)
+    if (payload.id) {
+      await updateAdvertisement(payload.id, payload, { skipBusinessErrorMessage: true })
+      ElMessage.success('更新成功')
+    } else {
+      await createAdvertisement(payload, { skipBusinessErrorMessage: true })
+      ElMessage.success('创建成功')
     }
-  })
+    dialogVisible.value = false
+    await loadAdvertisements()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '操作失败')
+  }
 }
 
 const handleStatusChange = async (row) => {
+  const previousStatus = row.status === 1 ? 0 : 1
   try {
     await updateStatus(row.id, row.status, { skipBusinessErrorMessage: true })
     ElMessage.success('状态更新成功')
   } catch (error) {
+    row.status = previousStatus
     ElMessage.error(error.response?.data?.message || '状态更新失败')
-    row.status = row.status === 1 ? 0 : 1
   }
 }
 
-const handleDelete = (row) => {
-  ElMessageBox.confirm('确定要删除这个广告吗？', '提示', {
-    confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
-  }).then(async () => {
-    try {
-      await deleteAdvertisement(row.id, { skipBusinessErrorMessage: true })
-      ElMessage.success('删除成功')
-      loadAdvertisements()
-    } catch (error) {
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这个广告吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await deleteAdvertisement(row.id, { skipBusinessErrorMessage: true })
+    ElMessage.success('删除成功')
+    if (advertisementList.value.length === 1 && page.value > 1) {
+      page.value -= 1
+    }
+    await loadAdvertisements()
+  } catch (error) {
+    if (!isCancelAction(error)) {
       ElMessage.error(error.response?.data?.message || '删除失败')
     }
-  }).catch(() => {})
+  }
 }
 
-const handleRefresh = () => loadAdvertisements()
-const handleDialogClose = () => formRef.value?.resetFields()
+const handleRefresh = async () => {
+  await loadAdvertisements()
+  ElMessage.success('数据已刷新')
+}
 
-const getPositionLabel = (p) => ({ homepage: '首页', download: '下载页', category: '分类页', custom: '自定义页' }[p] || p)
-const getPositionTagType = (p) => ({ homepage: 'success', download: 'primary', category: 'warning', custom: 'info' }[p] || '')
-const getTypeLabel = (t) => ({ image: '图片广告', text: '文字广告', video: '视频广告' }[t] || t)
-const getTypeTagType = (t) => ({ image: 'success', text: 'primary', video: 'warning' }[t] || '')
+const handleDialogClose = () => {
+  form.value = createDefaultForm()
+  formRef.value?.clearValidate()
+}
 
-onMounted(() => loadAdvertisements())
+const getPositionLabel = (position) => ({
+  homepage: '首页',
+  download: '下载页',
+  category: '分类页',
+  custom: '自定义页'
+}[position] || position)
+
+const getPositionTagType = (position) => ({
+  homepage: 'success',
+  download: 'primary',
+  category: 'warning',
+  custom: 'info'
+}[position] || '')
+
+const getTypeLabel = (type) => ({
+  image: '图片广告',
+  text: '文字广告',
+  video: '视频广告'
+}[type] || type)
+
+const getTypeTagType = (type) => ({
+  image: 'success',
+  text: 'primary',
+  video: 'warning'
+}[type] || '')
+
+onMounted(() => {
+  loadAdvertisements()
+})
 </script>
 
 <style scoped>
@@ -361,7 +466,6 @@ onMounted(() => loadAdvertisements())
   min-height: 100%;
 }
 
-/* 工具栏 */
 .toolbar {
   display: flex;
   align-items: center;
@@ -411,7 +515,6 @@ onMounted(() => loadAdvertisements())
   border-radius: 10px !important;
 }
 
-/* 表格卡片 */
 .table-card {
   background: white;
   border-radius: 16px;
@@ -419,7 +522,6 @@ onMounted(() => loadAdvertisements())
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
 
-/* 位置标签 */
 .position-tabs {
   display: flex;
   gap: 8px;
@@ -455,7 +557,6 @@ onMounted(() => loadAdvertisements())
 
 .tab-icon { font-size: 15px; }
 
-/* 现代表格 */
 .modern-table :deep(.el-table__header th) {
   background: #f8f9fa;
   color: #606266;
@@ -509,14 +610,12 @@ onMounted(() => loadAdvertisements())
   font-size: 18px;
 }
 
-/* 分页 */
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
 }
 
-/* 对话框 */
 .modern-dialog :deep(.el-dialog__header) {
   background: linear-gradient(135deg, #667eea, #764ba2);
   border-radius: 16px 16px 0 0;

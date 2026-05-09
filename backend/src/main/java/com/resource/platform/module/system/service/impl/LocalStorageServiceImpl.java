@@ -1,19 +1,22 @@
 package com.resource.platform.module.system.service.impl;
 
+import com.resource.platform.common.BizErrorCode;
+import com.resource.platform.exception.BusinessException;
 import com.resource.platform.module.system.service.StorageService;
 import com.resource.platform.util.ImageUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.file.Files;
-import com.resource.platform.common.BizErrorCode;
-import com.resource.platform.exception.BusinessException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
+
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * 本地存储服务实现
@@ -22,16 +25,24 @@ import java.nio.file.Paths;
 @Service("localStorageService")
 public class LocalStorageServiceImpl implements StorageService {
 
-    @Value("${storage.local.path:/data/uploads}")
-    private String uploadPath;
+    @Autowired
+    private StorageSettingsProvider storageSettingsProvider;
 
-    @Value("${storage.local.url-prefix:http://localhost:8080/uploads}")
-    private String urlPrefix;
+    public String extractStoredFileName(String fileUrl) {
+        String relativePath = extractRelativePath(fileUrl);
+        if (relativePath == null || relativePath.isEmpty()) {
+            return null;
+        }
+        Path path = Paths.get(relativePath);
+        Path fileName = path.getFileName();
+        return fileName == null ? null : fileName.toString();
+    }
 
     /**
      * 验证路径是否在允许的上传目录内（防止路径遍历攻击）
      */
     private void validatePath(Path targetPath) throws IOException {
+        String uploadPath = getUploadPath();
         Path canonicalUpload = Paths.get(uploadPath).toAbsolutePath().normalize();
         Path canonicalTarget = targetPath.toAbsolutePath().normalize();
         if (!canonicalTarget.startsWith(canonicalUpload)) {
@@ -42,6 +53,7 @@ public class LocalStorageServiceImpl implements StorageService {
 
     @Override
     public String upload(MultipartFile file, String path) throws IOException {
+        String uploadPath = getUploadPath();
         // 构建完整路径
         String fullPath = uploadPath + "/" + path;
         Path directory = Paths.get(fullPath);
@@ -74,6 +86,7 @@ public class LocalStorageServiceImpl implements StorageService {
 
     @Override
     public String upload(InputStream inputStream, String fileName, String path) throws IOException {
+        String uploadPath = getUploadPath();
         // 构建完整路径
         String fullPath = uploadPath + "/" + path;
         Path directory = Paths.get(fullPath);
@@ -102,8 +115,13 @@ public class LocalStorageServiceImpl implements StorageService {
     @Override
     public boolean delete(String fileUrl) {
         try {
-            // 从URL中提取文件路径
-            String filePath = fileUrl.replace(urlPrefix, uploadPath);
+            String uploadPath = getUploadPath();
+            String relativePath = extractRelativePath(fileUrl);
+            if (relativePath == null || relativePath.isEmpty()) {
+                log.warn("无法解析本地存储文件路径: fileUrl={}", fileUrl);
+                return false;
+            }
+            String filePath = Paths.get(uploadPath, relativePath).toString();
             return ImageUtil.deleteLocalFile(filePath);
         } catch (Exception e) {
             log.error("删除文件失败: {}", e.getMessage());
@@ -113,6 +131,7 @@ public class LocalStorageServiceImpl implements StorageService {
 
     @Override
     public String getFileUrl(String filePath) {
+        String urlPrefix = getUrlPrefix();
         // 确保 urlPrefix 不以斜杠结尾
         String prefix = urlPrefix.endsWith("/") ? urlPrefix.substring(0, urlPrefix.length() - 1) : urlPrefix;
         // 确保 filePath 以斜杠开头
@@ -122,7 +141,44 @@ public class LocalStorageServiceImpl implements StorageService {
 
     @Override
     public boolean exists(String filePath) {
+        String uploadPath = getUploadPath();
         String fullPath = uploadPath + "/" + filePath;
         return Files.exists(Paths.get(fullPath));
+    }
+
+    private String getUploadPath() {
+        return storageSettingsProvider.getLocalPath();
+    }
+
+    private String getUrlPrefix() {
+        String prefix = storageSettingsProvider.getLocalUrlPrefix();
+        return prefix.isEmpty() ? "/uploads" : prefix;
+    }
+
+    private String extractRelativePath(String fileUrl) {
+        String normalizedFileUrl = normalizeFileUrl(fileUrl);
+        String urlPrefix = getUrlPrefix();
+        if (normalizedFileUrl.startsWith(urlPrefix + "/")) {
+            return normalizedFileUrl.substring(urlPrefix.length() + 1);
+        }
+        if (normalizedFileUrl.equals(urlPrefix)) {
+            return "";
+        }
+        return null;
+    }
+
+    private String normalizeFileUrl(String fileUrl) {
+        if (fileUrl == null) {
+            return "";
+        }
+        try {
+            URI uri = URI.create(fileUrl);
+            if (uri.getScheme() != null && uri.getPath() != null) {
+                return uri.getPath();
+            }
+        } catch (IllegalArgumentException ignored) {
+            // fall through to raw string handling
+        }
+        return Objects.toString(fileUrl, "");
     }
 }

@@ -46,11 +46,11 @@
         <el-icon><Plus /></el-icon>
         新增分类
       </el-button>
-      <el-button @click="handleExport" class="export-btn">
+      <el-button @click="handleExport" class="export-btn" :loading="exportLoading">
         <el-icon><Download /></el-icon>
         导出分类
       </el-button>
-      <el-button @click="loadCategoryTree" class="refresh-btn">
+      <el-button @click="handleRefresh" class="refresh-btn">
         <el-icon><Refresh /></el-icon>
         刷新
       </el-button>
@@ -71,6 +71,7 @@
         node-key="id"
         default-expand-all
         draggable
+        :allow-drop="allowSiblingDrop"
         @node-drop="handleDrop"
         class="modern-tree"
       >
@@ -196,12 +197,12 @@ import {
   createCategory,
   updateCategory,
   deleteCategory,
-  updateCategorySortOrder,
-  exportCategories
+  updateCategorySortOrder
 } from '@/api/modules/categories'
 
 const statistics = ref({})
 const categoryTree = ref([])
+const exportLoading = ref(false)
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const formRef = ref(null)
@@ -252,6 +253,67 @@ const commonIcons = [
 
 const resolveIconComponent = (iconName) => iconComponents[iconName] || null
 
+const isCancelAction = (error) => error === 'cancel' || error === 'close'
+
+const toCsvCell = (value) => {
+  if (value === null || value === undefined) {
+    return '""'
+  }
+  return `"${String(value).replace(/"/g, '""')}"`
+}
+
+const downloadCsv = (content, fileName) => {
+  const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' })
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+const flattenCategoryTree = (nodes, rows = []) => {
+  for (const node of nodes) {
+    rows.push(node)
+    if (Array.isArray(node.children) && node.children.length > 0) {
+      flattenCategoryTree(node.children, rows)
+    }
+  }
+  return rows
+}
+
+const findNodeById = (nodes, id) => {
+  for (const node of nodes) {
+    if (node.id === id) {
+      return node
+    }
+    if (Array.isArray(node.children) && node.children.length > 0) {
+      const found = findNodeById(node.children, id)
+      if (found) {
+        return found
+      }
+    }
+  }
+  return null
+}
+
+const getSiblingNodes = (parentId) => {
+  if (!parentId || parentId === 0) {
+    return Array.isArray(categoryTree.value) ? categoryTree.value : []
+  }
+  const parentNode = findNodeById(categoryTree.value, parentId)
+  return Array.isArray(parentNode?.children) ? parentNode.children : []
+}
+
+const allowSiblingDrop = (draggingNode, dropNode, type) => {
+  if (!['prev', 'next'].includes(type)) {
+    return false
+  }
+  return draggingNode?.data?.parentId === dropNode?.data?.parentId
+}
+
 const getStatistics = async () => {
   try {
     const { data } = await getCategoryStatistics()
@@ -291,8 +353,8 @@ const handleEdit = (data) => {
     parentId: data.parentId,
     icon: data.icon || '',
     description: data.description || '',
-    sortOrder: data.sortOrder || 0,
-    status: data.status
+    sortOrder: Number(data.sortOrder ?? 0),
+    status: data.status ?? 1
   })
   dialogVisible.value = true
 }
@@ -337,12 +399,35 @@ const handleDrop = async (draggingNode, dropNode, dropType) => {
   loadCategoryTree()
 }
 
+const handleRefresh = async () => {
+  await Promise.all([getStatistics(), loadCategoryTree()])
+}
+
 const handleExport = async () => {
+  exportLoading.value = true
   try {
-    const { data } = await exportCategories()
-    ElMessage.success('导出成功: ' + data)
+    const rows = [
+      ['ID', '名称', '父分类ID', '层级', '图标', '描述', '排序', '状态', '资源数', '创建时间'],
+      ...flattenCategoryTree(Array.isArray(categoryTree.value) ? categoryTree.value : []).map((item) => [
+        item.id ?? '',
+        item.name || '',
+        item.parentId ?? '',
+        item.level ?? '',
+        item.icon || '',
+        item.description || '',
+        item.sortOrder ?? 0,
+        item.status ?? '',
+        item.resourceCount ?? 0,
+        item.createTime || ''
+      ])
+    ]
+    const csvContent = rows.map((row) => row.map(toCsvCell).join(',')).join('\n')
+    downloadCsv(csvContent, 'categories_export.csv')
+    ElMessage.success('导出成功')
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '导出失败')
+  } finally {
+    exportLoading.value = false
   }
 }
 
@@ -378,8 +463,7 @@ const getNodeEmoji = (level) => {
 }
 
 onMounted(() => {
-  getStatistics()
-  loadCategoryTree()
+  Promise.all([getStatistics(), loadCategoryTree()])
 })
 </script>
 

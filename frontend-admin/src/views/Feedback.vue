@@ -233,7 +233,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { 
   ChatDotRound, Clock, CircleCheck, Calendar, Search, Refresh,
@@ -246,6 +247,8 @@ import {
   updateFeedbackStatus 
 } from '@/api/modules/feedback'
 
+const route = useRoute()
+const router = useRouter()
 const statistics = ref({})
 const feedbackList = ref([])
 const loading = ref(false)
@@ -258,6 +261,7 @@ const currentFeedback = ref(null)
 const queryForm = reactive({
   type: '',
   status: '',
+  unreplied: false,
   keyword: '',
   page: 1,
   pageSize: 20
@@ -320,12 +324,29 @@ const getStatistics = async () => {
   }
 }
 
+const applyRouteFilters = () => {
+  const { status, type, filter } = route.query
+  queryForm.page = 1
+  queryForm.status = typeof status === 'string' ? status : ''
+  queryForm.type = typeof type === 'string' ? type : ''
+  queryForm.unreplied = filter === 'unreplied'
+  if (queryForm.unreplied) {
+    queryForm.status = ''
+  }
+}
+
 const handleQuery = async () => {
   loading.value = true
   try {
     const response = await queryFeedback(queryForm)
-    feedbackList.value = Array.isArray(response?.data?.records) ? response.data.records : []
-    total.value = Number(response?.data?.total || 0)
+    const records = Array.isArray(response?.data?.records) ? response.data.records : []
+    const totalCount = Number(response?.data?.total || 0)
+    if (records.length === 0 && totalCount > 0 && queryForm.page > 1) {
+      queryForm.page -= 1
+      return await handleQuery()
+    }
+    feedbackList.value = records
+    total.value = totalCount
   } catch (error) {
     console.error('查询反馈失败:', error)
     ElMessage.error(error.response?.data?.message || '查询反馈失败')
@@ -338,11 +359,12 @@ const handleReset = () => {
   Object.assign(queryForm, {
     type: '',
     status: '',
+    unreplied: false,
     keyword: '',
     page: 1,
     pageSize: 20
   })
-  handleQuery()
+  router.replace({ path: route.path, query: {} })
 }
 
 const handleView = (row) => {
@@ -399,9 +421,18 @@ const handleSubmitStatus = async () => {
 }
 
 onMounted(() => {
+  applyRouteFilters()
   getStatistics()
   handleQuery()
 })
+
+watch(
+  () => route.query,
+  () => {
+    applyRouteFilters()
+    handleQuery()
+  }
+)
 </script>
 
 <style scoped>

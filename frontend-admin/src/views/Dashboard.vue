@@ -233,21 +233,21 @@ const pendingTasksList = computed(() => [
     count: pendingTasks.value.pendingResources || 0,
     type: 'warning',
     icon: Document,
-    action: '/resources?status=pending'
+    action: '/resources?auditStatus=pending'
   },
   {
     label: '待处理反馈',
     count: pendingTasks.value.pendingFeedback || 0,
     type: 'info',
     icon: ChatDotRound,
-    action: '/feedback?type=pending'
+    action: '/feedback?status=PENDING'
   },
   {
     label: '待回复反馈',
     count: pendingTasks.value.unrepliedFeedback || 0,
     type: 'success',
     icon: Message,
-    action: '/feedback?type=unreplied'
+    action: '/feedback?filter=unreplied'
   }
 ])
 

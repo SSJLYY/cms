@@ -150,16 +150,18 @@ public class FeedbackServiceImpl implements FeedbackService {
             wrapper.and(w -> w.like(Feedback::getTitle, query.getKeyword())
                     .or().like(Feedback::getContent, query.getKeyword()));
         }
+
+        if (Boolean.TRUE.equals(query.getUnreplied())) {
+            wrapper.and(w -> w.isNull(Feedback::getReply)
+                    .or()
+                    .eq(Feedback::getReply, ""));
+        }
         
         wrapper.orderByDesc(Feedback::getCreateTime);
         
         IPage<Feedback> pageResult = feedbackMapper.selectPage(page, wrapper);
         
-        List<FeedbackVO> voList = pageResult.getRecords().stream()
-                .map(this::convertToVO)
-                .collect(Collectors.toList());
-        
-        return new PageResult<>(pageResult.getTotal(), voList);
+        return PageResult.of(pageResult, this::convertToVO);
     }
     
     @Override

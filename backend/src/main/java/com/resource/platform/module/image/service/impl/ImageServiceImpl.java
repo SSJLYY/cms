@@ -19,6 +19,7 @@ import com.resource.platform.module.image.vo.ImageBatchDeleteResultVO;
 import com.resource.platform.module.image.vo.ImageStatisticsVO;
 import com.resource.platform.module.image.vo.ImageVO;
 import com.resource.platform.module.resource.vo.ResourceVO;
+import com.resource.platform.module.system.service.impl.StorageServiceResolver;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -70,6 +72,13 @@ public class ImageServiceImpl implements ImageService {
     @Autowired
     private com.resource.platform.module.resource.mapper.ResourceMapper resourceMapper;
 
+    @Autowired
+    private StorageServiceResolver storageServiceResolver;
+
+    private String resolveStorageType() {
+        return storageServiceResolver.getCurrentStorageType();
+    }
+
     @Value("${file.upload.max-size:10485760}")
     private long maxFileSize;
 
@@ -79,8 +88,6 @@ public class ImageServiceImpl implements ImageService {
     @Value("${file.image.thumbnail.height:300}")
     private int thumbnailHeight;
 
-    @Value("${storage.type:local}")
-    private String storageType;
 
     /**
      * 获取图片统计信息
@@ -134,11 +141,12 @@ public class ImageServiceImpl implements ImageService {
         // 步骤5：统计今日上传数（只统计未删除的）
         log.debug("统计今日上传数量");
         LocalDateTime todayStart = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
-        LocalDateTime todayEnd = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+        LocalDateTime now = LocalDateTime.now();
         
         Long todayUploads = imageMapper.selectCount(
             new LambdaQueryWrapper<Image>()
-                .between(Image::getCreateTime, todayStart, todayEnd)
+                .ge(Image::getCreateTime, todayStart)
+                .lt(Image::getCreateTime, now)
                 .eq(Image::getDeleted, 0)
         );
         statistics.setTodayUploads(todayUploads);
@@ -185,6 +193,7 @@ public class ImageServiceImpl implements ImageService {
         // 初始化URL变量
         String fileUrl = null;
         String thumbnailUrl = null;
+        String activeStorageType = resolveStorageType();
         
         try {
             // 步骤2：获取图片尺寸
@@ -234,7 +243,7 @@ public class ImageServiceImpl implements ImageService {
             // 创建图片实体对象并设置各个字段
             log.debug("保存图片信息到数据库");
             Image image = new Image();
-            image.setFileName(ImageUtil.generateFileName(file.getOriginalFilename()));
+            image.setFileName(resolveStoredFileName(fileUrl, file.getOriginalFilename()));
             image.setOriginalName(file.getOriginalFilename());
             image.setFilePath(fileUrl);
             image.setFileUrl(fileUrl);
@@ -243,7 +252,7 @@ public class ImageServiceImpl implements ImageService {
             image.setWidth(dimensions[0]);
             image.setHeight(dimensions[1]);
             image.setThumbnailUrl(thumbnailUrl);
-            image.setStorageType(storageType);
+            image.setStorageType(activeStorageType);
             image.setIsUsed(0); // 初始状态为未使用
             image.setUploaderId(uploaderId);
             image.setDeleted(0); // 显式设置为未删除
@@ -472,9 +481,9 @@ public class ImageServiceImpl implements ImageService {
         }
 
         try {
-            storageService.delete(image.getFileUrl());
+            storageServiceResolver.resolveStorageServiceByUrl(image.getFileUrl()).delete(image.getFileUrl());
             if (image.getThumbnailUrl() != null) {
-                storageService.delete(image.getThumbnailUrl());
+                storageServiceResolver.resolveStorageServiceByUrl(image.getThumbnailUrl()).delete(image.getThumbnailUrl());
             }
         } catch (Exception e) {
             log.error("删除图片存储文件失败: imageId={}, fileUrl={}", image.getId(), image.getFileUrl(), e);
@@ -537,9 +546,9 @@ public class ImageServiceImpl implements ImageService {
         List<Long> storageDeletedIds = new ArrayList<>();
         for (Image image : deletableImages) {
             try {
-                storageService.delete(image.getFileUrl());
+                storageServiceResolver.resolveStorageServiceByUrl(image.getFileUrl()).delete(image.getFileUrl());
                 if (image.getThumbnailUrl() != null) {
-                    storageService.delete(image.getThumbnailUrl());
+                    storageServiceResolver.resolveStorageServiceByUrl(image.getThumbnailUrl()).delete(image.getThumbnailUrl());
                 }
                 storageDeletedIds.add(image.getId());
             } catch (Exception e) {
@@ -703,5 +712,21 @@ public class ImageServiceImpl implements ImageService {
         vo.setStatus(resource.getStatus());
         vo.setCreateTime(resource.getCreateTime());
         return vo;
+    }
+
+    private String resolveStoredFileName(String fileUrl, String fallbackName) {
+        if ("local".equals(storageServiceResolver.resolveStorageTypeByUrl(fileUrl))) {
+            String storedFileName = storageServiceResolver.getLocalStorageService().extractStoredFileName(fileUrl);
+            if (storedFileName != null && !storedFileName.isEmpty()) {
+                return storedFileName;
+            }
+        }
+
+        String normalizedUrl = Objects.toString(fileUrl, "");
+        int slashIndex = normalizedUrl.lastIndexOf('/');
+        if (slashIndex >= 0 && slashIndex < normalizedUrl.length() - 1) {
+            return normalizedUrl.substring(slashIndex + 1);
+        }
+        return ImageUtil.generateFileName(fallbackName);
     }
 }

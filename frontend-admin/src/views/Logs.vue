@@ -84,7 +84,7 @@
           <el-icon><Refresh /></el-icon>
           重置
         </el-button>
-        <el-button type="warning" @click="handleExport">
+        <el-button type="warning" @click="handleExport" :loading="exportLoading">
           <el-icon><Download /></el-icon>
           导出
         </el-button>
@@ -206,16 +206,17 @@ import {
 import {
   getLogStatistics,
   queryLogs,
-  cleanLogs,
-  exportLogs
+  cleanLogs
 } from '@/api/modules/logs'
 
 const statistics = ref({})
 const logList = ref([])
 const loading = ref(false)
+const exportLoading = ref(false)
 const total = ref(0)
 const detailVisible = ref(false)
 const currentLog = ref(null)
+const EXPORT_PAGE_SIZE = 200
 
 const queryForm = reactive({
   module: '',
@@ -265,12 +266,75 @@ const handleView = (row) => {
   detailVisible.value = true
 }
 
+const toCsvCell = (value) => {
+  if (value === null || value === undefined) {
+    return '""'
+  }
+  return `"${String(value).replace(/"/g, '""')}"`
+}
+
+const downloadCsv = (content, fileName) => {
+  const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' })
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+const formatExportTime = () => {
+  const now = new Date()
+  const pad = (value) => String(value).padStart(2, '0')
+  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
+}
+
 const handleExport = async () => {
+  exportLoading.value = true
   try {
-    const { data } = await exportLogs(queryForm, { skipBusinessErrorMessage: true })
-    ElMessage.success('导出成功: ' + data)
+    const firstPage = await queryLogs({
+      ...queryForm,
+      page: 1,
+      pageSize: EXPORT_PAGE_SIZE
+    })
+    const totalRows = Number(firstPage?.data?.total || 0)
+    const totalPages = Math.max(1, Math.ceil(totalRows / EXPORT_PAGE_SIZE))
+    let records = Array.isArray(firstPage?.data?.records) ? firstPage.data.records : []
+
+    for (let page = 2; page <= totalPages; page += 1) {
+      const pageResult = await queryLogs({
+        ...queryForm,
+        page,
+        pageSize: EXPORT_PAGE_SIZE
+      })
+      const pageRecords = Array.isArray(pageResult?.data?.records) ? pageResult.data.records : []
+      records = records.concat(pageRecords)
+    }
+
+    const rows = [
+      ['ID', '模块', '类型', '描述', '请求URL', '请求方法', 'IP地址', '状态', '耗时(ms)', '创建时间'],
+      ...records.map((item) => [
+        item.id ?? '',
+        item.module || '',
+        item.type || '',
+        item.description || '',
+        item.requestUrl || '',
+        item.requestMethod || '',
+        item.ipAddress || '',
+        item.status || '',
+        item.duration ?? '',
+        item.createTime || ''
+      ])
+    ]
+    const csvContent = rows.map((row) => row.map(toCsvCell).join(',')).join('\n')
+    downloadCsv(csvContent, `logs_export_${formatExportTime()}.csv`)
+    ElMessage.success('导出成功')
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '导出失败')
+  } finally {
+    exportLoading.value = false
   }
 }
 

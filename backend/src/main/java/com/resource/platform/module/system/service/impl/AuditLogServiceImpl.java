@@ -38,10 +38,11 @@ public class AuditLogServiceImpl implements AuditLogService {
         
         // 今日审计日志数
         LocalDateTime todayStart = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
-        LocalDateTime todayEnd = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+        LocalDateTime now = LocalDateTime.now();
         Long todayAuditLogs = auditLogMapper.selectCount(
             new LambdaQueryWrapper<AuditLog>()
-                .between(AuditLog::getCreateTime, todayStart, todayEnd)
+                .ge(AuditLog::getCreateTime, todayStart)
+                .lt(AuditLog::getCreateTime, now)
         );
         statistics.setTodayAuditLogs(todayAuditLogs);
         

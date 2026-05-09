@@ -20,6 +20,8 @@ public class ResourceVO implements Serializable {
     private Long categoryId;
     private String categoryName;
     private Integer status;
+    private String auditStatus;
+    private Long crawlerTaskId;
     private Integer downloadCount;
     private Integer viewCount;
     private LocalDateTime createTime;

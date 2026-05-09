@@ -367,8 +367,14 @@ const loadTasks = async () => {
   loading.value = true
   try {
     const res = await queryTasks(queryForm)
-    tasks.value = Array.isArray(res?.data?.records) ? res.data.records : []
-    total.value = Number(res?.data?.total || 0)
+    const records = Array.isArray(res?.data?.records) ? res.data.records : []
+    const totalCount = Number(res?.data?.total || 0)
+    if (records.length === 0 && totalCount > 0 && queryForm.page > 1) {
+      queryForm.page -= 1
+      return await loadTasks()
+    }
+    tasks.value = records
+    total.value = totalCount
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '加载任务列表失败')
   } finally {

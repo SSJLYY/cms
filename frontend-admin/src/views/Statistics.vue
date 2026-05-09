@@ -1,6 +1,5 @@
 <template>
   <div class="statistics-container">
-    <!-- 统计卡片 -->
     <div class="statistics-cards">
       <div class="stat-card stat-success">
         <div class="stat-icon">
@@ -21,7 +20,7 @@
           </svg>
         </div>
       </div>
-      
+
       <div class="stat-card stat-warning">
         <div class="stat-icon">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -40,7 +39,7 @@
           </svg>
         </div>
       </div>
-      
+
       <div class="stat-card stat-danger">
         <div class="stat-icon">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -53,7 +52,7 @@
         </div>
         <div class="stat-badge">今日</div>
       </div>
-      
+
       <div class="stat-card stat-primary">
         <div class="stat-content">
           <div class="stat-label">统计周期</div>
@@ -67,9 +66,7 @@
       </div>
     </div>
 
-    <!-- 图表区域 -->
     <div class="charts-grid">
-      <!-- 下载分布图 -->
       <div class="chart-card chart-large">
         <div class="card-header">
           <h3>
@@ -89,8 +86,7 @@
         </div>
         <div ref="downloadChartRef" style="height: 350px"></div>
       </div>
-      
-      <!-- 下载排行榜 -->
+
       <div class="chart-card">
         <div class="card-header">
           <h3>
@@ -104,9 +100,9 @@
           <el-tag type="success" size="small" effect="dark">TOP 5</el-tag>
         </div>
         <div class="ranking-list">
-          <div 
-            v-for="(item, index) in topDownloads" 
-            :key="index"
+          <div
+            v-for="(item, index) in topDownloads"
+            :key="`${item.name}-${index}`"
             class="ranking-item"
           >
             <div class="ranking-number" :class="`rank-${index + 1}`">
@@ -116,23 +112,16 @@
               <div class="ranking-title">{{ item.name }}</div>
               <div class="ranking-meta">
                 <el-tag size="small" type="info" effect="plain">{{ item.category }}</el-tag>
-                <span class="ranking-count">{{ item.downloads }}次</span>
               </div>
             </div>
-            <div class="ranking-trend" :class="item.trend === 'up' ? 'trend-up' : 'trend-down'">
-              <svg v-if="item.trend === 'up'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="18 15 12 9 6 15"/>
-              </svg>
-              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
+            <div class="ranking-value">
+              {{ item.downloads }}次
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 访问统计表格 -->
     <div class="table-card">
       <div class="card-header">
         <h3>
@@ -142,7 +131,7 @@
           访问统计详情
         </h3>
         <div class="header-actions">
-          <el-button type="primary" size="small" @click="handleExport" class="export-btn">
+          <el-button type="primary" size="small" @click="handleExport" :loading="exportLoading" class="export-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="7 10 12 15 17 10"/>
@@ -159,12 +148,12 @@
           </el-button>
         </div>
       </div>
-      
+
       <el-table :data="visitStats" style="width: 100%" v-loading="tableLoading" stripe class="modern-table">
         <el-table-column type="index" label="排名" width="80" align="center">
           <template #default="{ $index }">
-            <el-tag 
-              :type="$index < 3 ? 'danger' : 'info'" 
+            <el-tag
+              :type="$index < 3 ? 'danger' : 'info'"
               size="small"
               effect="dark"
               class="rank-tag"
@@ -221,7 +210,7 @@
           </template>
         </el-table-column>
       </el-table>
-      
+
       <div class="pagination">
         <el-pagination
           v-model:current-page="currentPage"
@@ -234,7 +223,6 @@
       </div>
     </div>
 
-    <!-- 实时访问监控 -->
     <div class="monitor-card">
       <div class="card-header">
         <h3>
@@ -250,7 +238,7 @@
           实时更新
         </el-tag>
       </div>
-      
+
       <div class="monitor-content">
         <el-timeline>
           <el-timeline-item
@@ -297,12 +285,15 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { 
-  getStatisticsOverview, 
-  getDownloadDistribution, 
-  getVisitDetails, 
-  getRealtimeActivities 
+import * as echarts from 'echarts'
+import {
+  getStatisticsOverview,
+  getDownloadDistribution,
+  getVisitDetails,
+  getRealtimeActivities
 } from '@/api/modules/statistics'
+
+const EXPORT_PAGE_SIZE = 100
 
 const statsPeriod = ref('today')
 const downloadChartRef = ref(null)
@@ -311,6 +302,7 @@ const tableLoading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const exportLoading = ref(false)
 
 const overviewData = ref({
   totalDownloads: 0,
@@ -354,6 +346,30 @@ const isExternalReferer = (referer) => {
   return typeof referer === 'string' && /^(https?:)?\/\//i.test(referer.trim())
 }
 
+const toCsvCell = (value) => {
+  if (value === null || value === undefined) {
+    return '""'
+  }
+  return `"${String(value).replace(/"/g, '""')}"`
+}
+
+const downloadCsv = (content, fileName) => {
+  const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' })
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+const fetchVisitDetails = async (params) => {
+  const res = await getVisitDetails(params)
+  return Array.isArray(res?.data?.records) ? res.data.records : []
+}
+
 const loadOverview = async () => {
   try {
     const res = await getStatisticsOverview(statsPeriod.value)
@@ -372,11 +388,10 @@ const loadDownloadDistribution = async () => {
     const res = await getDownloadDistribution(statsPeriod.value)
     const data = Array.isArray(res?.data) ? res.data : []
 
-    topDownloads.value = data.slice(0, 5).map((item, index) => ({
+    topDownloads.value = data.slice(0, 5).map((item) => ({
       name: item.name,
-      category: '电脑软件',
-      downloads: item.value,
-      trend: index % 2 === 0 ? 'up' : 'down'
+      category: item.category || '未知',
+      downloads: item.value
     }))
 
     initDownloadChart(data)
@@ -393,9 +408,14 @@ const loadVisitDetails = async () => {
       pageNum: currentPage.value,
       pageSize: pageSize.value
     })
-    const records = res?.data?.records
-    visitStats.value = Array.isArray(records) ? records : []
-    total.value = Number(res?.data?.total || 0)
+    const records = Array.isArray(res?.data?.records) ? res.data.records : []
+    const totalCount = Number(res?.data?.total || 0)
+    if (records.length === 0 && totalCount > 0 && currentPage.value > 1) {
+      currentPage.value -= 1
+      return await loadVisitDetails()
+    }
+    visitStats.value = records
+    total.value = totalCount
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '加载访问统计失败')
   } finally {
@@ -414,19 +434,19 @@ const loadRealtimeActivities = async () => {
 
 const initDownloadChart = (data) => {
   if (!downloadChartRef.value) return
-  
+
   if (!downloadChart) {
     downloadChart = echarts.init(downloadChartRef.value)
   }
-  
+
   const colors = ['#667eea', '#f093fb', '#4facfe', '#00f2fe', '#11998e', '#38ef7d', '#f5576c', '#fa8c16']
-  
+
   const chartData = data.map((item, index) => ({
     value: item.value,
     name: item.name,
     itemStyle: { color: colors[index % colors.length] }
   }))
-  
+
   const option = {
     tooltip: {
       trigger: 'item',
@@ -479,8 +499,45 @@ const handleRefreshChart = () => {
   ElMessage.success('图表已刷新')
 }
 
-const handleExport = () => {
-  ElMessage.success('数据导出功能开发中...')
+const handleExport = async () => {
+  exportLoading.value = true
+  try {
+    const firstPage = await getVisitDetails({
+      period: statsPeriod.value,
+      pageNum: 1,
+      pageSize: EXPORT_PAGE_SIZE
+    })
+    const totalRows = Number(firstPage?.data?.total || 0)
+    const totalPages = Math.max(1, Math.ceil(totalRows / EXPORT_PAGE_SIZE))
+    let records = Array.isArray(firstPage?.data?.records) ? firstPage.data.records : []
+
+    for (let page = 2; page <= totalPages; page += 1) {
+      const pageRecords = await fetchVisitDetails({
+        period: statsPeriod.value,
+        pageNum: page,
+        pageSize: EXPORT_PAGE_SIZE
+      })
+      records = records.concat(pageRecords)
+    }
+
+    const rows = [
+      ['资源', '来源地址', '浏览器', '分类', '访问次数'],
+      ...records.map((item) => [
+        item.resource || '',
+        item.referer || '',
+        item.browser || '',
+        item.category || '',
+        item.visits ?? 0
+      ])
+    ]
+    const csvContent = rows.map((row) => row.map(toCsvCell).join(',')).join('\n')
+    downloadCsv(csvContent, `statistics_visit_details_${statsPeriod.value}.csv`)
+    ElMessage.success('数据导出成功')
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '数据导出失败')
+  } finally {
+    exportLoading.value = false
+  }
 }
 
 const handleRefresh = () => {
@@ -501,7 +558,6 @@ watch([currentPage, pageSize], () => {
   loadVisitDetails()
 })
 
-// 组件级定时器变量，确保 onUnmounted 能正确清理
 let realtimeTimer = null
 
 onMounted(() => {
@@ -530,7 +586,6 @@ onUnmounted(() => {
   min-height: calc(100vh - 60px);
 }
 
-/* 统计卡片 */
 .statistics-cards {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -636,7 +691,6 @@ onUnmounted(() => {
   margin-top: 8px;
 }
 
-/* 图表区域 */
 .charts-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -644,11 +698,17 @@ onUnmounted(() => {
   margin-bottom: 24px;
 }
 
-.chart-card {
+.chart-card,
+.table-card,
+.monitor-card {
   background: white;
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.chart-large {
+  min-height: 430px;
 }
 
 .card-header {
@@ -679,7 +739,6 @@ onUnmounted(() => {
   color: white;
 }
 
-/* 排行榜 */
 .ranking-list {
   padding: 8px 0;
 }
@@ -745,37 +804,10 @@ onUnmounted(() => {
   gap: 10px;
 }
 
-.ranking-count {
-  font-size: 12px;
-  color: #909399;
-}
-
-.ranking-trend {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ranking-trend.trend-up {
-  background: #ecfdf5;
-  color: #10b981;
-}
-
-.ranking-trend.trend-down {
-  background: #fef2f2;
-  color: #ef4444;
-}
-
-/* 表格 */
-.table-card {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-  margin-bottom: 24px;
+.ranking-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #667eea;
 }
 
 .modern-table :deep(.el-table__header th) {
@@ -809,9 +841,6 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   max-width: 250px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .pagination {
@@ -820,16 +849,12 @@ onUnmounted(() => {
   justify-content: flex-end;
 }
 
-/* 实时监控 */
 .monitor-card {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  margin-top: 24px;
 }
 
 .realtime-tag {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
 }
@@ -837,56 +862,44 @@ onUnmounted(() => {
 .pulse {
   width: 8px;
   height: 8px;
-  background: #10b981;
   border-radius: 50%;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.2); }
-}
-
-.monitor-content {
-  max-height: 400px;
-  overflow-y: auto;
+  background: currentColor;
+  animation: pulse 1.5s infinite;
 }
 
 .activity-card {
-  border-radius: 12px;
   border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: none;
+  background: #f8f9fc;
 }
 
 .activity-item {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .activity-icon {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
   flex-shrink: 0;
 }
 
 .activity-visit {
-  background: #e0f2fe;
-  color: #0284c7;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .activity-download {
-  background: #dcfce7;
-  color: #16a34a;
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
 }
 
 .activity-search {
-  background: #fef3c7;
-  color: #d97706;
+  background: linear-gradient(135deg, #faad14 0%, #ffc53d 100%);
 }
 
 .activity-content {
@@ -901,24 +914,56 @@ onUnmounted(() => {
 }
 
 .activity-desc {
-  font-size: 12px;
+  font-size: 13px;
   color: #909399;
 }
 
-/* 响应式 */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (max-width: 1200px) {
   .statistics-cards {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .charts-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 768px) {
+  .statistics-container {
+    padding: 16px;
+  }
+
   .statistics-cards {
     grid-template-columns: 1fr;
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions .el-button {
+    flex: 1;
   }
 }
 </style>

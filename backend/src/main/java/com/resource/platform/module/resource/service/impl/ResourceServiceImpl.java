@@ -29,6 +29,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -144,9 +145,9 @@ public class ResourceServiceImpl implements ResourceService {
     @Override
     public PageResult<ResourceVO> queryResources(ResourceQueryDTO query) {
         // 记录查询开始
-        log.info("开始分页查询资源: page={}, pageSize={}, keyword={}, categoryId={}, status={}", 
+        log.info("开始分页查询资源: page={}, pageSize={}, keyword={}, categoryId={}, status={}, auditStatus={}", 
             query.getPageNum(), query.getPageSize(), query.getKeyword(), 
-            query.getCategoryId(), query.getStatus());
+            query.getCategoryId(), query.getStatus(), query.getAuditStatus());
         
         // 构建查询条件
         LambdaQueryWrapper<Resource> wrapper = new LambdaQueryWrapper<>();
@@ -172,6 +173,11 @@ public class ResourceServiceImpl implements ResourceService {
         if (query.getStatus() != null) {
             log.debug("添加状态筛选条件: status={}", query.getStatus());
             wrapper.eq(Resource::getStatus, query.getStatus());
+        }
+
+        if (StringUtils.hasText(query.getAuditStatus())) {
+            log.debug("添加审核状态筛选条件: auditStatus={}", query.getAuditStatus());
+            wrapper.eq(Resource::getAuditStatus, query.getAuditStatus());
         }
 
         if (StringUtils.hasText(query.getSource())) {
@@ -220,7 +226,7 @@ public class ResourceServiceImpl implements ResourceService {
         // 记录查询成功
         log.info("分页查询资源成功: total={}, records={}", resultPage.getTotal(), voList.size());
         
-        return new PageResult<>(resultPage.getTotal(), voList);
+        return PageResult.of(resultPage, this::convertToVO);
     }
 
     /**
@@ -371,7 +377,7 @@ public class ResourceServiceImpl implements ResourceService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
     public void deleteResource(Long id) {
         Resource existing = resourceMapper.selectById(id);
         if (existing == null) {
@@ -746,7 +752,6 @@ public class ResourceServiceImpl implements ResourceService {
     }
     
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public int batchDelete(List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return 0;

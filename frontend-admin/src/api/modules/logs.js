@@ -64,14 +64,6 @@ export function cleanLogs(beforeTime, config = {}) {
  * @param {Object} data - 导出参数
  * @returns {Promise} 返回导出结果
  */
-export function exportLogs(data, config = {}) {
-  return request({
-    url: '/api/logs/export',
-    method: 'post',
-    data,
-    ...config
-  })
-}
 
 /**
  * 获取审计日志统计信息

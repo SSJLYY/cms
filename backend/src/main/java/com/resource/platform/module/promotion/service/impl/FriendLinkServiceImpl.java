@@ -127,11 +127,11 @@ public class FriendLinkServiceImpl implements FriendLinkService {
                 .collect(Collectors.toList());
         
         // 步骤5：封装分页结果
-        PageResult<FriendLinkVO> pageResult = new PageResult<>(result.getTotal(), voList);
+        PageResult<FriendLinkVO> pageResult = PageResult.of(result, this::convertToVO);
         
         // 记录业务完成
         log.info("友情链接分页查询业务逻辑执行完成: total={}, currentPageRecords={}", 
-            pageResult.getTotal(), voList.size());
+            pageResult.getTotal(), pageResult.getRecords().size());
         
         return pageResult;
     }

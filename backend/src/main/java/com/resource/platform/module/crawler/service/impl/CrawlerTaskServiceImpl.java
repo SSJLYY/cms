@@ -249,11 +249,7 @@ public class CrawlerTaskServiceImpl implements CrawlerTaskService {
         
         Page<CrawlerTask> result = crawlerTaskMapper.selectPage(page, wrapper);
         
-        List<CrawlerTaskVO> voList = result.getRecords().stream()
-                .map(this::convertToVO)
-                .collect(Collectors.toList());
-        
-        return new PageResult<>(result.getTotal(), voList);
+        return PageResult.of(result, this::convertToVO);
     }
     
     @Override

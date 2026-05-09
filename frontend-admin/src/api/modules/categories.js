@@ -133,9 +133,3 @@ export function updateCategorySortOrder(id, sortOrder, config = {}) {
  * 导出分类数据
  * @returns {Promise} 返回导出的分类数据
  */
-export function exportCategories() {
-  return request({
-    url: '/api/categories/export',
-    method: 'get'
-  })
-}

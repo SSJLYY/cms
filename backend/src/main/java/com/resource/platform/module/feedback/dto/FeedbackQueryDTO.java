@@ -7,6 +7,7 @@ public class FeedbackQueryDTO {
     private String keyword;
     private String status;
     private String type;
+    private Boolean unreplied;
     private Integer page = 1;
     private Integer pageSize = 10;
     

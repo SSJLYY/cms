@@ -154,9 +154,11 @@ public class SEOServiceImpl implements SEOService {
         // 步骤5：统计今日提交数
         // 查询今天提交的记录数量
         log.debug("查询今日提交数");
+        LocalDateTime now = LocalDateTime.now();
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
         LambdaQueryWrapper<SEOSubmission> todayWrapper = new LambdaQueryWrapper<>();
         todayWrapper.ge(SEOSubmission::getSubmitTime, todayStart);
+        todayWrapper.lt(SEOSubmission::getSubmitTime, now);
         Long todayCount = seoSubmissionMapper.selectCount(todayWrapper);
         stats.setTodaySubmissions(todayCount != null ? todayCount.intValue() : 0);
         log.info("今日提交数统计完成: todaySubmissions={}", stats.getTodaySubmissions());
@@ -423,10 +425,7 @@ public class SEOServiceImpl implements SEOService {
         // 步骤5：封装分页结果
         // 创建分页结果对象
         log.debug("封装分页结果");
-        PageResult<SEOSubmission> pageResult = new PageResult<>(
-            resultPage.getTotal(),
-            resultPage.getRecords()
-        );
+        PageResult<SEOSubmission> pageResult = PageResult.of(resultPage);
         
         // 记录每个提交记录的基本信息
         for (SEOSubmission submission : resultPage.getRecords()) {

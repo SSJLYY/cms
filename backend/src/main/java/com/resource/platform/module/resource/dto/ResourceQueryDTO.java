@@ -21,6 +21,8 @@ public class ResourceQueryDTO {
     /** 资源状态：0-已下架，1-已发布 */
     private Integer status;
 
+    private String auditStatus;
+
     @Pattern(regexp = "^(crawler|manual)$", message = "来源只能为 crawler 或 manual")
     private String source;
 

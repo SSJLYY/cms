@@ -236,8 +236,15 @@ const loadData = async () => {
   try {
     const params = { ...searchForm, page: pagination.page, pageSize: pagination.pageSize }
     const res = await getFriendLinkPage(params)
-    tableData.value = Array.isArray(res?.data?.records) ? res.data.records : []
-    pagination.total = Number(res?.data?.total || 0)
+    const records = Array.isArray(res?.data?.records) ? res.data.records : []
+    const totalCount = Number(res?.data?.total || 0)
+    if (records.length === 0 && totalCount > 0 && pagination.page > 1) {
+      pagination.page -= 1
+      return await loadData()
+    }
+    tableData.value = records
+    pagination.total = totalCount
+    selectedIds.value = selectedIds.value.filter((id) => tableData.value.some((item) => item.id === id))
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '加载数据失败')
   } finally {
@@ -247,6 +254,7 @@ const loadData = async () => {
 
 const handleSearch = () => {
   pagination.page = 1
+  selectedIds.value = []
   loadData()
 }
 
@@ -254,6 +262,7 @@ const handleReset = () => {
   searchForm.name = ''
   searchForm.status = null
   pagination.page = 1
+  selectedIds.value = []
   loadData()
 }
 

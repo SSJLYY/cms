@@ -41,6 +41,9 @@ public class ConfigServiceImpl implements ConfigService {
     @Autowired
     private SystemConfigMapper systemConfigMapper;
 
+    @Autowired
+    private StorageSettingsProvider storageSettingsProvider;
+
     /**
      * 获取所有配置并按类别分组
      * 
@@ -315,6 +318,7 @@ public class ConfigServiceImpl implements ConfigService {
         // 验证更新结果
         if (rows > 0) {
             // 记录成功日志（敏感配置脱敏处理）
+            evictStorageSettingsIfNeeded(configKey);
             boolean isSensitive = configKey.toLowerCase().contains("password") || 
                                 configKey.toLowerCase().contains("secret") ||
                                 configKey.toLowerCase().contains("token");
@@ -464,6 +468,7 @@ public class ConfigServiceImpl implements ConfigService {
         // 验证重置结果
         if (rows > 0) {
             // 记录成功日志（敏感配置脱敏处理）
+            evictStorageSettingsIfNeeded(configKey);
             boolean isSensitive = configKey.toLowerCase().contains("password") || 
                                 configKey.toLowerCase().contains("secret") ||
                                 configKey.toLowerCase().contains("token");
@@ -818,6 +823,12 @@ public class ConfigServiceImpl implements ConfigService {
         boolean writable = storageDir.canWrite();
         log.info("本地存储路径测试: path={}, exists=true, writable={}", path, writable);
         return writable;
+    }
+
+    private void evictStorageSettingsIfNeeded(String configKey) {
+        if (configKey != null && configKey.startsWith("storage.")) {
+            storageSettingsProvider.evictCache();
+        }
     }
 }
 

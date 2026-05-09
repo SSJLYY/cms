@@ -172,13 +172,19 @@ const getStatistics = async () => {
 const loadHistory = async () => {
   loading.value = true
   try {
-      const { data } = await request({
-        url: '/api/seo/history', method: 'get',
-        params: { page: page.value, pageSize: pageSize.value },
-        skipBusinessErrorMessage: true
-      })
-    historyList.value = Array.isArray(data?.records) ? data.records : []
-    total.value = Number(data?.total || 0)
+    const { data } = await request({
+      url: '/api/seo/history', method: 'get',
+      params: { page: page.value, pageSize: pageSize.value },
+      skipBusinessErrorMessage: true
+    })
+    const records = Array.isArray(data?.records) ? data.records : []
+    const totalCount = Number(data?.total || 0)
+    if (records.length === 0 && totalCount > 0 && page.value > 1) {
+      page.value -= 1
+      return await loadHistory()
+    }
+    historyList.value = records
+    total.value = totalCount
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '加载提交历史失败')
   } finally {

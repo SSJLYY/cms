@@ -65,6 +65,7 @@ public class DashboardServiceImpl implements DashboardService {
     public DashboardMetricsVO getMetrics() {
         DashboardMetricsVO metrics = new DashboardMetricsVO();
         
+        LocalDateTime now = LocalDateTime.now();
         LocalDateTime todayStart = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
         
         Long totalResources = resourceMapper.selectCount(
@@ -76,6 +77,7 @@ public class DashboardServiceImpl implements DashboardService {
         Long todayResources = resourceMapper.selectCount(
             new LambdaQueryWrapper<Resource>()
                 .ge(Resource::getCreateTime, todayStart)
+                .lt(Resource::getCreateTime, now)
                 .eq(Resource::getDeleted, 0)
         );
         metrics.setTodayResources(todayResources);
@@ -94,6 +96,7 @@ public class DashboardServiceImpl implements DashboardService {
             new LambdaQueryWrapper<AccessLog>()
                 .eq(AccessLog::getActionType, "download")
                 .ge(AccessLog::getCreateTime, todayStart)
+                .lt(AccessLog::getCreateTime, now)
         );
         metrics.setTodayDownloads(todayDownloads);
         
@@ -106,6 +109,7 @@ public class DashboardServiceImpl implements DashboardService {
         Long todayUsers = userMapper.selectCount(
             new LambdaQueryWrapper<User>()
                 .ge(User::getCreateTime, todayStart)
+                .lt(User::getCreateTime, now)
                 .eq(User::getDeleted, 0)
         );
         metrics.setTodayUsers(todayUsers);
@@ -142,17 +146,21 @@ public class DashboardServiceImpl implements DashboardService {
         
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd");
         
+        LocalDateTime now = LocalDateTime.now();
+
         for (int i = days - 1; i >= 0; i--) {
             LocalDate date = LocalDate.now().minusDays(i);
             dates.add(date.format(formatter));
             
             LocalDateTime dayStart = LocalDateTime.of(date, LocalTime.MIN);
-            LocalDateTime dayEnd = LocalDateTime.of(date, LocalTime.MAX);
+            LocalDateTime dayEnd = i == 0
+                ? now
+                : dayStart.plusDays(1);
             
             Long dayResourceCount = resourceMapper.selectCount(
                 new LambdaQueryWrapper<Resource>()
                     .ge(Resource::getCreateTime, dayStart)
-                    .le(Resource::getCreateTime, dayEnd)
+                    .lt(Resource::getCreateTime, dayEnd)
                     .eq(Resource::getDeleted, 0)
             );
             resourceData.add(dayResourceCount);
@@ -161,14 +169,14 @@ public class DashboardServiceImpl implements DashboardService {
                 new LambdaQueryWrapper<AccessLog>()
                     .eq(AccessLog::getActionType, "download")
                     .ge(AccessLog::getCreateTime, dayStart)
-                    .le(AccessLog::getCreateTime, dayEnd)
+                    .lt(AccessLog::getCreateTime, dayEnd)
             );
             downloadData.add(dayDownloadCount);
             
             Long dayUserCount = userMapper.selectCount(
                 new LambdaQueryWrapper<User>()
                     .ge(User::getCreateTime, dayStart)
-                    .le(User::getCreateTime, dayEnd)
+                    .lt(User::getCreateTime, dayEnd)
                     .eq(User::getDeleted, 0)
             );
             userData.add(dayUserCount);
@@ -233,7 +241,7 @@ public class DashboardServiceImpl implements DashboardService {
         
         Long pendingFeedback = feedbackMapper.selectCount(
             new LambdaQueryWrapper<Feedback>()
-                .in(Feedback::getStatus, "unread", "processing")
+                .in(Feedback::getStatus, "PENDING", "PROCESSING")
                 .eq(Feedback::getDeleted, 0)
         );
         tasks.put("pendingFeedback", pendingFeedback);

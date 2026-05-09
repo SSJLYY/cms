@@ -73,10 +73,11 @@ public class LogServiceImpl implements LogService {
         // 步骤2：统计今日日志数
         log.debug("统计今日日志数量");
         LocalDateTime todayStart = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
-        LocalDateTime todayEnd = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+        LocalDateTime now = LocalDateTime.now();
         Long todayLogs = systemLogMapper.selectCount(
             new LambdaQueryWrapper<SystemLog>()
-                .between(SystemLog::getCreateTime, todayStart, todayEnd)
+                .ge(SystemLog::getCreateTime, todayStart)
+                .lt(SystemLog::getCreateTime, now)
         );
         statistics.setTodayLogs(todayLogs);
         log.debug("今日日志数: {}", todayLogs);

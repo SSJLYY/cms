@@ -335,8 +335,15 @@ const handleQuery = async () => {
   loading.value = true
   try {
     const { data } = await queryImages(queryForm)
-    imageList.value = Array.isArray(data?.records) ? data.records : []
-    total.value = Number(data?.total || 0)
+    const records = Array.isArray(data?.records) ? data.records : []
+    const totalCount = Number(data?.total || 0)
+    if (records.length === 0 && totalCount > 0 && queryForm.page > 1) {
+      queryForm.page -= 1
+      return await handleQuery()
+    }
+    imageList.value = records
+    total.value = totalCount
+    selectedIds.value = []
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '查询图片失败')
   } finally {
@@ -345,6 +352,7 @@ const handleQuery = async () => {
 }
 
 const handleReset = () => {
+  selectedIds.value = []
   Object.assign(queryForm, { keyword: '', isUsed: null, storageType: '', page: 1, pageSize: 24 })
   handleQuery()
 }
@@ -373,9 +381,13 @@ const toggleSelection = (id) => {
   else selectedIds.value.push(id)
 }
 
-const handleCopyUrl = (row) => {
-  navigator.clipboard.writeText(getImageUrl(row.fileUrl))
-  ElMessage.success('链接已复制到剪贴板')
+const handleCopyUrl = async (row) => {
+  try {
+    await navigator.clipboard.writeText(getImageUrl(row.fileUrl))
+    ElMessage.success('链接已复制到剪贴板')
+  } catch (error) {
+    ElMessage.error('复制链接失败')
+  }
 }
 
 const handleDelete = (row) => {
