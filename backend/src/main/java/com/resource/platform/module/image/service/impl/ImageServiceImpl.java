@@ -481,9 +481,15 @@ public class ImageServiceImpl implements ImageService {
         }
 
         try {
-            storageServiceResolver.resolveStorageServiceByUrl(image.getFileUrl()).delete(image.getFileUrl());
+            boolean fileDeleted = storageServiceResolver.resolveStorageServiceByUrl(image.getFileUrl()).delete(image.getFileUrl());
+            if (!fileDeleted) {
+                throw new BusinessException("鍒犻櫎鍥剧墖瀛樺偍鏂囦欢澶辫触");
+            }
             if (image.getThumbnailUrl() != null) {
-                storageServiceResolver.resolveStorageServiceByUrl(image.getThumbnailUrl()).delete(image.getThumbnailUrl());
+                boolean thumbnailDeleted = storageServiceResolver.resolveStorageServiceByUrl(image.getThumbnailUrl()).delete(image.getThumbnailUrl());
+                if (!thumbnailDeleted) {
+                    throw new BusinessException("鍒犻櫎鍥剧墖瀛樺偍鏂囦欢澶辫触");
+                }
             }
         } catch (Exception e) {
             log.error("删除图片存储文件失败: imageId={}, fileUrl={}", image.getId(), image.getFileUrl(), e);
@@ -546,9 +552,15 @@ public class ImageServiceImpl implements ImageService {
         List<Long> storageDeletedIds = new ArrayList<>();
         for (Image image : deletableImages) {
             try {
-                storageServiceResolver.resolveStorageServiceByUrl(image.getFileUrl()).delete(image.getFileUrl());
+                boolean fileDeleted = storageServiceResolver.resolveStorageServiceByUrl(image.getFileUrl()).delete(image.getFileUrl());
+                if (!fileDeleted) {
+                    throw new BusinessException("delete original image file returned false");
+                }
                 if (image.getThumbnailUrl() != null) {
-                    storageServiceResolver.resolveStorageServiceByUrl(image.getThumbnailUrl()).delete(image.getThumbnailUrl());
+                    boolean thumbnailDeleted = storageServiceResolver.resolveStorageServiceByUrl(image.getThumbnailUrl()).delete(image.getThumbnailUrl());
+                    if (!thumbnailDeleted) {
+                        throw new BusinessException("delete thumbnail file returned false");
+                    }
                 }
                 storageDeletedIds.add(image.getId());
             } catch (Exception e) {

@@ -29,6 +29,7 @@ public class OSSStorageServiceImpl implements StorageService {
     private static final String CIRCUIT_BREAKER_NAME = "storage-service";
 
     private volatile OSS ossClient;
+    private volatile String clientConfigSignature;
 
     @Autowired
     @Qualifier("localStorageService")
@@ -134,19 +135,29 @@ public class OSSStorageServiceImpl implements StorageService {
     private OSS getOSSClient() {
         StorageSettingsProvider.StorageSettings settings = storageSettingsProvider.getSettings();
         validateSettings(settings);
+        String configSignature = buildClientConfigSignature(settings);
 
         OSS snapshot = ossClient;
-        if (snapshot != null) {
+        if (snapshot != null && configSignature.equals(clientConfigSignature)) {
             return snapshot;
         }
 
         synchronized (this) {
-            if (ossClient == null) {
-                ossClient = new OSSClientBuilder().build(
+            if (ossClient != null && configSignature.equals(clientConfigSignature)) {
+                return ossClient;
+            }
+
+            OSS previousClient = ossClient;
+            ossClient = new OSSClientBuilder().build(
                     settings.getOssEndpoint(),
                     settings.getOssAccessKeyId(),
                     settings.getOssAccessKeySecret()
-                );
+            );
+            clientConfigSignature = configSignature;
+            if (previousClient != null) {
+                previousClient.shutdown();
+                log.info("OSS 客户端已按新配置重建: endpoint={}", settings.getOssEndpoint());
+            } else {
                 log.info("OSS 客户端初始化完成: endpoint={}", settings.getOssEndpoint());
             }
             return ossClient;
@@ -185,5 +196,13 @@ public class OSSStorageServiceImpl implements StorageService {
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    private String buildClientConfigSignature(StorageSettingsProvider.StorageSettings settings) {
+        return String.join("|",
+            Objects.toString(settings.getOssEndpoint(), ""),
+            Objects.toString(settings.getOssAccessKeyId(), ""),
+            Objects.toString(settings.getOssAccessKeySecret(), "")
+        );
     }
 }

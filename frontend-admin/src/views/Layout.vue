@@ -287,7 +287,7 @@ const handleCommand = async (command) => {
       ElMessage.success('退出成功')
       router.push('/login')
     } catch (error) {
-      if (error !== 'cancel') {
+      if (error !== 'cancel' && error !== 'close') {
         localStorage.removeItem('token')
         router.push('/login')
       }

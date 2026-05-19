@@ -246,6 +246,18 @@
             </div>
           </div>
         </el-scrollbar>
+        <div class="image-selector-footer">
+          <el-button
+            v-if="hasMoreImages"
+            type="primary"
+            plain
+            @click="loadImages(true)"
+            :loading="imageLoading"
+          >
+            加载更多
+          </el-button>
+          <span v-else class="image-selector-tip">已加载全部图片</span>
+        </div>
       </div>
       <template #footer>
         <el-button @click="showImageSelector = false">取消</el-button>
@@ -426,10 +438,13 @@ const resources = ref([])
 const categories = ref([])
 const linkTypes = ref([])
 const availableImages = ref([])
+const imageQueryPage = ref(1)
+const hasMoreImages = ref(false)
 const dialogVisible = ref(false)
 const showImageSelector = ref(false)
 const showBatchMoveDialog = ref(false)
 const tableLoading = ref(false)
+const imageLoading = ref(false)
 const saveLoading = ref(false)
 const batchLoading = ref(false)
 const total = ref(0)
@@ -493,8 +508,18 @@ const formatDateTime = (dateStr) => {
 const getImageUrl = (url) => {
   if (!url) return ''
   if (url.startsWith('http://') || url.startsWith('https://')) return url
+  const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+  if (url.startsWith('/uploads/') && apiBaseUrl) return apiBaseUrl + url
   return window.location.origin + (url.startsWith('/') ? url : `/${url}`)
 }
+
+const cloneDialogValue = (value, fallback) => {
+  if (value == null) return fallback
+  if (typeof structuredClone === 'function') return structuredClone(value)
+  return JSON.parse(JSON.stringify(value))
+}
+
+const isMessageBoxDismiss = (error) => error === 'cancel' || error === 'close'
 
 const loadResources = async () => {
   try {
@@ -561,19 +586,38 @@ const handleReset = () => {
   queryParams.auditStatus = null
   queryParams.source = null
   queryParams.pageNum = 1
-  router.replace({ path: route.path, query: {} })
+  if (Object.keys(route.query).length > 0) {
+    router.replace({ path: route.path, query: {} })
+    return
+  }
+  loadResources()
 }
 
-const loadImages = async () => {
+const IMAGE_PAGE_SIZE = 100
+
+const loadImages = async (append = false) => {
+  if (imageLoading.value || (append && !hasMoreImages.value)) {
+    return
+  }
   try {
+    imageLoading.value = true
+    const targetPage = append ? imageQueryPage.value + 1 : 1
     const res = await queryImages({
-      page: 1,
-      pageSize: 100,
+      page: targetPage,
+      pageSize: IMAGE_PAGE_SIZE,
       isUsed: null
     })
-    availableImages.value = Array.isArray(res?.data?.records) ? res.data.records : []
+    const records = Array.isArray(res?.data?.records) ? res.data.records : []
+    const totalCount = Number(res?.data?.total || 0)
+    imageQueryPage.value = targetPage
+    availableImages.value = append ? availableImages.value.concat(records) : records
+    hasMoreImages.value = totalCount > 0
+      ? availableImages.value.length < totalCount
+      : records.length === IMAGE_PAGE_SIZE
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '加载图片失败')
+  } finally {
+    imageLoading.value = false
   }
 }
 
@@ -618,17 +662,19 @@ const removeImage = (index) => {
   if (removedImage.id === form.coverImageId) {
     const nextCover = form.images[0]
     form.coverImageId = nextCover ? nextCover.id : null
-    form.coverImageUrl = nextCover ? nextCover.fileUrl : ''
+    form.coverImageUrl = nextCover ? getImageUrl(nextCover.fileUrl) : ''
   }
 }
 
 const showDialog = (row) => {
   if (row) {
+    const downloadLinks = cloneDialogValue(row.downloadLinks, [])
+    const images = cloneDialogValue(row.images, [])
     Object.assign(form, {
       ...row,
-      downloadLinks: row.downloadLinks || [],
-      images: row.images || [],
-      imageIds: row.images ? row.images.map(img => img.id) : []
+      downloadLinks,
+      images,
+      imageIds: images.map(img => img.id)
     })
   } else {
     Object.assign(form, {
@@ -645,6 +691,8 @@ const showDialog = (row) => {
     })
   }
   dialogVisible.value = true
+  imageQueryPage.value = 0
+  hasMoreImages.value = false
   loadImages()
 }
 
@@ -723,7 +771,7 @@ const handleDelete = async (id) => {
     ElMessage.success('删除成功')
     loadResources()
   } catch (error) {
-    if (error !== 'cancel') {
+    if (!isMessageBoxDismiss(error)) {
       ElMessage.error(error.response?.data?.message || '删除失败')
     }
   }
@@ -758,7 +806,7 @@ const handleBatchPublish = async () => {
     selectedResources.value = []
     loadResources()
   } catch (error) {
-    if (error !== 'cancel') {
+    if (!isMessageBoxDismiss(error)) {
       ElMessage.error(error.response?.data?.message || '批量发布失败')
     }
   } finally {
@@ -791,7 +839,7 @@ const handleBatchUnpublish = async () => {
     selectedResources.value = []
     loadResources()
   } catch (error) {
-    if (error !== 'cancel') {
+    if (!isMessageBoxDismiss(error)) {
       ElMessage.error(error.response?.data?.message || '批量下架失败')
     }
   } finally {
@@ -824,7 +872,7 @@ const handleBatchDelete = async () => {
     selectedResources.value = []
     loadResources()
   } catch (error) {
-    if (error !== 'cancel') {
+    if (!isMessageBoxDismiss(error)) {
       ElMessage.error(error.response?.data?.message || '批量删除失败')
     }
   } finally {
@@ -1035,6 +1083,18 @@ watch(
 /* 图片选择器 */
 .image-selector {
   padding: 10px;
+}
+
+.image-selector-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 16px;
+}
+
+.image-selector-tip {
+  font-size: 13px;
+  color: #909399;
 }
 
 .image-grid {

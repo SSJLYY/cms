@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -37,6 +39,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class ConfigServiceImpl implements ConfigService {
+
+    private static final Set<String> SUPPORTED_STORAGE_TYPES =
+        new HashSet<>(Arrays.asList("local", "oss"));
 
     @Autowired
     private SystemConfigMapper systemConfigMapper;
@@ -308,6 +313,7 @@ public class ConfigServiceImpl implements ConfigService {
         
         // 步骤3：更新配置值
         // 设置新的配置值
+        validateStorageTypeConfigValue(configKey, configValue);
         config.setConfigValue(configValue);
         
         // 步骤4：保存到数据库
@@ -458,6 +464,7 @@ public class ConfigServiceImpl implements ConfigService {
         
         // 步骤4：重置配置值
         // 将配置值设置为默认值
+        validateStorageTypeConfigValue(configKey, defaultValue);
         config.setConfigValue(defaultValue);
         
         // 步骤5：保存到数据库
@@ -620,9 +627,11 @@ public class ConfigServiceImpl implements ConfigService {
             // 检查必需的配置项
             String type = storageConfig.get("type");
             String endpoint = storageConfig.get("endpoint");
-            String accessKey = storageConfig.get("accessKey");
-            String secretKey = storageConfig.get("secretKey");
             String bucketName = storageConfig.get("bucketName");
+            if (!isSupportedStorageType(type)) {
+                log.warn("Unsupported storage type in test config: type={}", type);
+                return false;
+            }
             
             log.debug("验证存储配置参数: type={}, endpoint={}, bucketName={}", 
                 type, endpoint, bucketName);
@@ -632,43 +641,19 @@ public class ConfigServiceImpl implements ConfigService {
                 return false;
             }
             
+            String normalizedType = normalizeStorageType(type);
+            if ("local".equals(normalizedType)) {
+                return testLocalStorageConfig(storageConfig);
+            }
+
             if (endpoint == null || endpoint.trim().isEmpty()) {
                 log.warn("存储服务端点为空");
                 return false;
             }
-            
+
             // 步骤2：根据存储类型进行测试
-            log.debug("开始测试存储连接: type={}, endpoint={}", type, endpoint);
-            
-            switch (type.toLowerCase()) {
-                case "oss":
-                case "aliyun":
-                    // 测试阿里云OSS连接
-                    return testAliyunOSSConfig(storageConfig);
-                    
-                case "cos":
-                case "tencent":
-                    // 测试腾讯云COS连接
-                    return testTencentCOSConfig(storageConfig);
-                    
-                case "obs":
-                case "huawei":
-                    // 测试华为云OBS连接
-                    return testHuaweiOBSConfig(storageConfig);
-                    
-                case "s3":
-                case "aws":
-                    // 测试AWS S3连接
-                    return testAwsS3Config(storageConfig);
-                    
-                case "local":
-                    // 测试本地存储
-                    return testLocalStorageConfig(storageConfig);
-                    
-                default:
-                    log.warn("不支持的存储类型: type={}", type);
-                    return false;
-            }
+            log.debug("开始测试存储连接: type={}, endpoint={}", normalizedType, endpoint);
+            return testAliyunOSSConfig(storageConfig);
             
         } catch (Exception e) {
             // 记录测试失败
@@ -827,8 +812,37 @@ public class ConfigServiceImpl implements ConfigService {
 
     private void evictStorageSettingsIfNeeded(String configKey) {
         if (configKey != null && configKey.startsWith("storage.")) {
+            if (TransactionSynchronizationManager.isActualTransactionActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        storageSettingsProvider.evictCache();
+                    }
+                });
+                return;
+            }
             storageSettingsProvider.evictCache();
         }
+    }
+
+    private void validateStorageTypeConfigValue(String configKey, String configValue) {
+        if (!"storage.type".equals(configKey)) {
+            return;
+        }
+
+        if (!isSupportedStorageType(configValue)) {
+            log.warn("Rejected unsupported storage type update: configValue={}", configValue);
+            throw new BusinessException(BizErrorCode.PARAM_ERROR,
+                "Unsupported storage type, only local and oss are allowed");
+        }
+    }
+
+    private boolean isSupportedStorageType(String storageType) {
+        return SUPPORTED_STORAGE_TYPES.contains(normalizeStorageType(storageType));
+    }
+
+    private String normalizeStorageType(String storageType) {
+        return storageType == null ? "" : storageType.trim().toLowerCase(Locale.ROOT);
     }
 }
 

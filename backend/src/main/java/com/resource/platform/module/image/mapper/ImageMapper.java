@@ -13,7 +13,7 @@ public interface ImageMapper extends BaseMapper<Image> {
      *
      * @return 总文件大小（bytes），无图片时返回 0
      */
-    @Select("SELECT COALESCE(SUM(file_size), 0) FROM resource_image WHERE deleted = 0")
+    @Select("SELECT COALESCE(SUM(file_size), 0) FROM image WHERE deleted = 0")
     long selectTotalFileSize();
 }
 

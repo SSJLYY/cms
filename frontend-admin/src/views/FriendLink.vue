@@ -289,7 +289,7 @@ const handleDelete = async (row) => {
     ElMessage.success('删除成功')
     loadData()
   } catch (error) {
-    if (error !== 'cancel') {
+    if (error !== 'cancel' && error !== 'close') {
       ElMessage.error(error.response?.data?.message || '删除失败')
     }
   }
@@ -307,7 +307,7 @@ const handleBatchDelete = async () => {
     selectedIds.value = []
     loadData()
   } catch (error) {
-    if (error !== 'cancel') {
+    if (error !== 'cancel' && error !== 'close') {
       ElMessage.error(error.response?.data?.message || '删除失败')
     }
   }

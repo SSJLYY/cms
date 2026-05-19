@@ -247,7 +247,7 @@ const queryForm = reactive({
   pageSize: 24
 })
 
-const uploadUrl = computed(() => import.meta.env.VITE_API_BASE_URL + '/api/images/upload')
+const uploadUrl = computed(() => `${import.meta.env.VITE_API_BASE_URL || ''}/api/images/upload`)
 
 const uploadHeaders = computed(() => ({
   Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -318,6 +318,8 @@ const getImageUrl = (url) => {
   if (!url) return ''
   // 如果是绝对路径（以 http:// 或 https:// 开头），直接返回
   if (url.startsWith('http://') || url.startsWith('https://')) return url
+  const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+  if (url.startsWith('/uploads/') && apiBaseUrl) return apiBaseUrl + url
   // 如果是相对路径，拼接当前域名
   return window.location.origin + (url.startsWith('/') ? url : '/' + url)
 }

@@ -3,6 +3,7 @@ package com.resource.platform.config;
 import com.resource.platform.filter.JwtAuthenticationFilter;
 import com.resource.platform.filter.RateLimitFilter;
 import com.resource.platform.filter.TraceIdFilter;
+import com.resource.platform.module.system.service.impl.StorageSettingsProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -46,6 +47,9 @@ public class SecurityConfig {
     @Autowired
     private TraceIdFilter traceIdFilter;
 
+    @Autowired
+    private StorageSettingsProvider storageSettingsProvider;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12); // 强度12，兼顾安全和性能
@@ -58,6 +62,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        String localUploadPattern = normalizePrefix(storageSettingsProvider.getLocalUrlPrefix()) + "/**";
         http
             // ========== 基础安全策略 ==========
             .csrf().disable()
@@ -111,7 +116,7 @@ public class SecurityConfig {
                 .antMatchers(HttpMethod.GET, "/api/promotion/active").permitAll()
                 .antMatchers(HttpMethod.POST, "/api/promotion/*/click").permitAll()
                 // --- 静态资源 ---
-                .antMatchers("/uploads/**", "/images/**", "/thumbnails/**", "/static/**").permitAll()
+                .antMatchers(localUploadPattern, "/uploads/**", "/images/**", "/thumbnails/**", "/static/**").permitAll()
                 .antMatchers("/*.html", "/*.js", "/*.css", "/*.png", "/*.jpg", "/*.ico").permitAll()
                 // --- API 文档（生产环境通过 application-prod.yml 关闭 knife4j）---
                 .antMatchers(
@@ -134,5 +139,16 @@ public class SecurityConfig {
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    private String normalizePrefix(String prefix) {
+        if (prefix == null || prefix.trim().isEmpty()) {
+            return "/uploads";
+        }
+        String normalized = prefix.trim();
+        if (!normalized.startsWith("/")) {
+            normalized = "/" + normalized;
+        }
+        return normalized.endsWith("/") ? normalized.substring(0, normalized.length() - 1) : normalized;
     }
 }

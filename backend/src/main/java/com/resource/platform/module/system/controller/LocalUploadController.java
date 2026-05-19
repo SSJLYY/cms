@@ -7,6 +7,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,12 +20,13 @@ import java.nio.file.Paths;
  * Serves local uploaded files from the runtime-configured storage path.
  */
 @RestController
+@RequestMapping("${storage.local.url-prefix:/uploads}")
 public class LocalUploadController {
 
     @Autowired
     private StorageSettingsProvider storageSettingsProvider;
 
-    @GetMapping("/uploads/{*filePath}")
+    @GetMapping("/{*filePath}")
     public ResponseEntity<Resource> getUploadedFile(@PathVariable("filePath") String filePath) {
         Path rootPath = Paths.get(storageSettingsProvider.getLocalPath()).toAbsolutePath().normalize();
         Path targetPath = rootPath.resolve(filePath).normalize();

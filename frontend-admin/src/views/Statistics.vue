@@ -303,6 +303,7 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 const exportLoading = ref(false)
+let skipNextVisitDetailsWatch = false
 
 const overviewData = ref({
   totalDownloads: 0,
@@ -365,12 +366,25 @@ const downloadCsv = (content, fileName) => {
   window.URL.revokeObjectURL(url)
 }
 
+const getErrorMessage = (error, fallback) => {
+  return error.response?.data?.message || fallback
+}
+
+const syncVisitPagination = (page, size = pageSize.value) => {
+  if (currentPage.value !== page || pageSize.value !== size) {
+    skipNextVisitDetailsWatch = true
+  }
+  currentPage.value = page
+  pageSize.value = size
+}
+
 const fetchVisitDetails = async (params) => {
   const res = await getVisitDetails(params)
   return Array.isArray(res?.data?.records) ? res.data.records : []
 }
 
 const loadOverview = async () => {
+  let success = true
   try {
     const res = await getStatisticsOverview(statsPeriod.value)
     overviewData.value = res?.data || {
@@ -379,11 +393,14 @@ const loadOverview = async () => {
       newVisits: 0
     }
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '加载统计概览失败')
+    success = false
+    ElMessage.error(getErrorMessage(error, '加载统计概览失败'))
   }
+  return success
 }
 
 const loadDownloadDistribution = async () => {
+  let success = true
   try {
     const res = await getDownloadDistribution(statsPeriod.value)
     const data = Array.isArray(res?.data) ? res.data : []
@@ -396,12 +413,15 @@ const loadDownloadDistribution = async () => {
 
     initDownloadChart(data)
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '加载下载分布失败')
+    success = false
+    ElMessage.error(getErrorMessage(error, '加载下载分布失败'))
   }
+  return success
 }
 
 const loadVisitDetails = async () => {
   tableLoading.value = true
+  let success = true
   try {
     const res = await getVisitDetails({
       period: statsPeriod.value,
@@ -411,25 +431,30 @@ const loadVisitDetails = async () => {
     const records = Array.isArray(res?.data?.records) ? res.data.records : []
     const totalCount = Number(res?.data?.total || 0)
     if (records.length === 0 && totalCount > 0 && currentPage.value > 1) {
-      currentPage.value -= 1
+      syncVisitPagination(currentPage.value - 1)
       return await loadVisitDetails()
     }
     visitStats.value = records
     total.value = totalCount
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '加载访问统计失败')
+    success = false
+    ElMessage.error(getErrorMessage(error, '加载访问统计失败'))
   } finally {
     tableLoading.value = false
   }
+  return success
 }
 
 const loadRealtimeActivities = async () => {
+  let success = true
   try {
     const res = await getRealtimeActivities(10)
     realtimeActivities.value = Array.isArray(res?.data) ? res.data : []
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '加载实时活动失败')
+    success = false
+    ElMessage.error(getErrorMessage(error, '加载实时活动失败'))
   }
+  return success
 }
 
 const initDownloadChart = (data) => {
@@ -487,16 +512,21 @@ const initDownloadChart = (data) => {
   downloadChart.setOption(option)
 }
 
-const loadAllData = () => {
-  loadOverview()
-  loadDownloadDistribution()
-  loadVisitDetails()
-  loadRealtimeActivities()
+const loadAllData = async () => {
+  const results = await Promise.all([
+    loadOverview(),
+    loadDownloadDistribution(),
+    loadVisitDetails(),
+    loadRealtimeActivities()
+  ])
+  return results.every(Boolean)
 }
 
-const handleRefreshChart = () => {
-  loadDownloadDistribution()
-  ElMessage.success('图表已刷新')
+const handleRefreshChart = async () => {
+  const success = await loadDownloadDistribution()
+  if (success) {
+    ElMessage.success('图表已刷新')
+  }
 }
 
 const handleExport = async () => {
@@ -534,37 +564,43 @@ const handleExport = async () => {
     downloadCsv(csvContent, `statistics_visit_details_${statsPeriod.value}.csv`)
     ElMessage.success('数据导出成功')
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '数据导出失败')
+    ElMessage.error(getErrorMessage(error, '数据导出失败'))
   } finally {
     exportLoading.value = false
   }
 }
 
-const handleRefresh = () => {
-  loadAllData()
-  ElMessage.success('数据已刷新')
+const handleRefresh = async () => {
+  const success = await loadAllData()
+  if (success) {
+    ElMessage.success('数据已刷新')
+  }
 }
 
 const handleResize = () => {
   downloadChart?.resize()
 }
 
-watch(statsPeriod, () => {
-  currentPage.value = 1
-  loadAllData()
+watch(statsPeriod, async () => {
+  syncVisitPagination(1)
+  await loadAllData()
 })
 
-watch([currentPage, pageSize], () => {
-  loadVisitDetails()
+watch([currentPage, pageSize], async () => {
+  if (skipNextVisitDetailsWatch) {
+    skipNextVisitDetailsWatch = false
+    return
+  }
+  await loadVisitDetails()
 })
 
 let realtimeTimer = null
 
 onMounted(() => {
-  loadAllData()
+  void loadAllData()
 
   realtimeTimer = setInterval(() => {
-    loadRealtimeActivities()
+    void loadRealtimeActivities()
   }, 30000)
 
   window.addEventListener('resize', handleResize)
